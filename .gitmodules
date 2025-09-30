@@ -1,0 +1,6 @@
+[submodule "kanban-backend"]
+	path = kanban-backend
+	url = https://github.com/ky-ler/kanban-backend
+[submodule "kanban-web"]
+	path = kanban-web
+	url = https://github.com/ky-ler/kanban-web
