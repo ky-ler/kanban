@@ -8,6 +8,7 @@
   "settings": {
     "eslint.workingDirectories": [
       { "directory": "./kanban-web", "changeProcessCWD": true }
-    ]
+    ],
+    "java.compile.nullAnalysis.mode": "automatic"
   }
 }
