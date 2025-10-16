@@ -2,7 +2,7 @@
 
 This repository contains the complete source code for a full-stack Kanban-style project management application. The project is organized using Git submodules to manage the frontend and backend codebases within this single parent repository.
 
-- **Backend (`kanban-backend`):** A robust RESTful API built with Java and Spring Boot, secured with Keycloak.
+- **Backend (`kanban-backend`):** A robust RESTful API built with Java and Spring Boot, secured with Auth0.
 - **Frontend (`kanban-web`):** A modern, responsive web application built with React, TypeScript, and Vite.
 
 ## Tech Stack
@@ -11,8 +11,6 @@ This repository contains the complete source code for a full-stack Kanban-style 
 | :----------- | :------------------------------------------------------------------------ |
 | **Backend**  | Java 21, Spring Boot 3, Spring Security, PostgreSQL, JPA/Hibernate, Maven |
 | **Frontend** | React 19, TypeScript, Vite, TanStack Router, React Query, Tailwind CSS    |
-| **Security** | Keycloak (Identity and Access Management)                                 |
-| **DevOps**   | Docker                                                                    |
 
 ## Key Features
 
@@ -20,7 +18,6 @@ This repository contains the complete source code for a full-stack Kanban-style 
 - **Role-Based Access Control (RBAC):** Secure API with fine-grained permissions for different user roles (e.g., ADMIN, MEMBER).
 - **Modern User Interface:** A clean, responsive, and intuitive interface for managing your workflow.
 - **Collaborator Management:** Add, remove, and update roles for team members on a per-project basis.
-- **Containerized Environment:** The entire backend infrastructure (PostgreSQL, Keycloak) is containerized with Docker for easy setup and consistent development.
 
 ## Getting Started
 
@@ -31,7 +28,7 @@ Follow these instructions to get the entire application running locally.
 - Java 21 (or later)
 - Maven
 - Node.js (v18 or later)
-- Docker
+- Docker or PostgreSQL
 
 ### 1. Clone the Repository with Submodules
 
@@ -48,16 +45,15 @@ If you have already cloned the repository without the flag, you can initialize t
 git submodule update --init --recursive
 ```
 
-### 2. Run Backend Services with Docker
+### 2. Run PostgreSQL
 
-The backend infrastructure, including PostgreSQL and Keycloak, is managed by Docker Compose. From the root of the project, run:
+You can run the PostgreSQL database with Docker Compose. From the root of the project, run:
 
 ```sh
 # This command starts the database and identity server in detached mode.
 docker-compose up -d
 ```
 
-- **Keycloak** will be available at `http://localhost:9090`. Log in and configure a realm and client as needed.
 - **PostgreSQL** will be available on port `8778`.
 
 ### 3. Configure and Run the Backend
@@ -68,7 +64,7 @@ Navigate to the backend directory and run the Spring Boot application using Mave
 # Navigate into the backend submodule
 cd kanban-backend
 
-# Ensure the issuer-uri in application.yml matches your Keycloak realm URL
+# Ensure the issuer-uri in application.yml matches your Auth0 issuer uri, and the audiences is set to your Auth0 API audience.
 # (src/main/resources/application.yml)
 
 # Run the backend application
@@ -92,8 +88,10 @@ npm install
 cp .env.example .env
 
 # Ensure the variables in .env point to your running services
-# VITE_KEYCLOAK_URL=http://localhost:9090
 # VITE_API_URL=http://localhost:8080/api
+# VITE_AUTH0_DOMAIN=your-auth0-domain
+# VITE_AUTH0_CLIENT_ID=your-auth0-client-id
+# VITE_AUTH0_AUDIENCE=your-auth0-audience
 
 # Run the frontend application
 npm run dev
