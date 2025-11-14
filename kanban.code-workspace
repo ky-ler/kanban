@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "name": "kanban",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "eslint.workingDirectories": [
+      { "directory": "./client", "changeProcessCWD": true }
+    ],
+    "java.compile.nullAnalysis.mode": "automatic"
+  }
+}

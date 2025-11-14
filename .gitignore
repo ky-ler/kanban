@@ -1,0 +1,39 @@
+### General ###
+.DS_Store
+*.local
+
+### Node / Frontend ###
+# Dependency and build folders
+node_modules/
+dist/
+dist-ssr/
+
+# Logs
+logs
+*.log
+
+# Environment variables
+.env
+
+# Editor caches and misc
+.eslintcache
+
+### Java / Backend ###
+# Maven & build
+target/
+build/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### IDEs and editors ###
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr

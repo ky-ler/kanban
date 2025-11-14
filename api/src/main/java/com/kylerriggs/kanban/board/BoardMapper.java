@@ -1,0 +1,88 @@
+package com.kylerriggs.kanban.board;
+
+import com.kylerriggs.kanban.board.dto.BoardDto;
+import com.kylerriggs.kanban.board.dto.BoardSummary;
+import com.kylerriggs.kanban.board.dto.CollaboratorDto;
+import com.kylerriggs.kanban.column.dto.ColumnDto;
+import com.kylerriggs.kanban.task.Task;
+import com.kylerriggs.kanban.task.TaskMapper;
+import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
+import com.kylerriggs.kanban.user.UserMapper;
+import com.kylerriggs.kanban.user.dto.UserSummaryDto;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@AllArgsConstructor
+@Service
+public class BoardMapper {
+    private final UserMapper userMapper;
+    private final TaskMapper taskMapper;
+
+    /**
+     * Converts a Board entity to a detailed DTO with all collaborators, tasks, and columns.
+     *
+     * @param board     the board entity to convert
+     * @param isDefault whether this board is the user's default board
+     * @return the board as a detailed DTO
+     */
+    public BoardDto toDto(Board board, boolean isDefault) {
+        UserSummaryDto creatorSummary = userMapper.toSummaryDto(board.getCreatedBy());
+
+        CollaboratorDto[] collaborators = board.getCollaborators().stream()
+                .map(c -> new CollaboratorDto(
+                        userMapper.toSummaryDto(c.getUser()),
+                        c.getRole()
+                ))
+                .toArray(CollaboratorDto[]::new);
+
+        TaskSummaryDto[] tasks = board.getTasks().stream()
+                .map(taskMapper::toSummaryDto)
+                .toArray(TaskSummaryDto[]::new);
+
+        ColumnDto[] columns = board.getColumns().stream()
+                .map(column -> new ColumnDto(
+                        column.getId(),
+                        column.getName(),
+                        column.getPosition()
+                ))
+                .toArray(ColumnDto[]::new);
+
+        return new BoardDto(
+                board.getId(),
+                board.getName(),
+                board.getDescription(),
+                creatorSummary,
+                collaborators,
+                tasks,
+                columns,
+                board.isArchived(),
+                board.getDateCreated().toString(),
+                board.getDateModified().toString(),
+                isDefault
+        );
+    }
+
+    /**
+     * Converts a Board entity to a summary DTO with task counts and basic information.
+     * Used for listing multiple boards without loading all details.
+     *
+     * @param board     the board entity to convert
+     * @param isDefault whether this board is the user's default board
+     * @return the board as a summary DTO
+     */
+    public BoardSummary toSummaryDto(Board board, boolean isDefault) {
+        int completedTasks = (int) board.getTasks().stream()
+                .filter(Task::isCompleted)
+                .count();
+
+        return new BoardSummary(
+                board.getId(),
+                board.getName(),
+                board.getDescription(),
+                board.getDateModified().toString(),
+                completedTasks,
+                board.getTasks().size(),
+                board.isArchived(),
+                isDefault);
+    }
+}
