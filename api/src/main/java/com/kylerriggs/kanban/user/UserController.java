@@ -21,7 +21,7 @@ public class UserController {
      * @return no content
      */
     @PostMapping("/default-board")
-    public ResponseEntity<Void> setDefaultBoard(@Valid @RequestBody UUID boardId) {
+    public ResponseEntity<Void> setDefaultBoard(@NonNull @Valid @RequestBody UUID boardId) {
         userService.setDefaultBoard(boardId);
         return ResponseEntity.ok().build();
     }

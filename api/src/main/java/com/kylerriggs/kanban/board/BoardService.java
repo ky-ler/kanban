@@ -14,6 +14,8 @@ import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +45,10 @@ public class BoardService {
     @Transactional
     public BoardDto createBoard(BoardRequest boardRequest) {
         String requestUserId = userService.getCurrentUserId();
+
+        if (requestUserId == null) {
+            throw new ResourceNotFoundException("");
+        }
 
         // Check if user has reached the board limit
         long userBoardCount = boardRepository.countByCollaboratorsUserId(requestUserId);
@@ -97,12 +103,15 @@ public class BoardService {
      * @return the board as a DTO with isDefault flag
      * @throws ResourceNotFoundException if the board doesn't exist
      */
-    public BoardDto getBoard(UUID boardId) {
-        Board board = boardRepository.findByIdWithDetails(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
+    public BoardDto getBoard(@NonNull UUID boardId) {
+        Board board =
+                boardRepository
+                        .findByIdWithDetails(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         String requestUserId = userService.getCurrentUserId();
-        UUID defaultBoardId = userRepository.findDefaultBoardIdById(requestUserId);
+        UUID defaultBoardId = userRepository.findDefaultBoardIdById(requestUserId).orElse(null);
         boolean isDefault = Objects.equals(board.getId(), defaultBoardId);
 
         return boardMapper.toDto(board, isDefault);
@@ -115,9 +124,12 @@ public class BoardService {
      * @return list of task summaries
      * @throws ResourceNotFoundException if the board doesn't exist
      */
-    public List<TaskSummaryDto> getTasksForBoard(UUID boardId) {
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
+    public List<TaskSummaryDto> getTasksForBoard(@NonNull UUID boardId) {
+        Board board =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         return board.getTasks().stream()
                 .map(taskMapper::toSummaryDto)
@@ -150,9 +162,12 @@ public class BoardService {
      * @throws ResourceNotFoundException if the board doesn't exist
      */
     @Transactional
-    public BoardDto updateBoard(UUID boardId, BoardRequest boardRequest) {
-        Board boardToUpdate = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
+    public BoardDto updateBoard(@NonNull UUID boardId, BoardRequest boardRequest) {
+        Board boardToUpdate =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         boardToUpdate.setName(boardRequest.name());
         boardToUpdate.setDescription(boardRequest.description());
@@ -190,7 +205,7 @@ public class BoardService {
      * @throws IllegalArgumentException    if the user is already a collaborator
      */
     @Transactional
-    public void addCollaborator(UUID boardId, CollaboratorRequest collaboratorRequest) {
+    public void addCollaborator(@NonNull UUID boardId, CollaboratorRequest collaboratorRequest) {
         String userId = collaboratorRequest.userId();
         BoardRole role = collaboratorRequest.role();
 
@@ -241,9 +256,12 @@ public class BoardService {
      * @throws IllegalArgumentException  if removing would leave no collaborators or admins
      */
     @Transactional
-    public void removeCollaborator(UUID boardId, String userId) {
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
+    public void removeCollaborator(@NonNull UUID boardId, @NonNull String userId) {
+        Board board =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         BoardUser collaboratorToRemove = board.getCollaborators().stream()
                 .filter(c -> c.getUser().getId().equals(userId))
@@ -297,9 +315,13 @@ public class BoardService {
      * @throws IllegalArgumentException  if the role change would violate business rules
      */
     @Transactional
-    public void updateCollaboratorRole(UUID boardId, String userId, BoardRole newRole) {
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
+    public void updateCollaboratorRole(
+            @NonNull UUID boardId, @NonNull String userId, @NonNull BoardRole newRole) {
+        Board board =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         BoardUser collaboratorToUpdate = board.getCollaborators().stream()
                 .filter(c -> c.getUser().getId().equals(userId))

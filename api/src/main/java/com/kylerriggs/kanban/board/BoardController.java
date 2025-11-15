@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -50,7 +51,7 @@ public class BoardController {
      */
     @GetMapping("/{boardId}")
     @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
-    public ResponseEntity<BoardDto> getBoard(@PathVariable UUID boardId) {
+    public ResponseEntity<BoardDto> getBoard(@NonNull @PathVariable UUID boardId) {
         BoardDto board = boardService.getBoard(boardId);
         return ResponseEntity.ok(board);
     }
@@ -64,7 +65,8 @@ public class BoardController {
      */
     @GetMapping("/{boardId}/tasks")
     @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
-    public ResponseEntity<List<TaskSummaryDto>> getTasksForBoard(@PathVariable UUID boardId) {
+    public ResponseEntity<List<TaskSummaryDto>> getTasksForBoard(
+            @NonNull @PathVariable UUID boardId) {
         List<TaskSummaryDto> tasks = boardService.getTasksForBoard(boardId);
         return ResponseEntity.ok(tasks);
     }
@@ -92,9 +94,7 @@ public class BoardController {
     @PutMapping("/{boardId}")
     @PreAuthorize("@boardAccess.isCreator(#boardId)")
     public ResponseEntity<BoardDto> updateBoard(
-            @PathVariable UUID boardId,
-            @Valid @RequestBody BoardRequest boardRequest
-    ) {
+            @NonNull @PathVariable UUID boardId, @Valid @RequestBody BoardRequest boardRequest) {
         BoardDto updatedBoard = boardService.updateBoard(boardId, boardRequest);
         return ResponseEntity.ok(updatedBoard);
     }
@@ -125,9 +125,8 @@ public class BoardController {
     @PostMapping("/{boardId}/collaborators")
     @PreAuthorize("@boardAccess.isAdmin(#boardId)")
     public ResponseEntity<Void> addCollaborator(
-            @PathVariable UUID boardId,
-            @Valid @RequestBody CollaboratorRequest collaboratorRequest
-    ) {
+            @NonNull @PathVariable UUID boardId,
+            @Valid @RequestBody CollaboratorRequest collaboratorRequest) {
         boardService.addCollaborator(boardId, collaboratorRequest);
         return ResponseEntity.noContent().build();
     }
@@ -143,9 +142,7 @@ public class BoardController {
     @DeleteMapping("/{boardId}/collaborators/{userId}")
     @PreAuthorize("@boardAccess.isAdmin(#boardId)")
     public ResponseEntity<Void> removeCollaborator(
-            @PathVariable UUID boardId,
-            @PathVariable String userId
-    ) {
+            @NonNull @PathVariable UUID boardId, @NonNull @PathVariable String userId) {
         boardService.removeCollaborator(boardId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -162,10 +159,9 @@ public class BoardController {
     @PutMapping("/{boardId}/collaborators/{userId}")
     @PreAuthorize("@boardAccess.isCreator(#boardId)")
     public ResponseEntity<Void> updateCollaboratorRole(
-            @PathVariable UUID boardId,
-            @PathVariable String userId,
-            @Valid @RequestBody RoleUpdateRequest req
-    ) {
+            @NonNull @PathVariable UUID boardId,
+            @NonNull @PathVariable String userId,
+            @Valid @RequestBody RoleUpdateRequest req) {
         boardService.updateCollaboratorRole(boardId, userId, req.newRole());
         return ResponseEntity.ok().build();
     }

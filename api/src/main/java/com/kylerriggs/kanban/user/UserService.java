@@ -3,7 +3,11 @@ package com.kylerriggs.kanban.user;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.exception.UnauthorizedException;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +25,13 @@ public class UserService {
      * @return the user ID from the authentication token
      */
     public String getCurrentUserId() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        if (userId == null) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        return userId;
     }
 
     /**
@@ -31,7 +41,8 @@ public class UserService {
      */
     public UUID getCurrentUserDefaultBoardId() {
         String requestUserId = getCurrentUserId();
-        return userRepository.findDefaultBoardIdById(requestUserId);
+
+        return userRepository.findDefaultBoardIdById(requestUserId).orElse(null);
     }
 
     /**
@@ -43,8 +54,17 @@ public class UserService {
     public UUID getDefaultBoard() {
         String requestUserId = getCurrentUserId();
 
-        User user = userRepository.findById(requestUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requestUserId));
+        if (requestUserId == null) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        User user =
+                userRepository
+                        .findById(requestUserId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "User not found: " + requestUserId));
 
         Board defaultBoard = user.getDefaultBoard();
 
@@ -57,11 +77,20 @@ public class UserService {
      * @param boardId the ID of the board to set as default
      * @throws ResourceNotFoundException if the user or board doesn't exist
      */
-    public void setDefaultBoard(UUID boardId) {
+    public void setDefaultBoard(@NonNull UUID boardId) {
         String requestUserId = getCurrentUserId();
 
-        User user = userRepository.findById(requestUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requestUserId));
+        if (requestUserId == null) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        User user =
+                userRepository
+                        .findById(requestUserId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "User not found: " + requestUserId));
 
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));

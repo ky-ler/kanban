@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -30,9 +31,7 @@ public class TaskController {
      */
     @GetMapping("/{taskId}")
     @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
-    public ResponseEntity<TaskDto> getTask(
-            @PathVariable UUID taskId
-    ) {
+    public ResponseEntity<TaskDto> getTask(@NonNull @PathVariable UUID taskId) {
         TaskDto task = taskService.getTask(taskId);
         return ResponseEntity.ok(task);
     }
@@ -47,8 +46,7 @@ public class TaskController {
     @PostMapping()
     @PreAuthorize("@boardAccess.isCollaborator(#taskRequest.boardId())")
     public ResponseEntity<TaskDto> createTask(
-            @Valid @RequestBody TaskRequest taskRequest
-    ) {
+            @NonNull @Valid @RequestBody TaskRequest taskRequest) {
         TaskDto createdTask = taskService.createTask(taskRequest);
 
         URI location = ServletUriComponentsBuilder
@@ -71,9 +69,8 @@ public class TaskController {
     @PutMapping("/{taskId}")
     @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
     public ResponseEntity<TaskDto> updateTask(
-            @PathVariable UUID taskId,
-            @Valid @RequestBody TaskRequest taskRequest
-    ) {
+            @NonNull @PathVariable UUID taskId,
+            @NonNull @Valid @RequestBody TaskRequest taskRequest) {
         TaskDto updatedTask = taskService.updateTask(taskId, taskRequest);
 
         return ResponseEntity.ok(updatedTask);
@@ -91,9 +88,8 @@ public class TaskController {
     @PatchMapping("/{taskId}")
     @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
     public ResponseEntity<Void> moveTask(
-            @PathVariable UUID taskId,
-            @Valid @RequestBody MoveTaskRequest moveTaskRequest
-    ) {
+            @NonNull @PathVariable UUID taskId,
+            @NonNull @Valid @RequestBody MoveTaskRequest moveTaskRequest) {
         taskService.moveTask(taskId, moveTaskRequest);
         return ResponseEntity.ok().build();
     }
@@ -107,9 +103,7 @@ public class TaskController {
      */
     @DeleteMapping("/{taskId}")
     @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
-    public ResponseEntity<Void> deleteTask(
-            @PathVariable UUID taskId
-    ) {
+    public ResponseEntity<Void> deleteTask(@NonNull @PathVariable UUID taskId) {
         taskService.deleteTask(taskId);
         return ResponseEntity.noContent().build();
     }

@@ -4,7 +4,9 @@ import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.column.ColumnRepository;
+import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
@@ -12,6 +14,8 @@ import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -38,9 +42,12 @@ public class TaskService {
      * @return the task as a DTO
      * @throws ResourceNotFoundException if the task doesn't exist
      */
-    public TaskDto getTask(UUID taskId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+    public TaskDto getTask(@NonNull UUID taskId) {
+        Task task =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         return taskMapper.toDto(task);
     }
@@ -55,11 +62,20 @@ public class TaskService {
      * @throws IllegalArgumentException  if the assignee is not a board collaborator
      */
     @Transactional
-    public TaskDto createTask(TaskRequest createTaskRequest) {
+    public TaskDto createTask(@NonNull TaskRequest createTaskRequest) {
         String requestUserId = userService.getCurrentUserId();
 
-        User createdBy = userRepository.findById(requestUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requestUserId));
+        if (requestUserId == null) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        User createdBy =
+                userRepository
+                        .findById(requestUserId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "User not found: " + requestUserId));
 
         Board board = boardRepository.findById(createTaskRequest.boardId())
                 .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + createTaskRequest.boardId()));
@@ -68,7 +84,14 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Column not found: " + createTaskRequest.columnId()));
 
         User assignedTo = null;
-        if (StringUtils.hasText(createTaskRequest.assigneeId())) {
+
+        String requestAssigneeId = Optional.ofNullable(createTaskRequest.assigneeId()).orElse(null);
+        if (StringUtils.hasText(requestAssigneeId)) {
+            // This null check is only here to prevent Null type safety issues
+            if (requestAssigneeId == null) {
+                throw new BoardAccessException("Assignee ID is not valid.");
+            }
+
             board.getCollaborators().stream()
                     .filter(c -> c.getUser().getId().equals(createTaskRequest.assigneeId()))
                     .findFirst()
@@ -102,12 +125,17 @@ public class TaskService {
      * @param updateTaskRequest the task update request
      * @return the updated task as a DTO
      * @throws ResourceNotFoundException if the task, board, column, or assignee doesn't exist
-     * @throws IllegalArgumentException  if the new assignee is not a board collaborator
+     * @throws BoardAccessException if the new assignee is not a board collaborator
      */
     @Transactional
-    public TaskDto updateTask(UUID taskId, TaskRequest updateTaskRequest) {
-        Board boardToUpdate = boardRepository.findById(updateTaskRequest.boardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + updateTaskRequest.boardId()));
+    public TaskDto updateTask(@NonNull UUID taskId, TaskRequest updateTaskRequest) {
+        Board boardToUpdate =
+                boardRepository
+                        .findById(updateTaskRequest.boardId())
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Board not found: " + updateTaskRequest.boardId()));
 
         Task taskToUpdate = boardToUpdate.getTasks().stream()
                 .filter(i -> Objects.equals(i.getId(), taskId))
@@ -123,12 +151,20 @@ public class TaskService {
             taskToUpdate.setColumn(newColumn);
         }
 
-        String currentAssigneeId = Optional.ofNullable(taskToUpdate.getAssignedTo())
-                .map(User::getId)
-                .orElse(null);
+        String currentAssigneeId =
+                Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
 
-        if (!Objects.equals(currentAssigneeId, updateTaskRequest.assigneeId())) {
-            if (StringUtils.hasText(updateTaskRequest.assigneeId())) {
+        String requestAssigneeId = Optional.ofNullable(updateTaskRequest.assigneeId()).orElse(null);
+
+        if (!Objects.equals(currentAssigneeId, requestAssigneeId)) {
+            if (StringUtils.hasText(requestAssigneeId)) {
+                String assigneeId = requestAssigneeId;
+
+                // This null check is only here to prevent Null type safety issues
+                if (assigneeId == null) {
+                    throw new BoardAccessException("Assignee ID is not valid.");
+                }
+
                 boardToUpdate.getCollaborators().stream()
                         .filter(c -> c.getUser().getId().equals(updateTaskRequest.assigneeId()))
                         .findFirst()
@@ -157,9 +193,12 @@ public class TaskService {
      * @throws ResourceNotFoundException if the task doesn't exist
      */
     @Transactional
-    public void deleteTask(UUID taskId) {
-        Task taskToDelete = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+    public void deleteTask(@NonNull UUID taskId) {
+        Task taskToDelete =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         Board board = taskToDelete.getBoard();
         board.getTasks().remove(taskToDelete);
@@ -174,7 +213,7 @@ public class TaskService {
      * @throws ResourceNotFoundException if the task or column doesn't exist
      */
     @Transactional
-    public void moveTask(UUID taskId, MoveTaskRequest moveTaskRequest) {
+    public void moveTask(@NonNull UUID taskId, MoveTaskRequest moveTaskRequest) {
         Integer newPosition = moveTaskRequest.newPosition();
         UUID newColumnId = moveTaskRequest.newColumnId();
 
