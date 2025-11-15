@@ -24,14 +24,37 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BoardLimitExceededException.class)
     public ResponseEntity<Object> handleBoardLimitExceededException(
-            BoardLimitExceededException ex, WebRequest request
-    ) {
-        Map<String, Object> body = Map.of(
-                "timestamp", System.currentTimeMillis(),
-                "column", HttpStatus.FORBIDDEN.value(),
-                "error", "Board Limit Exceeded",
-                "message", ex.getMessage()
-        );
+            BoardLimitExceededException ex, WebRequest request) {
+        Map<String, Object> body =
+                Map.of(
+                        "timestamp", System.currentTimeMillis(),
+                        "column", HttpStatus.FORBIDDEN.value(),
+                        "error", "Board Limit Exceeded",
+                        "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(BoardAccessException.class)
+    public ResponseEntity<Object> handleBoardAccessException(
+            BoardAccessException ex, WebRequest request) {
+        Map<String, Object> body =
+                Map.of(
+                        "timestamp", System.currentTimeMillis(),
+                        "column", HttpStatus.FORBIDDEN.value(),
+                        "error", "Forbidden",
+                        "message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Object> handleUnauthorizedException(
+            UnauthorizedException ex, WebRequest request) {
+        Map<String, Object> body =
+                Map.of(
+                        "timestamp", System.currentTimeMillis(),
+                        "column", HttpStatus.UNAUTHORIZED.value(),
+                        "error", "Unauthorized",
+                        "message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
     }
 }
