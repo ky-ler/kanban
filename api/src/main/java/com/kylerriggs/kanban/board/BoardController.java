@@ -2,9 +2,12 @@ package com.kylerriggs.kanban.board;
 
 import com.kylerriggs.kanban.board.dto.*;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,8 +27,8 @@ public class BoardController {
     private final BoardService boardService;
 
     /**
-     * Creates a new board with the given name and description.
-     * The creator is automatically added as an admin.
+     * Creates a new board with the given name and description. The creator is automatically added
+     * as an admin.
      *
      * @param boardRequest the board creation request containing name and description
      * @return the created board DTO with location header
@@ -34,17 +37,18 @@ public class BoardController {
     public ResponseEntity<BoardDto> createBoard(@Valid @RequestBody BoardRequest boardRequest) {
         BoardDto board = boardService.createBoard(boardRequest);
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{boardId}")
-                .buildAndExpand(board.id())
-                .toUri();
+        URI location =
+                ServletUriComponentsBuilder.fromCurrentRequest()
+                        .path("/{boardId}")
+                        .buildAndExpand(board.id())
+                        .toUri();
 
         return ResponseEntity.created(location).body(board);
     }
 
     /**
-     * Retrieves a single board by its ID with all details.
-     * Requires the user to be a collaborator on the board.
+     * Retrieves a single board by its ID with all details. Requires the user to be a collaborator
+     * on the board.
      *
      * @param boardId the ID of the board to retrieve
      * @return the board DTO
@@ -57,8 +61,8 @@ public class BoardController {
     }
 
     /**
-     * Retrieves all tasks associated with a specific board.
-     * Requires the user to be a collaborator on the board.
+     * Retrieves all tasks associated with a specific board. Requires the user to be a collaborator
+     * on the board.
      *
      * @param boardId the ID of the board
      * @return list of task summaries
@@ -72,8 +76,8 @@ public class BoardController {
     }
 
     /**
-     * Retrieves all boards that the current user is a collaborator on.
-     * Returns summary information for each board.
+     * Retrieves all boards that the current user is a collaborator on. Returns summary information
+     * for each board.
      *
      * @return list of board summaries
      */
@@ -84,10 +88,10 @@ public class BoardController {
     }
 
     /**
-     * Updates the name and description of an existing board.
-     * Only the creator of the board can perform this action.
+     * Updates the name and description of an existing board. Only the creator of the board can
+     * perform this action.
      *
-     * @param boardId      the ID of the board to update
+     * @param boardId the ID of the board to update
      * @param boardRequest board update request containing new name and description
      * @return the updated board DTO
      */
@@ -99,26 +103,26 @@ public class BoardController {
         return ResponseEntity.ok(updatedBoard);
     }
 
-//    /**
-//     * Deletes a board and all its associated data.
-//     * Requires admin privileges on the board.
-//     * Disabled for now, I want to implement archiving instead.
-//     *
-//     * @param boardId the ID of the board to delete
-//     * @return no content
-//     */
-//    @DeleteMapping("/{boardId}")
-//    @PreAuthorize("@boardAccess.isAdmin(#boardId)")
-//    public ResponseEntity<Void> deleteBoard(@PathVariable UUID boardId) {
-//        boardService.deleteBoard(boardId);
-//        return ResponseEntity.noContent().build();
-//    }
+    //    /**
+    //     * Deletes a board and all its associated data.
+    //     * Requires admin privileges on the board.
+    //     * Disabled for now, I want to implement archiving instead.
+    //     *
+    //     * @param boardId the ID of the board to delete
+    //     * @return no content
+    //     */
+    //    @DeleteMapping("/{boardId}")
+    //    @PreAuthorize("@boardAccess.isAdmin(#boardId)")
+    //    public ResponseEntity<Void> deleteBoard(@PathVariable UUID boardId) {
+    //        boardService.deleteBoard(boardId);
+    //        return ResponseEntity.noContent().build();
+    //    }
 
     /**
-     * Adds a new collaborator to a board with the specified role.
-     * Requires admin privileges on the board.
+     * Adds a new collaborator to a board with the specified role. Requires admin privileges on the
+     * board.
      *
-     * @param boardId             the ID of the board
+     * @param boardId the ID of the board
      * @param collaboratorRequest the collaborator request containing user ID and role
      * @return no content
      */
@@ -132,11 +136,10 @@ public class BoardController {
     }
 
     /**
-     * Removes a collaborator from a board.
-     * Requires admin privileges on the board.
+     * Removes a collaborator from a board. Requires admin privileges on the board.
      *
      * @param boardId the ID of the board
-     * @param userId  the ID of the user to remove
+     * @param userId the ID of the user to remove
      * @return no content
      */
     @DeleteMapping("/{boardId}/collaborators/{userId}")
@@ -148,12 +151,11 @@ public class BoardController {
     }
 
     /**
-     * Updates the role of a collaborator on a board.
-     * Requires admin privileges on the board.
+     * Updates the role of a collaborator on a board. Requires admin privileges on the board.
      *
      * @param boardId the ID of the board
-     * @param userId  the ID of the user whose role to update
-     * @param req     the role update request containing the new role
+     * @param userId the ID of the user whose role to update
+     * @param req the role update request containing the new role
      * @return no content
      */
     @PutMapping("/{boardId}/collaborators/{userId}")

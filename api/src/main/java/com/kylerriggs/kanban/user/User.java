@@ -4,7 +4,9 @@ import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardUser;
 import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.task.Task;
+
 import jakarta.persistence.*;
+
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -19,8 +21,7 @@ import java.util.Set;
 @Entity
 @Table(name = "users")
 public class User extends BaseEntity {
-    @Id
-    private String id;
+    @Id private String id;
 
     @Column(nullable = false, length = 15, unique = true)
     private String username;

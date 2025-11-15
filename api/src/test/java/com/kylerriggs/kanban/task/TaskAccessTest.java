@@ -1,5 +1,8 @@
 package com.kylerriggs.kanban.task;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,22 +15,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class TaskAccessTest {
 
     private static final UUID TASK_ID = UUID.fromString("a156c2d0-891b-44de-816b-c9259cd00391");
     private static final String USER_ID = "user123";
-    @Mock
-    private TaskRepository taskRepository;
-    @Mock
-    private SecurityContext securityContext;
-    @Mock
-    private Authentication authentication;
-    @InjectMocks
-    private TaskAccess taskAccess;
+    @Mock private TaskRepository taskRepository;
+    @Mock private SecurityContext securityContext;
+    @Mock private Authentication authentication;
+    @InjectMocks private TaskAccess taskAccess;
 
     @BeforeEach
     void setUp() {

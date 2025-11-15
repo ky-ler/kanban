@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.config;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,4 +13,3 @@ import org.springframework.context.annotation.Configuration;
 public class BoardProperties {
     private int maxBoardsPerUser = 10;
 }
-

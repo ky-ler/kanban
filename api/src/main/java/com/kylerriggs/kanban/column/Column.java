@@ -1,8 +1,10 @@
 package com.kylerriggs.kanban.column;
 
 import com.kylerriggs.kanban.board.Board;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+
 import lombok.*;
 
 import java.util.UUID;

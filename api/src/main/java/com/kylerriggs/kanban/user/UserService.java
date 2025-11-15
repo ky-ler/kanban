@@ -92,8 +92,11 @@ public class UserService {
                                         new ResourceNotFoundException(
                                                 "User not found: " + requestUserId));
 
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
+        Board board =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         user.setDefaultBoard(board);
     }

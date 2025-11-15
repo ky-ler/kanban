@@ -21,8 +21,7 @@ public class BoardUserId implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof BoardUserId that)) return false;
-        return Objects.equals(board, that.board) &&
-                Objects.equals(user, that.user);
+        return Objects.equals(board, that.board) && Objects.equals(user, that.user);
     }
 
     @Override

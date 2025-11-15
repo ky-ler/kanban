@@ -1,8 +1,11 @@
 package com.kylerriggs.kanban.user;
 
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -14,8 +17,8 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * Sets the default board for the current user.
-     * Requires the user to be authenticated and modifying their own data.
+     * Sets the default board for the current user. Requires the user to be authenticated and
+     * modifying their own data.
      *
      * @param boardId the ID of the board to set as default
      * @return no content
@@ -27,8 +30,7 @@ public class UserController {
     }
 
     /**
-     * Retrieves the current user's default board.
-     * Requires the user to be authenticated.
+     * Retrieves the current user's default board. Requires the user to be authenticated.
      *
      * @return the current user's default board
      */

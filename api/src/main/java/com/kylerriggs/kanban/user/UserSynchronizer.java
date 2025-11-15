@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -17,9 +18,9 @@ public class UserSynchronizer {
     private final UserMapper userMapper;
 
     /**
-     * Synchronizes user information from the identity provider (Auth0) JWT token.
-     * Creates a new user if they don't exist, or updates existing user information.
-     * Skips synchronization if the token doesn't contain an email.
+     * Synchronizes user information from the identity provider (Auth0) JWT token. Creates a new
+     * user if they don't exist, or updates existing user information. Skips synchronization if the
+     * token doesn't contain an email.
      *
      * @param token the JWT token containing user claims from Auth0
      */

@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import org.springframework.lang.NonNull;
+
 import java.util.UUID;
 
 public record TaskRequest(
@@ -16,7 +18,4 @@ public record TaskRequest(
         String description,
         @NonNull @NotNull(message = "Column ID cannot be null") UUID columnId,
         boolean isCompleted,
-
-        boolean isArchived
-) {
-}
+        boolean isArchived) {}

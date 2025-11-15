@@ -6,10 +6,13 @@ import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.user.User;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+
 import org.springframework.data.annotation.CreatedBy;
 
 import java.util.UUID;
@@ -21,10 +24,7 @@ import java.util.UUID;
 @SuperBuilder(toBuilder = true)
 @Entity
 @Table(name = "tasks")
-@JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
-)
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Task extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -40,11 +40,9 @@ public class Task extends BaseEntity {
     @jakarta.persistence.Column(name = "position", nullable = false)
     private Integer position;
 
-    @Builder.Default
-    private boolean isCompleted = false;
+    @Builder.Default private boolean isCompleted = false;
 
-    @Builder.Default
-    private boolean isArchived = false;
+    @Builder.Default private boolean isArchived = false;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "board_id", foreignKey = @ForeignKey(name = "fk_task_board"))

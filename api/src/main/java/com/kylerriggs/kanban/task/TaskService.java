@@ -13,6 +13,7 @@ import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.lang.NonNull;
@@ -53,13 +54,15 @@ public class TaskService {
     }
 
     /**
-     * Creates a new task in the specified board and column.
-     * The task is added to the end of the column's task list.
+     * Creates a new task in the specified board and column. The task is added to the end of the
+     * column's task list.
      *
-     * @param createTaskRequest the task creation request containing title, description, board, column, and optional assignee
+     * @param createTaskRequest the task creation request containing title, description, board,
+     *     column, and optional assignee
      * @return the created task as a DTO
+     * @throws UnauthorizedException if the user is not authenticated
      * @throws ResourceNotFoundException if the user, board, column, or assignee doesn't exist
-     * @throws IllegalArgumentException  if the assignee is not a board collaborator
+     * @throws BoardAccessException if the assignee is not a board collaborator
      */
     @Transactional
     public TaskDto createTask(@NonNull TaskRequest createTaskRequest) {
@@ -77,11 +80,22 @@ public class TaskService {
                                         new ResourceNotFoundException(
                                                 "User not found: " + requestUserId));
 
-        Board board = boardRepository.findById(createTaskRequest.boardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + createTaskRequest.boardId()));
+        Board board =
+                boardRepository
+                        .findById(createTaskRequest.boardId())
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Board not found: " + createTaskRequest.boardId()));
 
-        Column column = columnRepository.findById(createTaskRequest.columnId())
-                .orElseThrow(() -> new ResourceNotFoundException("Column not found: " + createTaskRequest.columnId()));
+        Column column =
+                columnRepository
+                        .findById(createTaskRequest.columnId())
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Column not found: "
+                                                        + createTaskRequest.columnId()));
 
         User assignedTo = null;
 
@@ -93,14 +107,21 @@ public class TaskService {
             }
 
             board.getCollaborators().stream()
-                    .filter(c -> c.getUser().getId().equals(createTaskRequest.assigneeId()))
+                    .filter(c -> c.getUser().getId().equals(requestAssigneeId))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "User is not a collaborator on the board: " + createTaskRequest.assigneeId()
-                    ));
+                    .orElseThrow(
+                            () ->
+                                    new BoardAccessException(
+                                            "User is not a collaborator on the board: "
+                                                    + requestAssigneeId));
 
-            assignedTo = userRepository.findById(createTaskRequest.assigneeId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + createTaskRequest.assigneeId()));
+            assignedTo =
+                    userRepository
+                            .findById(requestAssigneeId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "User not found: " + requestAssigneeId));
         }
 
         // Get the next position (append to end)
@@ -118,10 +139,10 @@ public class TaskService {
     }
 
     /**
-     * Updates an existing task's title, description, column, and assignee.
-     * Validates that the assignee (if changed) is a board collaborator.
+     * Updates an existing task's title, description, column, and assignee. Validates that the
+     * assignee (if changed) is a board collaborator.
      *
-     * @param taskId            the ID of the task to update
+     * @param taskId the ID of the task to update
      * @param updateTaskRequest the task update request
      * @return the updated task as a DTO
      * @throws ResourceNotFoundException if the task, board, column, or assignee doesn't exist
@@ -137,17 +158,25 @@ public class TaskService {
                                         new ResourceNotFoundException(
                                                 "Board not found: " + updateTaskRequest.boardId()));
 
-        Task taskToUpdate = boardToUpdate.getTasks().stream()
-                .filter(i -> Objects.equals(i.getId(), taskId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+        Task taskToUpdate =
+                boardToUpdate.getTasks().stream()
+                        .filter(i -> Objects.equals(i.getId(), taskId))
+                        .findFirst()
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         taskToUpdate.setTitle(updateTaskRequest.title());
         taskToUpdate.setDescription(updateTaskRequest.description());
 
         if (!taskToUpdate.getColumn().getId().equals(updateTaskRequest.columnId())) {
-            Column newColumn = columnRepository.findById(updateTaskRequest.columnId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Column not found: " + updateTaskRequest.columnId()));
+            Column newColumn =
+                    columnRepository
+                            .findById(updateTaskRequest.columnId())
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "Column not found: "
+                                                            + updateTaskRequest.columnId()));
             taskToUpdate.setColumn(newColumn);
         }
 
@@ -166,14 +195,21 @@ public class TaskService {
                 }
 
                 boardToUpdate.getCollaborators().stream()
-                        .filter(c -> c.getUser().getId().equals(updateTaskRequest.assigneeId()))
+                        .filter(c -> c.getUser().getId().equals(assigneeId))
                         .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "User is not a collaborator on the board: " + updateTaskRequest.assigneeId()
-                        ));
+                        .orElseThrow(
+                                () ->
+                                        new BoardAccessException(
+                                                "User is not a collaborator on the board: "
+                                                        + assigneeId));
 
-                User newAssignee = userRepository.findById(updateTaskRequest.assigneeId())
-                        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + updateTaskRequest.assigneeId()));
+                User newAssignee =
+                        userRepository
+                                .findById(assigneeId)
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "User not found: " + assigneeId));
                 taskToUpdate.setAssignedTo(newAssignee);
             } else {
                 taskToUpdate.setAssignedTo(null);
@@ -205,10 +241,10 @@ public class TaskService {
     }
 
     /**
-     * Moves a task to a new position within the same column or to a different column.
-     * Automatically recalculates positions of all affected tasks in both source and destination columns.
+     * Moves a task to a new position within the same column or to a different column. Automatically
+     * recalculates positions of all affected tasks in both source and destination columns.
      *
-     * @param taskId          the ID of the task to move
+     * @param taskId the ID of the task to move
      * @param moveTaskRequest the new position and optional new column ID
      * @throws ResourceNotFoundException if the task or column doesn't exist
      */
@@ -217,8 +253,11 @@ public class TaskService {
         Integer newPosition = moveTaskRequest.newPosition();
         UUID newColumnId = moveTaskRequest.newColumnId();
 
-        Task taskToMove = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+        Task taskToMove =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         Board board = taskToMove.getBoard();
         Integer oldPosition = taskToMove.getPosition();
@@ -226,8 +265,13 @@ public class TaskService {
 
         // If changing columns
         if (newColumnId != null && !oldColumnId.equals(newColumnId)) {
-            Column newColumn = columnRepository.findById(newColumnId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Column not found: " + newColumnId));
+            Column newColumn =
+                    columnRepository
+                            .findById(newColumnId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "Column not found: " + newColumnId));
 
             // Adjust positions in old column (shift down tasks after the moved task)
             board.getTasks().stream()
@@ -254,13 +298,19 @@ public class TaskService {
                 // Moving down: shift tasks between old and new position up
                 board.getTasks().stream()
                         .filter(t -> t.getColumn().getId().equals(oldColumnId))
-                        .filter(t -> t.getPosition() > oldPosition && t.getPosition() <= newPosition)
+                        .filter(
+                                t ->
+                                        t.getPosition() > oldPosition
+                                                && t.getPosition() <= newPosition)
                         .forEach(t -> t.setPosition(t.getPosition() - 1));
             } else {
                 // Moving up: shift tasks between new and old position down
                 board.getTasks().stream()
                         .filter(t -> t.getColumn().getId().equals(oldColumnId))
-                        .filter(t -> t.getPosition() >= newPosition && t.getPosition() < oldPosition)
+                        .filter(
+                                t ->
+                                        t.getPosition() >= newPosition
+                                                && t.getPosition() < oldPosition)
                         .forEach(t -> t.setPosition(t.getPosition() + 1));
             }
 

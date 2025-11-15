@@ -5,4 +5,3 @@ public class BoardLimitExceededException extends RuntimeException {
         super(message);
     }
 }
-

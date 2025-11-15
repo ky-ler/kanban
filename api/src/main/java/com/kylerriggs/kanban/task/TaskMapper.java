@@ -8,7 +8,9 @@ import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserMapper;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
+
 import lombok.AllArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 @AllArgsConstructor
@@ -25,12 +27,13 @@ public class TaskMapper {
     public TaskDto toDto(Task task) {
         UserSummaryDto createdBy = userMapper.toSummaryDto(task.getCreatedBy());
 
-        UserSummaryDto assignedTo = task.getAssignedTo() != null ?
-                new UserSummaryDto(
-                        task.getAssignedTo().getId(),
-                        task.getAssignedTo().getUsername(),
-                        task.getAssignedTo().getProfileImageUrl()
-                ) : null;
+        UserSummaryDto assignedTo =
+                task.getAssignedTo() != null
+                        ? new UserSummaryDto(
+                                task.getAssignedTo().getId(),
+                                task.getAssignedTo().getUsername(),
+                                task.getAssignedTo().getProfileImageUrl())
+                        : null;
 
         return new TaskDto(
                 task.getId(),
@@ -43,13 +46,12 @@ public class TaskMapper {
                 task.isCompleted(),
                 task.isArchived(),
                 task.getDateCreated() != null ? task.getDateCreated().toString() : null,
-                task.getDateModified() != null ? task.getDateModified().toString() : null
-        );
+                task.getDateModified() != null ? task.getDateModified().toString() : null);
     }
 
     /**
-     * Converts a Task entity to a summary DTO with minimal information.
-     * Used for displaying tasks in board overviews without loading all details.
+     * Converts a Task entity to a summary DTO with minimal information. Used for displaying tasks
+     * in board overviews without loading all details.
      *
      * @param task the task entity to convert
      * @return the task as a summary DTO
@@ -67,32 +69,29 @@ public class TaskMapper {
                 assignee,
                 task.getPosition(),
                 task.isCompleted(),
-                task.isArchived()
-        );
+                task.isArchived());
     }
 
     /**
      * Converts a task creation request and related entities to a Task entity.
      *
-     * @param req        the task creation request
-     * @param board      the board the task belongs to
-     * @param createdBy  the user creating the task
+     * @param req the task creation request
+     * @param board the board the task belongs to
+     * @param createdBy the user creating the task
      * @param assignedTo the user assigned to the task (can be null)
-     * @param column     the column the task belongs to
+     * @param column the column the task belongs to
      * @return the new task entity
      */
-    public Task toEntity(TaskRequest req,
-                         Board board,
-                         User createdBy,
-                         User assignedTo,
-                         Column column) {
-        Task task = Task.builder()
-                .board(board)
-                .createdBy(createdBy)
-                .title(req.title())
-                .description(req.description())
-                .column(column)
-                .build();
+    public Task toEntity(
+            TaskRequest req, Board board, User createdBy, User assignedTo, Column column) {
+        Task task =
+                Task.builder()
+                        .board(board)
+                        .createdBy(createdBy)
+                        .title(req.title())
+                        .description(req.description())
+                        .column(column)
+                        .build();
 
         if (assignedTo != null) {
             task.setAssignedTo(assignedTo);

@@ -4,10 +4,13 @@ import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.user.User;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+
 import org.springframework.data.annotation.CreatedBy;
 
 import java.util.HashSet;
@@ -33,8 +36,7 @@ public class Board extends BaseEntity {
     @jakarta.persistence.Column(columnDefinition = "TEXT", length = 2048)
     private String description;
 
-    @Builder.Default
-    private boolean isArchived = false;
+    @Builder.Default private boolean isArchived = false;
 
     @CreatedBy
     @ManyToOne(optional = false)

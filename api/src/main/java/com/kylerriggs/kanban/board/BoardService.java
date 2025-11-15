@@ -13,6 +13,7 @@ import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.lang.NonNull;
@@ -34,13 +35,13 @@ public class BoardService {
     private final TaskMapper taskMapper;
 
     /**
-     * Creates a new board with default columns and assigns the creator as an admin.
-     * The board is automatically set as the user's default if they don't have one.
+     * Creates a new board with default columns and assigns the creator as an admin. The board is
+     * automatically set as the user's default if they don't have one.
      *
      * @param boardRequest containing name and description of the board to create
      * @return the created board as a DTO
      * @throws BoardLimitExceededException if the user has reached the maximum board limit
-     * @throws ResourceNotFoundException   if the user doesn't exist
+     * @throws ResourceNotFoundException if the user doesn't exist
      */
     @Transactional
     public BoardDto createBoard(BoardRequest boardRequest) {
@@ -54,35 +55,40 @@ public class BoardService {
         long userBoardCount = boardRepository.countByCollaboratorsUserId(requestUserId);
         if (userBoardCount >= boardProperties.getMaxBoardsPerUser()) {
             throw new BoardLimitExceededException(
-                    "User has reached the maximum limit of " + boardProperties.getMaxBoardsPerUser() + " boards"
-            );
+                    "User has reached the maximum limit of "
+                            + boardProperties.getMaxBoardsPerUser()
+                            + " boards");
         }
 
-        User owner = userRepository.findById(requestUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requestUserId));
+        User owner =
+                userRepository
+                        .findById(requestUserId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "User not found: " + requestUserId));
 
+        Board board =
+                Board.builder()
+                        .name(boardRequest.name())
+                        .description(boardRequest.description())
+                        .createdBy(owner)
+                        .build();
 
-        Board board = Board.builder()
-                .name(boardRequest.name())
-                .description(boardRequest.description())
-                .createdBy(owner)
-                .build();
-
-        final List<String> DEFAULT_COLUMNS = List.of("Backlog", "Todo", "In Progress", "Done", "Canceled");
+        final List<String> DEFAULT_COLUMNS =
+                List.of("Backlog", "Todo", "In Progress", "Done", "Canceled");
         for (String columnName : DEFAULT_COLUMNS) {
-            Column column = Column.builder()
-                    .name(columnName)
-                    .position(DEFAULT_COLUMNS.indexOf(columnName))
-                    .board(board)
-                    .build();
+            Column column =
+                    Column.builder()
+                            .name(columnName)
+                            .position(DEFAULT_COLUMNS.indexOf(columnName))
+                            .board(board)
+                            .build();
             board.getColumns().add(column);
         }
 
-        BoardUser ownerMembership = BoardUser.builder()
-                .board(board)
-                .user(owner)
-                .role(BoardRole.ADMIN)
-                .build();
+        BoardUser ownerMembership =
+                BoardUser.builder().board(board).user(owner).role(BoardRole.ADMIN).build();
 
         board.getCollaborators().add(ownerMembership);
         Board savedBoard = boardRepository.save(board);
@@ -131,14 +137,12 @@ public class BoardService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
-        return board.getTasks().stream()
-                .map(taskMapper::toSummaryDto)
-                .toList();
+        return board.getTasks().stream().map(taskMapper::toSummaryDto).toList();
     }
 
     /**
-     * Retrieves all boards that the current user is a collaborator on.
-     * Returns summary information including task counts and default board status.
+     * Retrieves all boards that the current user is a collaborator on. Returns summary information
+     * including task counts and default board status.
      *
      * @return list of board summaries for the current user
      */
@@ -146,7 +150,8 @@ public class BoardService {
         String requestUserId = userService.getCurrentUserId();
         UUID defaultBoardId = userService.getCurrentUserDefaultBoardId();
 
-        List<Board> boards = boardRepository.findAllByCollaboratorsUserIdWithTasksAndColumn(requestUserId);
+        List<Board> boards =
+                boardRepository.findAllByCollaboratorsUserIdWithTasksAndColumn(requestUserId);
 
         return boards.stream()
                 .map(p -> boardMapper.toSummaryDto(p, Objects.equals(p.getId(), defaultBoardId)))
@@ -156,7 +161,7 @@ public class BoardService {
     /**
      * Updates the name and description of an existing board.
      *
-     * @param boardId      the ID of the board to update
+     * @param boardId the ID of the board to update
      * @param boardRequest containing new name and description of the board to update
      * @return the updated board as a DTO
      * @throws ResourceNotFoundException if the board doesn't exist
@@ -180,29 +185,31 @@ public class BoardService {
         return boardMapper.toDto(boardToUpdate, isDefault);
     }
 
-//    /**
-//     * Deletes a board and all its associated data (tasks, columns, collaborators).
-//     * Disabled for now. Implementing soft deletes/archiving instead.
-//     *
-//     * @param boardId the ID of the board to delete
-//     * @throws ResourceNotFoundException if the board doesn't exist
-//     */
-//    @Transactional
-//    public void deleteBoard(UUID boardId) {
-//        Board boardToDelete = boardRepository.findById(boardId)
-//                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
-//        boardRepository.delete(boardToDelete);
-//    }
+    // /**
+    // * Deletes a board and all its associated data (tasks, columns,
+    // collaborators).
+    // * Disabled for now. Implementing soft deletes/archiving instead.
+    // *
+    // * @param boardId the ID of the board to delete
+    // * @throws ResourceNotFoundException if the board doesn't exist
+    // */
+    // @Transactional
+    // public void deleteBoard(UUID boardId) {
+    // Board boardToDelete = boardRepository.findById(boardId)
+    // .orElseThrow(() -> new ResourceNotFoundException("Board not found: " +
+    // boardId));
+    // boardRepository.delete(boardToDelete);
+    // }
 
     /**
-     * Adds a new collaborator to a board with the specified role.
-     * If the user has no default board, this board becomes their default.
+     * Adds a new collaborator to a board with the specified role. If the user has no default board,
+     * this board becomes their default.
      *
-     * @param boardId             the ID of the board
+     * @param boardId the ID of the board
      * @param collaboratorRequest the collaborator request containing user ID and role
      * @throws BoardLimitExceededException if the user has reached the maximum board limit
-     * @throws ResourceNotFoundException   if the board or user doesn't exist
-     * @throws IllegalArgumentException    if the user is already a collaborator
+     * @throws ResourceNotFoundException if the board or user doesn't exist
+     * @throws IllegalArgumentException if the user is already a collaborator
      */
     @Transactional
     public void addCollaborator(@NonNull UUID boardId, CollaboratorRequest collaboratorRequest) {
@@ -213,28 +220,32 @@ public class BoardService {
         long userBoardCount = boardRepository.countByCollaboratorsUserId(userId);
         if (userBoardCount >= boardProperties.getMaxBoardsPerUser()) {
             throw new BoardLimitExceededException(
-                    "User has reached the maximum limit of " + boardProperties.getMaxBoardsPerUser() + " boards"
-            );
+                    "User has reached the maximum limit of "
+                            + boardProperties.getMaxBoardsPerUser()
+                            + " boards");
         }
 
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found: " + boardId));
+        Board board =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
 
-        boolean alreadyCollaborator = board.getCollaborators().stream()
-                .anyMatch(c -> c.getUser().getId().equals(userId));
+        boolean alreadyCollaborator =
+                board.getCollaborators().stream().anyMatch(c -> c.getUser().getId().equals(userId));
 
         if (alreadyCollaborator) {
             throw new IllegalArgumentException("User is already a collaborator in this board.");
         }
 
-        User userToAdd = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        User userToAdd =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("User not found: " + userId));
 
-        BoardUser newCollaborator = BoardUser.builder()
-                .board(board)
-                .user(userToAdd)
-                .role(role)
-                .build();
+        BoardUser newCollaborator =
+                BoardUser.builder().board(board).user(userToAdd).role(role).build();
 
         board.getCollaborators().add(newCollaborator);
 
@@ -246,14 +257,13 @@ public class BoardService {
     }
 
     /**
-     * Removes a collaborator from a board.
-     * Prevents removal if they are the only collaborator or last admin.
-     * Unassigns the user from all tasks and clears their default board if needed.
+     * Removes a collaborator from a board. Prevents removal if they are the only collaborator or
+     * last admin. Unassigns the user from all tasks and clears their default board if needed.
      *
      * @param boardId the ID of the board
-     * @param userId  the ID of the user to remove
+     * @param userId the ID of the user to remove
      * @throws ResourceNotFoundException if the board or collaborator doesn't exist
-     * @throws IllegalArgumentException  if removing would leave no collaborators or admins
+     * @throws IllegalArgumentException if removing would leave no collaborators or admins
      */
     @Transactional
     public void removeCollaborator(@NonNull UUID boardId, @NonNull String userId) {
@@ -263,28 +273,37 @@ public class BoardService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
-        BoardUser collaboratorToRemove = board.getCollaborators().stream()
-                .filter(c -> c.getUser().getId().equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Collaborator not found with ID: " + userId));
+        BoardUser collaboratorToRemove =
+                board.getCollaborators().stream()
+                        .filter(c -> c.getUser().getId().equals(userId))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Collaborator not found with ID: " + userId));
 
         if (board.getCollaborators().size() == 1) {
-            throw new IllegalArgumentException("Cannot remove the only collaborator. Please delete the board instead.");
+            throw new IllegalArgumentException(
+                    "Cannot remove the only collaborator. Please delete the board instead.");
         }
 
-        long adminCount = board.getCollaborators().stream()
-                .filter(c -> c.getRole() == BoardRole.ADMIN)
-                .count();
+        long adminCount =
+                board.getCollaborators().stream()
+                        .filter(c -> c.getRole() == BoardRole.ADMIN)
+                        .count();
 
         if (adminCount == 1 && collaboratorToRemove.getRole() == BoardRole.ADMIN) {
             throw new IllegalArgumentException("Cannot remove the last admin from the board.");
         }
 
-        board.getTasks().forEach(task -> {
-            if (task.getAssignedTo() != null && task.getAssignedTo().getId().equals(userId)) {
-                task.setAssignedTo(null);
-            }
-        });
+        board.getTasks()
+                .forEach(
+                        task -> {
+                            if (task.getAssignedTo() != null
+                                    && task.getAssignedTo().getId().equals(userId)) {
+                                task.setAssignedTo(null);
+                            }
+                        });
 
         User user = collaboratorToRemove.getUser();
         if (user.getDefaultBoard() != null && user.getDefaultBoard().getId().equals(boardId)) {
@@ -305,14 +324,14 @@ public class BoardService {
     }
 
     /**
-     * Updates the role of a collaborator on a board.
-     * Prevents demoting the last admin or changing the sole collaborator's role from admin.
+     * Updates the role of a collaborator on a board. Prevents demoting the last admin or changing
+     * the sole collaborator's role from admin.
      *
      * @param boardId the ID of the board
-     * @param userId  the ID of the user whose role to update
+     * @param userId the ID of the user whose role to update
      * @param newRole the new role to assign
      * @throws ResourceNotFoundException if the board or collaborator doesn't exist
-     * @throws IllegalArgumentException  if the role change would violate business rules
+     * @throws IllegalArgumentException if the role change would violate business rules
      */
     @Transactional
     public void updateCollaboratorRole(
@@ -323,26 +342,37 @@ public class BoardService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
-        BoardUser collaboratorToUpdate = board.getCollaborators().stream()
-                .filter(c -> c.getUser().getId().equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Collaborator not found with ID: " + userId));
+        BoardUser collaboratorToUpdate =
+                board.getCollaborators().stream()
+                        .filter(c -> c.getUser().getId().equals(userId))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Collaborator not found with ID: " + userId));
 
         // If this user is the only collaborator, they MUST be an ADMIN.
         if (board.getCollaborators().size() == 1) {
             if (newRole != BoardRole.ADMIN) {
-                throw new IllegalArgumentException("Cannot change the role of the only collaborator. They must remain an ADMIN.");
+                throw new IllegalArgumentException(
+                        "Cannot change the role of the only collaborator. They must remain an"
+                                + " ADMIN.");
             }
             return;
         }
 
         // Check if the user is the last admin, and prevent demotion if so
-        long adminCount = board.getCollaborators().stream()
-                .filter(c -> c.getRole() == BoardRole.ADMIN)
-                .count();
+        long adminCount =
+                board.getCollaborators().stream()
+                        .filter(c -> c.getRole() == BoardRole.ADMIN)
+                        .count();
 
-        if (adminCount == 1 && collaboratorToUpdate.getRole() == BoardRole.ADMIN && newRole != BoardRole.ADMIN) {
-            throw new IllegalArgumentException("Cannot demote the last admin of the board. Please assign another admin first.");
+        if (adminCount == 1
+                && collaboratorToUpdate.getRole() == BoardRole.ADMIN
+                && newRole != BoardRole.ADMIN) {
+            throw new IllegalArgumentException(
+                    "Cannot demote the last admin of the board. Please assign another admin"
+                            + " first.");
         }
 
         collaboratorToUpdate.setRole(newRole);

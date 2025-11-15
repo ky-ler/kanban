@@ -2,13 +2,14 @@ package com.kylerriggs.kanban.board;
 
 import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.user.User;
+
 import jakarta.persistence.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-
 
 @Getter
 @Setter
@@ -33,4 +34,3 @@ public class BoardUser extends BaseEntity {
     @Column(name = "role", nullable = false, length = 20)
     private BoardRole role;
 }
-
