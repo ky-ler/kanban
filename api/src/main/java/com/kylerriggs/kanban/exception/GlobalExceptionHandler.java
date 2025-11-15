@@ -70,4 +70,16 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<Object> handleBadRequestException(
+            BadRequestException ex, WebRequest request) {
+        Map<String, Object> body =
+                Map.of(
+                        "timestamp", System.currentTimeMillis(),
+                        "column", HttpStatus.BAD_REQUEST.value(),
+                        "error", "Bad Request",
+                        "message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
 }

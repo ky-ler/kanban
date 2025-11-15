@@ -6,6 +6,7 @@ import com.kylerriggs.kanban.board.dto.BoardSummary;
 import com.kylerriggs.kanban.board.dto.CollaboratorRequest;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.config.BoardProperties;
+import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.TaskMapper;
@@ -209,7 +210,7 @@ public class BoardService {
      * @param collaboratorRequest the collaborator request containing user ID and role
      * @throws BoardLimitExceededException if the user has reached the maximum board limit
      * @throws ResourceNotFoundException if the board or user doesn't exist
-     * @throws IllegalArgumentException if the user is already a collaborator
+     * @throws BadRequestException if the user is already a collaborator
      */
     @Transactional
     public void addCollaborator(@NonNull UUID boardId, CollaboratorRequest collaboratorRequest) {
@@ -235,7 +236,7 @@ public class BoardService {
                 board.getCollaborators().stream().anyMatch(c -> c.getUser().getId().equals(userId));
 
         if (alreadyCollaborator) {
-            throw new IllegalArgumentException("User is already a collaborator in this board.");
+            throw new BadRequestException("User is already a collaborator in this board.");
         }
 
         User userToAdd =
@@ -263,7 +264,7 @@ public class BoardService {
      * @param boardId the ID of the board
      * @param userId the ID of the user to remove
      * @throws ResourceNotFoundException if the board or collaborator doesn't exist
-     * @throws IllegalArgumentException if removing would leave no collaborators or admins
+     * @throws BadRequestException if removing would leave no collaborators or admins
      */
     @Transactional
     public void removeCollaborator(@NonNull UUID boardId, @NonNull String userId) {
@@ -283,7 +284,7 @@ public class BoardService {
                                                 "Collaborator not found with ID: " + userId));
 
         if (board.getCollaborators().size() == 1) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                     "Cannot remove the only collaborator. Please delete the board instead.");
         }
 
@@ -293,7 +294,7 @@ public class BoardService {
                         .count();
 
         if (adminCount == 1 && collaboratorToRemove.getRole() == BoardRole.ADMIN) {
-            throw new IllegalArgumentException("Cannot remove the last admin from the board.");
+            throw new BadRequestException("Cannot remove the last admin from the board.");
         }
 
         board.getTasks()
@@ -331,7 +332,7 @@ public class BoardService {
      * @param userId the ID of the user whose role to update
      * @param newRole the new role to assign
      * @throws ResourceNotFoundException if the board or collaborator doesn't exist
-     * @throws IllegalArgumentException if the role change would violate business rules
+     * @throws BadRequestException if the role change would violate business rules
      */
     @Transactional
     public void updateCollaboratorRole(
@@ -354,7 +355,7 @@ public class BoardService {
         // If this user is the only collaborator, they MUST be an ADMIN.
         if (board.getCollaborators().size() == 1) {
             if (newRole != BoardRole.ADMIN) {
-                throw new IllegalArgumentException(
+                throw new BadRequestException(
                         "Cannot change the role of the only collaborator. They must remain an"
                                 + " ADMIN.");
             }
@@ -370,7 +371,7 @@ public class BoardService {
         if (adminCount == 1
                 && collaboratorToUpdate.getRole() == BoardRole.ADMIN
                 && newRole != BoardRole.ADMIN) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                     "Cannot demote the last admin of the board. Please assign another admin"
                             + " first.");
         }
