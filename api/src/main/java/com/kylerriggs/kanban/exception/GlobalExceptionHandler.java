@@ -57,4 +57,16 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
     }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Object> handleForbiddenException(
+            ForbiddenException ex, WebRequest request) {
+        Map<String, Object> body =
+                Map.of(
+                        "timestamp", System.currentTimeMillis(),
+                        "column", HttpStatus.FORBIDDEN.value(),
+                        "error", "Forbidden",
+                        "message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
 }

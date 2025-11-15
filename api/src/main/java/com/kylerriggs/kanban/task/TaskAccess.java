@@ -1,8 +1,11 @@
 package com.kylerriggs.kanban.task;
 
 import com.kylerriggs.kanban.common.BaseAccess;
+import com.kylerriggs.kanban.exception.ForbiddenException;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -19,6 +22,12 @@ public class TaskAccess extends BaseAccess {
      */
     public boolean isCollaborator(UUID taskId) {
         String requestUserId = currentUserId();
-        return taskRepository.isUserAuthorizedForTask(taskId, requestUserId);
+        boolean requestUserIsCollaborator =
+                taskRepository.isUserAuthorizedForTask(taskId, requestUserId);
+        if (!requestUserIsCollaborator) {
+            log.warn("Access denied: User {} is not authorized for task {}", requestUserId, taskId);
+            throw new ForbiddenException("Not authorized for this task");
+        }
+        return true;
     }
 }

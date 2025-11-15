@@ -1,8 +1,12 @@
 package com.kylerriggs.kanban.user;
 
 import com.kylerriggs.kanban.common.BaseAccess;
+import com.kylerriggs.kanban.exception.ForbiddenException;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component("userAccess")
@@ -17,8 +21,14 @@ public class UserAccess extends BaseAccess {
      * @param userId the ID of the user to check modification rights for
      * @return true if the current user matches the specified user and exists, false otherwise
      */
-    public boolean canModify(String userId) {
+    public boolean canModify(@NonNull String userId) {
         String requestUserId = currentUserId();
-        return requestUserId.equals(userId) && userRepository.existsById(userId);
+        boolean requestUserExists = userRepository.existsById(userId);
+        boolean requestUserCanModify = requestUserId.equals(userId) && requestUserExists;
+        if (!requestUserCanModify) {
+            log.warn("Access denied: User {} cannot modify user {}", requestUserId, userId);
+            throw new ForbiddenException("You may not modify this user");
+        }
+        return true;
     }
 }
