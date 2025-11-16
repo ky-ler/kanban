@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
-  // DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
-  // DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -21,7 +19,6 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  // FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
