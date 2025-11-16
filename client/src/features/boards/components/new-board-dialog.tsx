@@ -30,7 +30,7 @@ import {
 import type { BoardRequest } from "@/api/gen/model";
 import { createBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 
-export function NewBoardDialog({ trigger }: { trigger: React.ReactNode }) {
+export const NewBoardDialog = ({ trigger }: { trigger: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -166,4 +166,4 @@ export function NewBoardDialog({ trigger }: { trigger: React.ReactNode }) {
       </DialogContent>
     </Dialog>
   );
-}
+};

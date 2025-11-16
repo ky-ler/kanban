@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import type { BoardSummary } from "@/api/gen/model";
 
-export function BoardSummaryCard({ board }: { board: BoardSummary }) {
+export const BoardSummaryCard = ({ board }: { board: BoardSummary }) => {
   const progress =
     board.totalTasks > 0
       ? Math.round((board.completedTasks / board.totalTasks) * 100)
@@ -117,4 +117,4 @@ export function BoardSummaryCard({ board }: { board: BoardSummary }) {
       </CardFooter>
     </Card>
   );
-}
+};

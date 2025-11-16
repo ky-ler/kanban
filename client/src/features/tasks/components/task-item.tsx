@@ -11,13 +11,13 @@ import { User } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { TaskSummaryDto } from "@/api/gen/model";
 
-export function TaskItem({
+export const TaskItem = ({
   task,
   boardId,
 }: Readonly<{
   task: TaskSummaryDto;
   boardId: string;
-}>) {
+}>) => {
   return (
     <Item asChild size="sm" variant="outline">
       <Link
@@ -56,5 +56,5 @@ export function TaskItem({
       </Link>
     </Item>
   );
-}
+};
 export default TaskItem;
