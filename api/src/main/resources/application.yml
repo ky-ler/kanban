@@ -27,5 +27,7 @@ springdoc:
     path: /api-docs
 
 kanban:
+  security:
+    custom-claim-prefix: https://kanban.kylerriggs.com/claims/
   board:
     max-boards-per-user: 10

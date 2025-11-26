@@ -1,16 +1,19 @@
 package com.kylerriggs.kanban.user;
 
+import com.kylerriggs.kanban.config.SecurityProperties;
 import com.kylerriggs.kanban.user.dto.UserDto;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
+
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+@RequiredArgsConstructor
 public class UserMapper {
-    private static final String AUTH0_ACTION_CLAIMS_NAMESPACE =
-            "https://kanban.kylerriggs.com/claims/";
+    private final SecurityProperties securityProperties;
 
     /**
      * Creates a new User entity from JWT token claims. Extracts user information from Auth0 custom
@@ -24,17 +27,17 @@ public class UserMapper {
 
         user.setId(jwt.getClaimAsString("sub"));
 
-        String username = jwt.getClaimAsString(AUTH0_ACTION_CLAIMS_NAMESPACE + "username");
+        String username = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "username");
 
         if (username == null) {
-            username = jwt.getClaimAsString(AUTH0_ACTION_CLAIMS_NAMESPACE + "nickname");
+            username = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "nickname");
         }
 
         user.setUsername(username);
 
-        user.setEmail(jwt.getClaimAsString(AUTH0_ACTION_CLAIMS_NAMESPACE + "email"));
+        user.setEmail(jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "email"));
 
-        user.setProfileImageUrl(jwt.getClaimAsString(AUTH0_ACTION_CLAIMS_NAMESPACE + "picture"));
+        user.setProfileImageUrl(jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "picture"));
 
         return user;
     }
@@ -47,17 +50,17 @@ public class UserMapper {
      * @param jwt the JWT token containing updated user claims
      */
     public void updateUserFromToken(User user, Jwt jwt) {
-        String username = jwt.getClaimAsString(AUTH0_ACTION_CLAIMS_NAMESPACE + "nickname");
+        String username = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "nickname");
         if (StringUtils.hasText(username) && !username.equals(user.getUsername())) {
             user.setUsername(username);
         }
 
-        String email = jwt.getClaimAsString(AUTH0_ACTION_CLAIMS_NAMESPACE + "email");
+        String email = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "email");
         if (StringUtils.hasText(email) && !email.equals(user.getEmail())) {
             user.setEmail(email);
         }
 
-        String profileImageUrl = jwt.getClaimAsString(AUTH0_ACTION_CLAIMS_NAMESPACE + "picture");
+        String profileImageUrl = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "picture");
         if (StringUtils.hasText(profileImageUrl)
                 && !profileImageUrl.equals(user.getProfileImageUrl())) {
             user.setProfileImageUrl(profileImageUrl);
