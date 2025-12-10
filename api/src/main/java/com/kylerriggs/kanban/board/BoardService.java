@@ -10,6 +10,7 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.TaskMapper;
+import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
@@ -34,6 +35,7 @@ public class BoardService {
     private final UserService userService;
     private final BoardProperties boardProperties;
     private final TaskMapper taskMapper;
+    private final TaskRepository taskRepository;
 
     /**
      * Creates a new board with default columns and assigns the creator as an admin. The board is
@@ -132,13 +134,9 @@ public class BoardService {
      * @throws ResourceNotFoundException if the board doesn't exist
      */
     public List<TaskSummaryDto> getTasksForBoard(@NonNull UUID boardId) {
-        Board board =
-                boardRepository
-                        .findById(boardId)
-                        .orElseThrow(
-                                () -> new ResourceNotFoundException("Board not found: " + boardId));
-
-        return board.getTasks().stream().map(taskMapper::toSummaryDto).toList();
+        return taskRepository.findByBoardId(boardId).stream()
+                .map(taskMapper::toSummaryDto)
+                .toList();
     }
 
     /**
