@@ -99,12 +99,9 @@ public class TaskService {
 
         User assignedTo = null;
 
-        String requestAssigneeId = Optional.ofNullable(createTaskRequest.assigneeId()).orElse(null);
+        String requestAssigneeId = createTaskRequest.assigneeId();
         if (StringUtils.hasText(requestAssigneeId)) {
             // This null check is only here to prevent Null type safety issues
-            if (requestAssigneeId == null) {
-                throw new BoardAccessException("Assignee ID is not valid.");
-            }
 
             board.getCollaborators().stream()
                     .filter(c -> c.getUser().getId().equals(requestAssigneeId))
@@ -183,33 +180,26 @@ public class TaskService {
         String currentAssigneeId =
                 Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
 
-        String requestAssigneeId = Optional.ofNullable(updateTaskRequest.assigneeId()).orElse(null);
+        String requestAssigneeId = updateTaskRequest.assigneeId();
 
         if (!Objects.equals(currentAssigneeId, requestAssigneeId)) {
             if (StringUtils.hasText(requestAssigneeId)) {
-                String assigneeId = requestAssigneeId;
-
-                // This null check is only here to prevent Null type safety issues
-                if (assigneeId == null) {
-                    throw new BoardAccessException("Assignee ID is not valid.");
-                }
-
                 boardToUpdate.getCollaborators().stream()
-                        .filter(c -> c.getUser().getId().equals(assigneeId))
+                        .filter(c -> c.getUser().getId().equals(requestAssigneeId))
                         .findFirst()
                         .orElseThrow(
                                 () ->
                                         new BoardAccessException(
                                                 "User is not a collaborator on the board: "
-                                                        + assigneeId));
+                                                        + requestAssigneeId));
 
                 User newAssignee =
                         userRepository
-                                .findById(assigneeId)
+                                .findById(requestAssigneeId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
-                                                        "User not found: " + assigneeId));
+                                                        "User not found: " + requestAssigneeId));
                 taskToUpdate.setAssignedTo(newAssignee);
             } else {
                 taskToUpdate.setAssignedTo(null);
