@@ -1,14 +1,15 @@
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import { Auth0Context } from "../hooks/use-auth0-context";
+import { env } from "@/config/env";
 
 export const Auth0Wrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <Auth0Provider
-      domain={import.meta.env.VITE_AUTH0_DOMAIN}
-      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
+      domain={env.VITE_AUTH0_DOMAIN}
+      clientId={env.VITE_AUTH0_CLIENT_ID}
       authorizationParams={{
         redirect_uri: window.location.origin,
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+        audience: env.VITE_AUTH0_AUDIENCE,
         scope: "openid profile email",
       }}
     >
