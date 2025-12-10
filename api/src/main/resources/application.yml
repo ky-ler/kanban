@@ -29,5 +29,13 @@ springdoc:
 kanban:
   security:
     custom-claim-prefix: https://kanban.kylerriggs.com/claims/
+    cors-allowed-origins:
+      - http://localhost:5173
   board:
     max-boards-per-user: 10
+    default-columns:
+      - Backlog
+      - To Do
+      - In Progress
+      - Done
+      - Canceled
