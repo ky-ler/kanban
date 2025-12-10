@@ -76,8 +76,8 @@ public class BoardService {
                         .createdBy(owner)
                         .build();
 
-        final List<String> DEFAULT_COLUMNS =
-                List.of("Backlog", "Todo", "In Progress", "Done", "Canceled");
+        final List<String> DEFAULT_COLUMNS = boardProperties.getDefaultColumns();
+
         for (String columnName : DEFAULT_COLUMNS) {
             Column column =
                     Column.builder()
