@@ -30,10 +30,6 @@ public class UserMapper {
         String username =
                 jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "username");
 
-        if (username == null) {
-            username = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "nickname");
-        }
-
         user.setUsername(username);
 
         user.setEmail(jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "email"));
@@ -53,7 +49,7 @@ public class UserMapper {
      */
     public void updateUserFromToken(User user, Jwt jwt) {
         String username =
-                jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "nickname");
+                jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "username");
         if (StringUtils.hasText(username) && !username.equals(user.getUsername())) {
             user.setUsername(username);
         }
