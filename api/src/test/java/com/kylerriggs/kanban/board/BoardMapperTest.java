@@ -164,7 +164,16 @@ class BoardMapperTest {
                     new UserSummaryDto(CREATOR_ID, "creator", "https://example.com/creator.jpg");
             TaskSummaryDto taskSummary =
                     new TaskSummaryDto(
-                            task.getId(), "Task 1", column.getId(), null, 0, false, false);
+                            task.getId(),
+                            "Task 1",
+                            column.getId(),
+                            null,
+                            0,
+                            false,
+                            false,
+                            null,
+                            null,
+                            null);
 
             when(userMapper.toSummaryDto(creator)).thenReturn(creatorSummary);
             when(taskMapper.toSummaryDto(task)).thenReturn(taskSummary);

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.column.Column;
+import com.kylerriggs.kanban.label.LabelMapper;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
@@ -34,12 +35,13 @@ class TaskMapperTest {
     private static final String TASK_DESCRIPTION = "Test Description";
 
     @Mock private UserMapper userMapper;
+    @Mock private LabelMapper labelMapper;
 
     private TaskMapper taskMapper;
 
     @BeforeEach
     void setUp() {
-        taskMapper = new TaskMapper(userMapper);
+        taskMapper = new TaskMapper(userMapper, labelMapper);
     }
 
     private User createUser(String id, String username) {
@@ -201,7 +203,10 @@ class TaskMapperTest {
                             TASK_DESCRIPTION,
                             COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
 
             Board board = new Board();
             board.setId(BOARD_ID);
@@ -229,7 +234,16 @@ class TaskMapperTest {
             // Given
             TaskRequest request =
                     new TaskRequest(
-                            BOARD_ID, null, TASK_TITLE, TASK_DESCRIPTION, COLUMN_ID, false, false);
+                            BOARD_ID,
+                            null,
+                            TASK_TITLE,
+                            TASK_DESCRIPTION,
+                            COLUMN_ID,
+                            false,
+                            false,
+                            null,
+                            null,
+                            null);
 
             Board board = new Board();
             board.setId(BOARD_ID);

@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.task;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import com.kylerriggs.kanban.board.Board;
@@ -14,7 +15,7 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
-import com.kylerriggs.kanban.sse.SseService;
+import com.kylerriggs.kanban.sse.BoardEventPublisher;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
@@ -53,7 +54,7 @@ class TaskServiceTest {
     @Mock private ColumnRepository columnRepository;
     @Mock private TaskMapper taskMapper;
     @Mock private UserService userService;
-    @Mock private SseService sseService;
+    @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private TaskService taskService;
 
     private User user;
@@ -127,6 +128,9 @@ class TaskServiceTest {
                         0,
                         false,
                         false,
+                        null, // priority
+                        null, // dueDate
+                        null,
                         Instant.now().toString(),
                         Instant.now().toString());
     }
@@ -168,7 +172,16 @@ class TaskServiceTest {
         void setUp() {
             createTaskRequest =
                     new TaskRequest(
-                            BOARD_ID, null, "New Task", "Description", COLUMN_ID, false, false);
+                            BOARD_ID,
+                            null,
+                            "New Task",
+                            "Description",
+                            COLUMN_ID,
+                            false,
+                            false,
+                            null,
+                            null,
+                            null);
         }
 
         @Test
@@ -190,7 +203,7 @@ class TaskServiceTest {
             assertNotNull(result);
             verify(taskRepository).save(any(Task.class));
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
@@ -277,7 +290,10 @@ class TaskServiceTest {
                             "Description",
                             COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
 
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
@@ -304,7 +320,10 @@ class TaskServiceTest {
                             "Description",
                             COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
 
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
@@ -339,7 +358,10 @@ class TaskServiceTest {
                             "Updated Description",
                             COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
             board.getTasks().add(task);
         }
 
@@ -357,7 +379,7 @@ class TaskServiceTest {
             assertEquals("Updated Task", task.getTitle());
             assertEquals("Updated Description", task.getDescription());
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
@@ -394,7 +416,10 @@ class TaskServiceTest {
                             "Updated Description",
                             NEW_COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
 
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(columnRepository.findById(NEW_COLUMN_ID)).thenReturn(Optional.of(newColumn));
@@ -428,7 +453,10 @@ class TaskServiceTest {
                             "Updated Description",
                             NEW_COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
 
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(columnRepository.findById(NEW_COLUMN_ID))
@@ -455,7 +483,10 @@ class TaskServiceTest {
                             "Updated Description",
                             COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
 
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(userRepository.findById(ASSIGNEE_ID)).thenReturn(Optional.of(assignee));
@@ -480,7 +511,10 @@ class TaskServiceTest {
                             "Updated Description",
                             COLUMN_ID,
                             false,
-                            false);
+                            false,
+                            null,
+                            null,
+                            null);
 
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
@@ -512,7 +546,7 @@ class TaskServiceTest {
             assertFalse(board.getTasks().contains(task));
             verify(taskRepository).delete(task);
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
@@ -562,7 +596,7 @@ class TaskServiceTest {
             assertEquals(3, task.getPosition());
             verify(taskRepository).decrementPositionsInRange(COLUMN_ID, 1, 3);
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test

@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.board;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -15,7 +16,8 @@ import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
-import com.kylerriggs.kanban.sse.SseService;
+import com.kylerriggs.kanban.exception.UnauthorizedException;
+import com.kylerriggs.kanban.sse.BoardEventPublisher;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
@@ -45,13 +47,14 @@ class BoardServiceTest {
     private static final UUID BOARD_ID = UUID.fromString("a156c2d0-891b-44de-816b-c9259cd00391");
 
     @Mock private BoardRepository boardRepository;
+    @Mock private BoardUserRepository boardUserRepository;
     @Mock private UserRepository userRepository;
     @Mock private TaskRepository taskRepository;
     @Mock private BoardMapper boardMapper;
     @Mock private TaskMapper taskMapper;
     @Mock private UserService userService;
     @Mock private BoardProperties boardProperties;
-    @Mock private SseService sseService;
+    @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private BoardService boardService;
 
     private User user;
@@ -206,13 +209,12 @@ class BoardServiceTest {
         }
 
         @Test
-        void createBoard_WhenUserNotAuthenticated_ThrowsResourceNotFoundException() {
+        void createBoard_WhenUserNotAuthenticated_ThrowsUnauthorizedException() {
             // Given
             when(userService.getCurrentUserId()).thenReturn(null);
 
             // When & Then
-            assertThrows(
-                    ResourceNotFoundException.class, () -> boardService.createBoard(boardRequest));
+            assertThrows(UnauthorizedException.class, () -> boardService.createBoard(boardRequest));
         }
     }
 
@@ -315,7 +317,7 @@ class BoardServiceTest {
             assertEquals("Updated Board", board.getName());
             assertEquals("Updated Description", board.getDescription());
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
@@ -344,6 +346,8 @@ class BoardServiceTest {
             // Given
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
+            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+                    .thenReturn(false);
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.of(otherUser));
 
@@ -361,6 +365,8 @@ class BoardServiceTest {
             otherUser.setDefaultBoard(null);
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
+            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+                    .thenReturn(false);
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.of(otherUser));
 
@@ -374,13 +380,10 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenAlreadyCollaborator_ThrowsBadRequestException() {
             // Given
-            BoardUser existingCollaborator =
-                    BoardUser.builder().board(board).user(otherUser).role(BoardRole.MEMBER).build();
-            board.getCollaborators().add(existingCollaborator);
-
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+                    .thenReturn(true);
 
             // When & Then
             assertThrows(
@@ -405,6 +408,8 @@ class BoardServiceTest {
             // Given
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
+            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+                    .thenReturn(false);
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.empty());
 
             // When & Then
@@ -418,6 +423,8 @@ class BoardServiceTest {
             // Given
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
+            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+                    .thenReturn(false);
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.empty());
 
