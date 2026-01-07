@@ -25,7 +25,10 @@ springdoc:
   default-produces-media-type: application/json
   api-docs:
     path: /api-docs
-
+logging:
+  level:
+    root: INFO
+    com.kylerriggs.kanban: DEBUG
 kanban:
   security:
     custom-claim-prefix: https://kanban.kylerriggs.com/claims/
