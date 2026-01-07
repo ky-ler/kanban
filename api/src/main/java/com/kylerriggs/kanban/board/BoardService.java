@@ -32,6 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BoardService {
     private final BoardRepository boardRepository;
+    private final BoardUserRepository boardUserRepository;
     private final UserRepository userRepository;
     private final BoardMapper boardMapper;
     private final UserService userService;
@@ -230,18 +231,16 @@ public class BoardService {
                             + " boards");
         }
 
+        // Check membership before loading the board to avoid N+1 query
+        if (boardUserRepository.existsByBoardIdAndUserId(boardId, userId)) {
+            throw new BadRequestException("User is already a collaborator in this board.");
+        }
+
         Board board =
                 boardRepository
                         .findById(boardId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
-
-        boolean alreadyCollaborator =
-                board.getCollaborators().stream().anyMatch(c -> c.getUser().getId().equals(userId));
-
-        if (alreadyCollaborator) {
-            throw new BadRequestException("User is already a collaborator in this board.");
-        }
 
         User userToAdd =
                 userRepository

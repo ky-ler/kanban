@@ -49,11 +49,9 @@ public class UserSynchronizer {
         Optional<User> optionalUser = userRepository.findByEmail(user.getEmail());
         if (optionalUser.isPresent()) {
             User existingUser = optionalUser.get();
-            if (existingUser != null) {
-                userMapper.updateUserFromToken(existingUser, token);
-                userRepository.save(existingUser);
-                log.debug("Updated existing user: {}", existingUser.getEmail());
-            }
+            userMapper.updateUserFromToken(existingUser, token);
+            userRepository.save(existingUser);
+            log.debug("Updated existing user: {}", existingUser.getEmail());
         } else {
             try {
                 log.info("Creating new user with email: {}", user.getEmail());
@@ -73,9 +71,7 @@ public class UserSynchronizer {
                                                         "User should exist but was not found: "
                                                                 + user.getEmail()));
                 userMapper.updateUserFromToken(existingUser, token);
-                if (existingUser != null) {
-                    userRepository.save(existingUser);
-                }
+                userRepository.save(existingUser);
             }
         }
     }
