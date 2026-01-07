@@ -5,6 +5,7 @@
  * OpenAPI spec version: v0
  */
 
+export * from "./activityLogDto";
 export * from "./boardDto";
 export * from "./boardRequest";
 export * from "./boardSummary";
