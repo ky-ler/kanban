@@ -14,6 +14,7 @@ import {
   useGetBoardSuspense,
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import { KanbanBoard } from "@/features/boards/components/kanban-board";
+import { useBoardEvents } from "@/features/boards/hooks/use-board-events";
 
 export const Route = createFileRoute("/_protected/boards/$boardId")({
   loader: ({ context: { queryClient }, params: { boardId } }) =>
@@ -24,6 +25,9 @@ export const Route = createFileRoute("/_protected/boards/$boardId")({
 function BoardComponent() {
   const { boardId } = Route.useParams();
   const { data: board, isLoading, error } = useGetBoardSuspense(boardId);
+
+  // Subscribe to real-time board events
+  useBoardEvents(boardId);
 
   if (!board || isLoading) {
     return <LoadingSpinner />;
