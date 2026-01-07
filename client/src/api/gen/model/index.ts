@@ -21,3 +21,6 @@ export * from "./taskDto";
 export * from "./taskRequest";
 export * from "./taskSummaryDto";
 export * from "./userSummaryDto";
+export * from "./createColumnRequest";
+export * from "./moveColumnRequest";
+export * from "./updateColumnRequest";
