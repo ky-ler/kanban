@@ -8,6 +8,8 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
+import com.kylerriggs.kanban.label.Label;
+import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.sse.BoardEventPublisher;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
@@ -28,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -37,6 +40,7 @@ public class TaskService {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final ColumnRepository columnRepository;
+    private final LabelRepository labelRepository;
     private final TaskMapper taskMapper;
     private final UserService userService;
     private final BoardEventPublisher eventPublisher;
@@ -137,6 +141,23 @@ public class TaskService {
 
         Task newTask = taskMapper.toEntity(createTaskRequest, board, createdBy, assignedTo, column);
         newTask.setPosition(newOrder);
+
+        // Handle labels
+        if (createTaskRequest.labelIds() != null && !createTaskRequest.labelIds().isEmpty()) {
+            Set<Label> labels = new LinkedHashSet<>();
+            for (UUID labelId : createTaskRequest.labelIds()) {
+                Label label =
+                        labelRepository
+                                .findByIdAndBoardId(labelId, board.getId())
+                                .orElseThrow(
+                                        () ->
+                                                new BadRequestException(
+                                                        "Label not found or doesn't belong to this board: "
+                                                                + labelId));
+                labels.add(label);
+            }
+            newTask.setLabels(labels);
+        }
 
         // Save task directly to ensure ID is generated before broadcasting
         Task savedTask = taskRepository.save(newTask);
@@ -239,6 +260,25 @@ public class TaskService {
             } else {
                 taskToUpdate.setAssignedTo(null);
             }
+        }
+
+        // Update labels
+        List<UUID> requestLabelIds = updateTaskRequest.labelIds();
+        if (requestLabelIds != null) {
+            Set<Label> newLabels = new LinkedHashSet<>();
+            for (UUID labelId : requestLabelIds) {
+                Label label =
+                        labelRepository
+                                .findByIdAndBoardId(labelId, boardToUpdate.getId())
+                                .orElseThrow(
+                                        () ->
+                                                new BadRequestException(
+                                                        "Label not found or doesn't belong to this board: "
+                                                                + labelId));
+                newLabels.add(label);
+            }
+            taskToUpdate.getLabels().clear();
+            taskToUpdate.getLabels().addAll(newLabels);
         }
 
         // TODO: Fix having to set the date modified manually

@@ -22,4 +22,5 @@ public record TaskRequest(
         boolean isCompleted,
         boolean isArchived,
         String priority,
-        LocalDate dueDate) {}
+        LocalDate dueDate,
+        List<UUID> labelIds) {}

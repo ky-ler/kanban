@@ -3,6 +3,7 @@ package com.kylerriggs.kanban.task;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.common.BaseEntity;
+import com.kylerriggs.kanban.label.Label;
 import com.kylerriggs.kanban.user.User;
 
 import jakarta.persistence.*;
@@ -73,4 +74,12 @@ public class Task extends BaseEntity {
     @ManyToOne(optional = false)
     @JoinColumn(name = "column_id", foreignKey = @ForeignKey(name = "fk_task_column"))
     private Column column;
+
+    @ManyToMany
+    @JoinTable(
+            name = "task_labels",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "label_id"))
+    @Builder.Default
+    private Set<Label> labels = new LinkedHashSet<>();
 }

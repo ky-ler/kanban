@@ -2,6 +2,8 @@ package com.kylerriggs.kanban.task;
 
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.column.Column;
+import com.kylerriggs.kanban.label.LabelMapper;
+import com.kylerriggs.kanban.label.dto.LabelSummaryDto;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
@@ -13,10 +15,13 @@ import lombok.AllArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @AllArgsConstructor
 @Service
 public class TaskMapper {
     private final UserMapper userMapper;
+    private final LabelMapper labelMapper;
 
     /**
      * Converts a Task entity to a detailed DTO with creator, assignee, and timestamps.
@@ -35,6 +40,9 @@ public class TaskMapper {
                                 task.getAssignedTo().getProfileImageUrl())
                         : null;
 
+        List<LabelSummaryDto> labels =
+                task.getLabels().stream().map(labelMapper::toSummaryDto).toList();
+
         return new TaskDto(
                 task.getId(),
                 createdBy,
@@ -47,6 +55,7 @@ public class TaskMapper {
                 task.isArchived(),
                 task.getPriority() != null ? task.getPriority().name() : null,
                 task.getDueDate() != null ? task.getDueDate().toString() : null,
+                labels,
                 task.getDateCreated() != null ? task.getDateCreated().toString() : null,
                 task.getDateModified() != null ? task.getDateModified().toString() : null);
     }
@@ -64,6 +73,9 @@ public class TaskMapper {
             assignee = userMapper.toSummaryDto(task.getAssignedTo());
         }
 
+        List<LabelSummaryDto> labels =
+                task.getLabels().stream().map(labelMapper::toSummaryDto).toList();
+
         return new TaskSummaryDto(
                 task.getId(),
                 task.getTitle(),
@@ -73,7 +85,8 @@ public class TaskMapper {
                 task.isCompleted(),
                 task.isArchived(),
                 task.getPriority() != null ? task.getPriority().name() : null,
-                task.getDueDate() != null ? task.getDueDate().toString() : null);
+                task.getDueDate() != null ? task.getDueDate().toString() : null,
+                labels);
     }
 
     /**
