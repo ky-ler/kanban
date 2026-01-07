@@ -106,6 +106,7 @@ export function useBoardEvents(
       eventSource.addEventListener("COLUMN_UPDATED", handleBoardEvent);
       eventSource.addEventListener("COLUMN_DELETED", handleBoardEvent);
       eventSource.addEventListener("COLUMN_MOVED", handleBoardEvent);
+      eventSource.addEventListener("ACTIVITY_LOGGED", handleBoardEvent);
 
       eventSource.onerror = () => {
         setStatus("error");
