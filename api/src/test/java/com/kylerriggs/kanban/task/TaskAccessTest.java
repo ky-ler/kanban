@@ -3,6 +3,8 @@ package com.kylerriggs.kanban.task;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.kylerriggs.kanban.exception.ForbiddenException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,34 +65,28 @@ class TaskAccessTest {
     }
 
     @Test
-    void isCollaborator_WhenUserIsNotMember_ReturnsFalse() {
+    void isCollaborator_WhenUserIsNotMember_ThrowsForbiddenException() {
         // Given
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(USER_ID);
         when(taskRepository.isUserAuthorizedForTask(TASK_ID, USER_ID)).thenReturn(false);
 
-        // When
-        boolean result = taskAccess.isCollaborator(TASK_ID);
-
-        // Then
-        assertFalse(result);
+        // When & Then
+        assertThrows(ForbiddenException.class, () -> taskAccess.isCollaborator(TASK_ID));
         verify(taskRepository).isUserAuthorizedForTask(TASK_ID, USER_ID);
     }
 
     @Test
-    void isCollaborator_WhenTaskDoesNotExist_ReturnsFalse() {
+    void isCollaborator_WhenTaskDoesNotExist_ThrowsForbiddenException() {
         // Given
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(USER_ID);
         when(taskRepository.isUserAuthorizedForTask(TASK_ID, USER_ID)).thenReturn(false);
 
-        // When
-        boolean result = taskAccess.isCollaborator(TASK_ID);
-
-        // Then
-        assertFalse(result);
+        // When & Then
+        assertThrows(ForbiddenException.class, () -> taskAccess.isCollaborator(TASK_ID));
         verify(taskRepository).isUserAuthorizedForTask(TASK_ID, USER_ID);
     }
 
@@ -139,13 +135,13 @@ class TaskAccessTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(USER_ID);
-        when(taskRepository.isUserAuthorizedForTask(differentTaskId, USER_ID)).thenReturn(false);
+        when(taskRepository.isUserAuthorizedForTask(differentTaskId, USER_ID)).thenReturn(true);
 
         // When
         boolean result = taskAccess.isCollaborator(differentTaskId);
 
         // Then
-        assertFalse(result);
+        assertTrue(result);
         verify(taskRepository).isUserAuthorizedForTask(differentTaskId, USER_ID);
     }
 }
