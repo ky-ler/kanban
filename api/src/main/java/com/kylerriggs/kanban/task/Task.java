@@ -21,7 +21,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true)
 @Entity
-@Table(name = "tasks")
+@Table(
+        name = "tasks",
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uk_task_column_position",
+                    columnNames = {"column_id", "position"})
+        })
 // @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Task extends BaseEntity {
     @Id

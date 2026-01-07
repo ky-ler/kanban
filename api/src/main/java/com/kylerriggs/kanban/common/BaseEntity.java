@@ -3,6 +3,7 @@ package com.kylerriggs.kanban.common;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Version;
 
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -28,4 +29,8 @@ public abstract class BaseEntity {
     @LastModifiedDate
     @Column(name = "date_modified", nullable = false)
     private Instant dateModified;
+
+    @Version
+    @Column(name = "version")
+    private Long version = 0L;
 }

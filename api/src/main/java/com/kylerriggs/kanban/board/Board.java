@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 
 import org.springframework.data.annotation.CreatedBy;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,14 +44,16 @@ public class Board extends BaseEntity {
     private User createdBy;
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
     @Builder.Default
-    private Set<Task> tasks = new HashSet<>();
+    private Set<Task> tasks = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<BoardUser> collaborators = new HashSet<>();
+    private Set<BoardUser> collaborators = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
     @Builder.Default
-    private Set<Column> columns = new HashSet<>();
+    private Set<Column> columns = new LinkedHashSet<>();
 }
