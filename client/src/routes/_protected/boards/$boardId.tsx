@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ import {
 
 export const Route = createFileRoute("/_protected/boards/$boardId")({
   validateSearch: (search: Record<string, unknown>) => ({
+    q: search.q as string | undefined,
     assignee: search.assignee as string | undefined,
     priority: search.priority as string | undefined,
     labels: search.labels as string | undefined,
@@ -47,6 +49,14 @@ function BoardComponent() {
   // Parse filters from URL search params
   const filters = parseFiltersFromSearch(search);
 
+  // Local state for search input (for debouncing)
+  const [searchInput, setSearchInput] = useState(filters.query ?? "");
+
+  // Sync searchInput with URL when navigating back/forward
+  useEffect(() => {
+    setSearchInput(filters.query ?? "");
+  }, [filters.query]);
+
   // Handle filter changes
   const handleFiltersChange = (newFilters: TaskFilters) => {
     const searchParams = filtersToSearchParams(newFilters);
@@ -56,6 +66,20 @@ function BoardComponent() {
       replace: true,
     });
   };
+
+  // Debounce URL update for search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== (filters.query ?? "")) {
+        navigate({
+          to: ".",
+          search: filtersToSearchParams({ ...filters, query: searchInput || undefined }),
+          replace: true,
+        });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, filters, navigate]);
 
   if (!board || isLoading) {
     return <LoadingSpinner />;
@@ -91,7 +115,7 @@ function BoardComponent() {
                 <Link
                   to={"/boards/$boardId/collaborators"}
                   params={{ boardId }}
-                  search={{ assignee: undefined, priority: undefined, labels: undefined, due: undefined }}
+                  search={{ q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined }}
                 >
                   <Users className="mr-2 h-4 w-4" />
                   Collaborators
@@ -102,7 +126,7 @@ function BoardComponent() {
                 <Link
                   to={"/boards/$boardId/edit"}
                   params={{ boardId }}
-                  search={{ assignee: undefined, priority: undefined, labels: undefined, due: undefined }}
+                  search={{ q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined }}
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Board
@@ -119,6 +143,8 @@ function BoardComponent() {
           collaborators={board.data.collaborators ?? []}
           filters={filters}
           onFiltersChange={handleFiltersChange}
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
         />
       </div>
       {/* Kanban Board */}

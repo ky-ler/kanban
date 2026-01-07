@@ -1,6 +1,7 @@
 import type { TaskSummaryDto } from "@/api/gen/model";
 
 export interface TaskFilters {
+  query?: string; // search query for title/description
   assignee?: string; // user ID or "unassigned"
   priorities?: string[];
   labelIds?: string[];
@@ -9,6 +10,7 @@ export interface TaskFilters {
 
 export function hasActiveFilters(filters: TaskFilters): boolean {
   return !!(
+    filters.query ||
     filters.assignee ||
     (filters.priorities && filters.priorities.length > 0) ||
     (filters.labelIds && filters.labelIds.length > 0) ||
@@ -25,6 +27,14 @@ export function filterTasks(
   }
 
   return tasks.filter((task) => {
+    // Search filter (title and description)
+    if (filters.query) {
+      const q = filters.query.toLowerCase();
+      const titleMatch = task.title.toLowerCase().includes(q);
+      const descMatch = task.description?.toLowerCase().includes(q) ?? false;
+      if (!titleMatch && !descMatch) return false;
+    }
+
     // Assignee filter
     if (filters.assignee) {
       if (filters.assignee === "unassigned") {
@@ -87,12 +97,14 @@ export function filterTasks(
 
 // Parse URL search params into TaskFilters
 export function parseFiltersFromSearch(search: {
+  q?: string;
   assignee?: string;
   priority?: string;
   labels?: string;
   due?: string;
 }): TaskFilters {
   return {
+    query: search.q || undefined,
     assignee: search.assignee || undefined,
     priorities: search.priority ? search.priority.split(",") : undefined,
     labelIds: search.labels ? search.labels.split(",") : undefined,
@@ -102,12 +114,14 @@ export function parseFiltersFromSearch(search: {
 
 // Convert TaskFilters to URL search params
 export function filtersToSearchParams(filters: TaskFilters): {
+  q?: string;
   assignee?: string;
   priority?: string;
   labels?: string;
   due?: string;
 } {
   return {
+    q: filters.query || undefined,
     assignee: filters.assignee || undefined,
     priority:
       filters.priorities && filters.priorities.length > 0

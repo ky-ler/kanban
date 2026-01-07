@@ -5,7 +5,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Filter, X, Check, User, Calendar, Tag, AlertCircle } from "lucide-react";
+import { Filter, X, Check, User, Calendar, Tag, AlertCircle, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { TaskFilters } from "../utils/filter-tasks";
 import { hasActiveFilters } from "../utils/filter-tasks";
@@ -33,6 +34,8 @@ interface TaskFilterBarProps {
   collaborators: CollaboratorDto[];
   filters: TaskFilters;
   onFiltersChange: (filters: TaskFilters) => void;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
 }
 
 export function TaskFilterBar({
@@ -40,6 +43,8 @@ export function TaskFilterBar({
   collaborators,
   filters,
   onFiltersChange,
+  searchValue,
+  onSearchChange,
 }: TaskFilterBarProps) {
   const { data: labelsResponse } = useGetLabelsByBoard(boardId);
   const labels = labelsResponse?.data ?? [];
@@ -71,10 +76,23 @@ export function TaskFilterBar({
 
   const clearAllFilters = () => {
     onFiltersChange({});
+    onSearchChange("");
   };
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Search tasks..."
+          value={searchValue}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-8 w-48 pl-8"
+        />
+      </div>
+
       <div className="flex items-center gap-1 text-muted-foreground">
         <Filter className="h-4 w-4" />
         <span className="text-sm font-medium">Filters</span>
@@ -342,7 +360,7 @@ export function TaskFilterBar({
         size="sm"
         className="h-8 text-muted-foreground hover:text-foreground"
         onClick={clearAllFilters}
-        disabled={!hasActiveFilters(filters)}
+        disabled={!hasActiveFilters(filters) && !searchValue}
       >
         <X className="h-3.5 w-3.5 mr-1" />
         Clear
