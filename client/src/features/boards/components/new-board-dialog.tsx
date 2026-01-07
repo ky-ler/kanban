@@ -43,6 +43,7 @@ export const NewBoardDialog = ({ trigger }: { trigger: React.ReactNode }) => {
         router.navigate({
           to: "/boards/$boardId",
           params: { boardId: data.id.toString() },
+          search: { q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined },
         });
         setIsOpen(false);
       },

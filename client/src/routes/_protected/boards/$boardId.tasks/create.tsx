@@ -124,7 +124,11 @@ function CreateTaskComponent() {
   const returnToBoard = (open: boolean) => {
     if (!open) {
       form.reset();
-      router.navigate({ to: "/boards/$boardId", params: { boardId } });
+      router.navigate({
+        to: "/boards/$boardId",
+        params: { boardId },
+        search: { q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined },
+      });
     }
   };
 
