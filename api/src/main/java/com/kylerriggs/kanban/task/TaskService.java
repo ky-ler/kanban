@@ -8,8 +8,7 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
-import com.kylerriggs.kanban.sse.SseService;
-import com.kylerriggs.kanban.sse.dto.BoardEvent;
+import com.kylerriggs.kanban.sse.BoardEventPublisher;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
@@ -38,7 +37,7 @@ public class TaskService {
     private final ColumnRepository columnRepository;
     private final TaskMapper taskMapper;
     private final UserService userService;
-    private final SseService sseService;
+    private final BoardEventPublisher eventPublisher;
 
     /**
      * Retrieves a single task by its ID.
@@ -139,15 +138,16 @@ public class TaskService {
 
         // Save task directly to ensure ID is generated before broadcasting
         Task savedTask = taskRepository.save(newTask);
-        board.getTasks().add(savedTask);
+
+        // Note: Don't manually add to board.getTasks() - JPA manages this via mappedBy relationship
+        // Adding manually with List (not Set) causes duplicates in memory
 
         // TODO: Fix having to set the date modified manually
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        // Broadcast SSE event for real-time updates
-        BoardEvent event = new BoardEvent("TASK_CREATED", board.getId(), savedTask.getId(), null);
-        sseService.broadcast(board.getId(), event);
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish("TASK_CREATED", board.getId(), savedTask.getId());
 
         return taskMapper.toDto(savedTask);
     }
@@ -233,9 +233,8 @@ public class TaskService {
         boardToUpdate.setDateModified(Instant.now());
         boardRepository.save(boardToUpdate);
 
-        // Broadcast SSE event for real-time updates
-        BoardEvent event = new BoardEvent("TASK_UPDATED", boardToUpdate.getId(), taskId, null);
-        sseService.broadcast(boardToUpdate.getId(), event);
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish("TASK_UPDATED", boardToUpdate.getId(), taskId);
 
         return taskMapper.toDto(taskToUpdate);
     }
@@ -265,9 +264,8 @@ public class TaskService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        // Broadcast SSE event for real-time updates
-        BoardEvent event = new BoardEvent("TASK_DELETED", boardId, taskId, null);
-        sseService.broadcast(boardId, event);
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish("TASK_DELETED", boardId, taskId);
     }
 
     /**
@@ -341,8 +339,7 @@ public class TaskService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        // Broadcast SSE event for real-time updates
-        BoardEvent event = new BoardEvent("TASK_MOVED", board.getId(), taskId, null);
-        sseService.broadcast(board.getId(), event);
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish("TASK_MOVED", board.getId(), taskId);
     }
 }
