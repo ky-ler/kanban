@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -70,5 +72,22 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
 
         return new CorsFilter(source);
+    }
+
+    /**
+     * Configures bearer token resolution to allow JWT extraction from both the Authorization header
+     * and query parameter (?access_token=...). Query parameter support is required for Server-Sent
+     * Events (SSE) since the browser's EventSource API cannot send custom headers.
+     *
+     * <p>Security Note: Query parameters may be logged by web servers and proxies. For production,
+     * consider using short-lived tokens for SSE connections or implementing token refresh.
+     *
+     * @return BearerTokenResolver supporting both header and query parameter token extraction
+     */
+    @Bean
+    public BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
+        resolver.setAllowUriQueryParameter(true);
+        return resolver;
     }
 }
