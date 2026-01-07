@@ -45,6 +45,8 @@ import { updateTaskBody } from "@/api/gen/endpoints/task-controller/task-control
 import type { TaskRequest } from "@/api/gen/model";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { formatDate } from "@/lib/format-date";
+import { LabelPicker } from "@/features/labels/components/label-picker";
+import { LabelBadge } from "@/features/labels/components/label-badge";
 
 export const Route = createFileRoute(
   "/_protected/boards/$boardId/tasks/$taskId",
@@ -89,6 +91,9 @@ function TaskComponent() {
       description: task?.data.description ?? "",
       columnId: task?.data.columnId ?? "",
       assigneeId: task?.data.assignedTo?.id ?? "",
+      priority: task?.data.priority ?? "",
+      dueDate: task?.data.dueDate ?? "",
+      labelIds: task?.data.labels?.map((l) => l.id) ?? [],
     } as TaskRequest,
     validators: {
       onChange: updateTaskBody,
@@ -284,6 +289,86 @@ function TaskComponent() {
                         );
                       }}
                     />
+                    <form.Field
+                      name="priority"
+                      children={(field) => {
+                        const isInvalid = !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>
+                              Priority
+                            </FieldLabel>
+                            <Select
+                              name={field.name}
+                              value={field.state.value ?? ""}
+                              onValueChange={field.handleChange}
+                              aria-invalid={isInvalid}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={null as never} key="none">
+                                  No priority
+                                </SelectItem>
+                                <SelectItem value="LOW">Low</SelectItem>
+                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                <SelectItem value="HIGH">High</SelectItem>
+                                <SelectItem value="URGENT">Urgent</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        );
+                      }}
+                    />
+                    <form.Field
+                      name="dueDate"
+                      children={(field) => {
+                        const isInvalid = !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>
+                              Due Date
+                            </FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              type="date"
+                              value={field.state.value ?? ""}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        );
+                      }}
+                    />
+                    <form.Field
+                      name="labelIds"
+                      children={(field) => {
+                        const isInvalid = !field.state.meta.isValid;
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Labels</FieldLabel>
+                            <LabelPicker
+                              boardId={boardId}
+                              selectedLabelIds={field.state.value ?? []}
+                              onChange={field.handleChange}
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        );
+                      }}
+                    />
                   </FieldGroup>
                 </FieldGroup>
               </FieldSet>
@@ -313,6 +398,38 @@ function TaskComponent() {
                 <FieldDescription>
                   {task.data.assignedTo?.username || "Unassigned"}
                 </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel>Priority</FieldLabel>
+                <FieldDescription>
+                  {task.data.priority
+                    ? task.data.priority.charAt(0) +
+                      task.data.priority.slice(1).toLowerCase()
+                    : "None"}
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel>Due Date</FieldLabel>
+                <FieldDescription>
+                  {task.data.dueDate
+                    ? formatDate(task.data.dueDate)
+                    : "Not set"}
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel>Labels</FieldLabel>
+                {task.data.labels && task.data.labels.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {task.data.labels.map((label) => (
+                      <LabelBadge key={label.id} label={label} size="sm" />
+                    ))}
+                  </div>
+                ) : (
+                  <FieldDescription>No labels</FieldDescription>
+                )}
               </Field>
 
               <Field>

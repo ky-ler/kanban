@@ -41,6 +41,7 @@ import {
 import type { TaskRequest } from "@/api/gen/model";
 import { useCreateTask } from "@/api/gen/endpoints/task-controller/task-controller";
 import { createTaskBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
+import { LabelPicker } from "@/features/labels/components/label-picker";
 
 export const Route = createFileRoute(
   "/_protected/boards/$boardId/tasks/create",
@@ -80,6 +81,9 @@ function CreateTaskComponent() {
       description: "",
       assigneeId: "",
       columnId: columnId ?? "",
+      priority: "",
+      dueDate: "",
+      labelIds: [],
     } as TaskRequest,
     validators: {
       onSubmit: createTaskBody,
@@ -267,6 +271,89 @@ function CreateTaskComponent() {
                           </Select>
                           <FieldDescription>
                             Optionally, select the assignee for this task
+                          </FieldDescription>
+                          {isInvalid && (
+                            <FieldError errors={field.state.meta.errors} />
+                          )}
+                        </Field>
+                      );
+                    }}
+                  />
+                  <form.Field
+                    name="priority"
+                    children={(field) => {
+                      const isInvalid = !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Priority</FieldLabel>
+                          <Select
+                            name={field.name}
+                            value={field.state.value ?? ""}
+                            onValueChange={field.handleChange}
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={null as never} key="none">
+                                No priority
+                              </SelectItem>
+                              <SelectItem value="LOW">Low</SelectItem>
+                              <SelectItem value="MEDIUM">Medium</SelectItem>
+                              <SelectItem value="HIGH">High</SelectItem>
+                              <SelectItem value="URGENT">Urgent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FieldDescription>
+                            Optionally, set a priority level for this task
+                          </FieldDescription>
+                          {isInvalid && (
+                            <FieldError errors={field.state.meta.errors} />
+                          )}
+                        </Field>
+                      );
+                    }}
+                  />
+                  <form.Field
+                    name="dueDate"
+                    children={(field) => {
+                      const isInvalid = !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Due Date</FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            type="date"
+                            value={field.state.value ?? ""}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            aria-invalid={isInvalid}
+                          />
+                          <FieldDescription>
+                            Optionally, set a due date for this task
+                          </FieldDescription>
+                          {isInvalid && (
+                            <FieldError errors={field.state.meta.errors} />
+                          )}
+                        </Field>
+                      );
+                    }}
+                  />
+                  <form.Field
+                    name="labelIds"
+                    children={(field) => {
+                      const isInvalid = !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Labels</FieldLabel>
+                          <LabelPicker
+                            boardId={boardId}
+                            selectedLabelIds={field.state.value ?? []}
+                            onChange={field.handleChange}
+                          />
+                          <FieldDescription>
+                            Optionally, add labels to categorize this task
                           </FieldDescription>
                           {isInvalid && (
                             <FieldError errors={field.state.meta.errors} />
