@@ -45,6 +45,8 @@ public class TaskMapper {
                 task.getPosition(),
                 task.isCompleted(),
                 task.isArchived(),
+                task.getPriority() != null ? task.getPriority().name() : null,
+                task.getDueDate() != null ? task.getDueDate().toString() : null,
                 task.getDateCreated() != null ? task.getDateCreated().toString() : null,
                 task.getDateModified() != null ? task.getDateModified().toString() : null);
     }
@@ -69,7 +71,9 @@ public class TaskMapper {
                 assignee,
                 task.getPosition(),
                 task.isCompleted(),
-                task.isArchived());
+                task.isArchived(),
+                task.getPriority() != null ? task.getPriority().name() : null,
+                task.getDueDate() != null ? task.getDueDate().toString() : null);
     }
 
     /**
@@ -84,6 +88,11 @@ public class TaskMapper {
      */
     public Task toEntity(
             TaskRequest req, Board board, User createdBy, User assignedTo, Column column) {
+        Priority priority = null;
+        if (req.priority() != null && !req.priority().isBlank()) {
+            priority = Priority.valueOf(req.priority().toUpperCase());
+        }
+
         Task task =
                 Task.builder()
                         .board(board)
@@ -91,6 +100,8 @@ public class TaskMapper {
                         .title(req.title())
                         .description(req.description())
                         .column(column)
+                        .priority(priority)
+                        .dueDate(req.dueDate())
                         .build();
 
         if (assignedTo != null) {

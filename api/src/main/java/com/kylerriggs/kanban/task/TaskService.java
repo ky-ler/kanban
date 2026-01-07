@@ -24,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -181,6 +183,16 @@ public class TaskService {
 
         taskToUpdate.setTitle(updateTaskRequest.title());
         taskToUpdate.setDescription(updateTaskRequest.description());
+
+        // Update priority
+        if (updateTaskRequest.priority() != null && !updateTaskRequest.priority().isBlank()) {
+            taskToUpdate.setPriority(Priority.valueOf(updateTaskRequest.priority().toUpperCase()));
+        } else {
+            taskToUpdate.setPriority(null);
+        }
+
+        // Update due date
+        taskToUpdate.setDueDate(updateTaskRequest.dueDate());
 
         if (!taskToUpdate.getColumn().getId().equals(updateTaskRequest.columnId())) {
             Column newColumn =

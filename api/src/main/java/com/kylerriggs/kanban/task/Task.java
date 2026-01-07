@@ -13,6 +13,9 @@ import lombok.experimental.SuperBuilder;
 
 import org.springframework.data.annotation.CreatedBy;
 
+import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -47,6 +50,12 @@ public class Task extends BaseEntity {
     @Builder.Default private boolean isCompleted = false;
 
     @Builder.Default private boolean isArchived = false;
+
+    @Enumerated(EnumType.STRING)
+    @jakarta.persistence.Column(length = 10)
+    private Priority priority;
+
+    private LocalDate dueDate;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "board_id", foreignKey = @ForeignKey(name = "fk_task_board"))

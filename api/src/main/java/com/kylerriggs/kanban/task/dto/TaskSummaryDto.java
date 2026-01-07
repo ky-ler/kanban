@@ -15,4 +15,6 @@ public record TaskSummaryDto(
         UserSummaryDto assignedTo,
         @NotNull @Min(0) Integer position,
         @NotNull boolean isCompleted,
-        @NotNull boolean isArchived) {}
+        @NotNull boolean isArchived,
+        String priority,
+        String dueDate) {}

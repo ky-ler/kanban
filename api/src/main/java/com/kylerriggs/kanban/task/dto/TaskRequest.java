@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 
 import org.springframework.lang.NonNull;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record TaskRequest(
@@ -18,4 +20,6 @@ public record TaskRequest(
         String description,
         @NonNull @NotNull(message = "Column ID cannot be null") UUID columnId,
         boolean isCompleted,
-        boolean isArchived) {}
+        boolean isArchived,
+        String priority,
+        LocalDate dueDate) {}

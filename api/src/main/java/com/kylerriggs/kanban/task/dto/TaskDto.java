@@ -18,5 +18,7 @@ public record TaskDto(
         @NotNull @Min(0) Integer position,
         @NotNull boolean isCompleted,
         @NotNull boolean isArchived,
+        String priority,
+        String dueDate,
         @NotBlank String dateCreated,
         @NotBlank String dateModified) {}
