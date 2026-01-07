@@ -86,10 +86,28 @@ function CreateTaskComponent() {
       labelIds: [],
     } as TaskRequest,
     validators: {
-      onSubmit: createTaskBody,
+      onSubmit: ({ value }) => {
+        const transformed = {
+          ...value,
+          dueDate: value.dueDate || undefined,
+          priority: value.priority || undefined,
+          assigneeId: value.assigneeId || undefined,
+        };
+        const result = createTaskBody.safeParse(transformed);
+        if (!result.success) {
+          return result.error.formErrors.fieldErrors;
+        }
+        return undefined;
+      },
     },
     onSubmit: async ({ value }) => {
-      toast.promise(createTaskMutation.mutateAsync({ data: value }), {
+      const data = {
+        ...value,
+        dueDate: value.dueDate || undefined,
+        priority: value.priority || undefined,
+        assigneeId: value.assigneeId || undefined,
+      };
+      toast.promise(createTaskMutation.mutateAsync({ data }), {
         loading: "Creating task...",
         success: "Task created!",
         error: "Failed to create task",

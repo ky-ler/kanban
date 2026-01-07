@@ -96,11 +96,29 @@ function TaskComponent() {
       labelIds: task?.data.labels?.map((l) => l.id) ?? [],
     } as TaskRequest,
     validators: {
-      onChange: updateTaskBody,
+      onSubmit: ({ value }) => {
+        const transformed = {
+          ...value,
+          dueDate: value.dueDate || undefined,
+          priority: value.priority || undefined,
+          assigneeId: value.assigneeId || undefined,
+        };
+        const result = updateTaskBody.safeParse(transformed);
+        if (!result.success) {
+          return result.error.formErrors.fieldErrors;
+        }
+        return undefined;
+      },
     },
     onSubmit: async ({ value }) => {
+      const data = {
+        ...value,
+        dueDate: value.dueDate || undefined,
+        priority: value.priority || undefined,
+        assigneeId: value.assigneeId || undefined,
+      };
       toast.promise(
-        updateTaskMutation.mutateAsync({ taskId: taskId, data: value }),
+        updateTaskMutation.mutateAsync({ taskId: taskId, data }),
         {
           loading: "Updating task...",
           success: "Task updated!",
