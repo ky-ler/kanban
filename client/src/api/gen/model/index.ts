@@ -16,6 +16,7 @@ export * from "./columnDto";
 export * from "./moveTaskRequest";
 export * from "./roleUpdateRequest";
 export * from "./roleUpdateRequestNewRole";
+export * from "./sseEmitter";
 export * from "./taskDto";
 export * from "./taskRequest";
 export * from "./taskSummaryDto";
