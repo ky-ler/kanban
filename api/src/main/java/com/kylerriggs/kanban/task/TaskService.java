@@ -1,5 +1,9 @@
 package com.kylerriggs.kanban.task;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylerriggs.kanban.activity.ActivityLogService;
+import com.kylerriggs.kanban.activity.ActivityType;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.column.Column;
@@ -26,12 +30,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +51,8 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final UserService userService;
     private final BoardEventPublisher eventPublisher;
+    private final ActivityLogService activityLogService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Retrieves a single task by its ID.
@@ -172,6 +181,9 @@ public class TaskService {
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("TASK_CREATED", board.getId(), savedTask.getId());
 
+        // Log activity
+        activityLogService.logActivity(savedTask, ActivityType.TASK_CREATED, null);
+
         return taskMapper.toDto(savedTask);
     }
 
@@ -202,15 +214,26 @@ public class TaskService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
+        // Capture old values for activity logging
+        String oldTitle = taskToUpdate.getTitle();
+        String oldDescription = taskToUpdate.getDescription();
+        Priority oldPriority = taskToUpdate.getPriority();
+        String oldAssigneeId =
+                Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
+        Set<UUID> oldLabelIds =
+                taskToUpdate.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
+        String oldDueDate =
+                taskToUpdate.getDueDate() != null ? taskToUpdate.getDueDate().toString() : null;
+
         taskToUpdate.setTitle(updateTaskRequest.title());
         taskToUpdate.setDescription(updateTaskRequest.description());
 
         // Update priority
+        Priority newPriority = null;
         if (updateTaskRequest.priority() != null && !updateTaskRequest.priority().isBlank()) {
-            taskToUpdate.setPriority(Priority.valueOf(updateTaskRequest.priority().toUpperCase()));
-        } else {
-            taskToUpdate.setPriority(null);
+            newPriority = Priority.valueOf(updateTaskRequest.priority().toUpperCase());
         }
+        taskToUpdate.setPriority(newPriority);
 
         // Update due date
         taskToUpdate.setDueDate(updateTaskRequest.dueDate());
@@ -233,12 +256,9 @@ public class TaskService {
             taskToUpdate.setColumn(newColumn);
         }
 
-        String currentAssigneeId =
-                Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
-
         String requestAssigneeId = updateTaskRequest.assigneeId();
 
-        if (!Objects.equals(currentAssigneeId, requestAssigneeId)) {
+        if (!Objects.equals(oldAssigneeId, requestAssigneeId)) {
             if (StringUtils.hasText(requestAssigneeId)) {
                 boardToUpdate.getCollaborators().stream()
                         .filter(c -> c.getUser().getId().equals(requestAssigneeId))
@@ -288,7 +308,96 @@ public class TaskService {
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("TASK_UPDATED", boardToUpdate.getId(), taskId);
 
+        // Log activity for changes
+        logTaskUpdateActivities(
+                taskToUpdate,
+                oldTitle,
+                oldDescription,
+                oldPriority,
+                oldAssigneeId,
+                oldLabelIds,
+                oldDueDate,
+                requestLabelIds);
+
         return taskMapper.toDto(taskToUpdate);
+    }
+
+    private void logTaskUpdateActivities(
+            Task task,
+            String oldTitle,
+            String oldDescription,
+            Priority oldPriority,
+            String oldAssigneeId,
+            Set<UUID> oldLabelIds,
+            String oldDueDate,
+            List<UUID> requestLabelIds) {
+
+        // Check for title/description changes (general update)
+        boolean titleChanged = !Objects.equals(oldTitle, task.getTitle());
+        boolean descriptionChanged = !Objects.equals(oldDescription, task.getDescription());
+
+        if (titleChanged || descriptionChanged) {
+            Map<String, Object> details = new HashMap<>();
+            if (titleChanged) {
+                details.put("oldTitle", oldTitle);
+                details.put("newTitle", task.getTitle());
+            }
+            if (descriptionChanged) {
+                details.put("descriptionChanged", true);
+            }
+            activityLogService.logActivity(task, ActivityType.TASK_UPDATED, toJson(details));
+        }
+
+        // Check for assignee change
+        String newAssigneeId =
+                Optional.ofNullable(task.getAssignedTo()).map(User::getId).orElse(null);
+        if (!Objects.equals(oldAssigneeId, newAssigneeId)) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("oldAssigneeId", oldAssigneeId);
+            details.put("newAssigneeId", newAssigneeId);
+            if (task.getAssignedTo() != null) {
+                details.put("newAssigneeUsername", task.getAssignedTo().getUsername());
+            }
+            activityLogService.logActivity(task, ActivityType.ASSIGNEE_CHANGED, toJson(details));
+        }
+
+        // Check for priority change
+        if (!Objects.equals(oldPriority, task.getPriority())) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("oldPriority", oldPriority != null ? oldPriority.name() : null);
+            details.put(
+                    "newPriority", task.getPriority() != null ? task.getPriority().name() : null);
+            activityLogService.logActivity(task, ActivityType.PRIORITY_CHANGED, toJson(details));
+        }
+
+        // Check for due date change
+        String newDueDate = task.getDueDate() != null ? task.getDueDate().toString() : null;
+        if (!Objects.equals(oldDueDate, newDueDate)) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("oldDueDate", oldDueDate);
+            details.put("newDueDate", newDueDate);
+            activityLogService.logActivity(task, ActivityType.DUE_DATE_CHANGED, toJson(details));
+        }
+
+        // Check for labels change
+        if (requestLabelIds != null) {
+            Set<UUID> newLabelIds =
+                    task.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
+            if (!Objects.equals(oldLabelIds, newLabelIds)) {
+                Map<String, Object> details = new HashMap<>();
+                details.put("oldLabelIds", oldLabelIds);
+                details.put("newLabelIds", newLabelIds);
+                activityLogService.logActivity(task, ActivityType.LABELS_CHANGED, toJson(details));
+            }
+        }
+    }
+
+    private String toJson(Map<String, Object> map) {
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     /**
@@ -307,6 +416,11 @@ public class TaskService {
 
         Board board = taskToDelete.getBoard();
         UUID boardId = board.getId();
+
+        // Log activity before deleting (include task title in details)
+        Map<String, Object> details = new HashMap<>();
+        details.put("taskTitle", taskToDelete.getTitle());
+        activityLogService.logActivity(taskToDelete, ActivityType.TASK_DELETED, toJson(details));
 
         // Remove from board's collection and delete the task
         board.getTasks().remove(taskToDelete);
@@ -393,5 +507,13 @@ public class TaskService {
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("TASK_MOVED", board.getId(), taskId);
+
+        // Log activity for move
+        Map<String, Object> details = new HashMap<>();
+        details.put("oldColumnId", oldColumnId.toString());
+        details.put("newColumnId", taskToMove.getColumn().getId().toString());
+        details.put("oldPosition", oldPosition);
+        details.put("newPosition", taskToMove.getPosition());
+        activityLogService.logActivity(taskToMove, ActivityType.TASK_MOVED, toJson(details));
     }
 }
