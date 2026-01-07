@@ -45,6 +45,10 @@ export function useBoardEvents(
   const retryCountRef = useRef(0);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
 
+  // Store onEvent in ref to avoid reconnecting when callback changes
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
+
   const connect = useCallback(async () => {
     if (!enabled || !boardId) return;
 
@@ -80,8 +84,8 @@ export function useBoardEvents(
         try {
           const data = JSON.parse(event.data) as BoardEvent;
 
-          // Call optional event callback
-          onEvent?.(data);
+          // Call optional event callback (using ref to avoid stale closure)
+          onEventRef.current?.(data);
 
           // Invalidate board query to trigger refetch
           queryClient.invalidateQueries({
@@ -98,6 +102,10 @@ export function useBoardEvents(
       eventSource.addEventListener("TASK_DELETED", handleBoardEvent);
       eventSource.addEventListener("TASK_MOVED", handleBoardEvent);
       eventSource.addEventListener("BOARD_UPDATED", handleBoardEvent);
+      eventSource.addEventListener("COLUMN_CREATED", handleBoardEvent);
+      eventSource.addEventListener("COLUMN_UPDATED", handleBoardEvent);
+      eventSource.addEventListener("COLUMN_DELETED", handleBoardEvent);
+      eventSource.addEventListener("COLUMN_MOVED", handleBoardEvent);
 
       eventSource.onerror = () => {
         setStatus("error");
@@ -125,7 +133,7 @@ export function useBoardEvents(
     } catch {
       setStatus("error");
     }
-  }, [boardId, enabled, onEvent, queryClient]);
+  }, [boardId, enabled, queryClient]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

@@ -12,17 +12,33 @@ import {
   type DragOverEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useState, useCallback } from "react";
-import { KanbanColumn } from "./kanban-column";
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+  SortableContext,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useState, useCallback, useMemo } from "react";
 import { TaskItem } from "@/features/tasks/components/task-item";
 import { useMoveTaskOptimistic } from "../hooks/use-move-task-optimistic";
+import { useMoveColumnOptimistic } from "../hooks/use-move-column-optimistic";
 import { ItemOverlay } from "@/features/tasks/components/item-overlay";
+import { SortableColumn } from "./sortable-column";
+import { AddColumnButton } from "./add-column-button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface KanbanBoardProps {
   columns: ColumnDto[];
   tasks: TaskSummaryDto[];
   boardId: string;
+}
+
+type DragItemType = "task" | "column";
+
+interface ActiveItem {
+  id: UniqueIdentifier;
+  type: DragItemType;
+  data: TaskSummaryDto | ColumnDto;
 }
 
 // Group tasks by column ID
@@ -40,16 +56,18 @@ const groupTasksByColumn = (
 };
 
 export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [activeTask, setActiveTask] = useState<TaskSummaryDto | null>(null);
+  const [activeItem, setActiveItem] = useState<ActiveItem | null>(null);
 
   // Temporary state for drag preview - persists until mutation settles
   const [tempTasks, setTempTasks] = useState<TaskSummaryDto[] | null>(null);
+  const [tempColumns, setTempColumns] = useState<ColumnDto[] | null>(null);
 
-  // Use tempTasks during/after drag, fall back to props
+  // Use temp state during/after drag, fall back to props
   const displayTasks = tempTasks ?? tasks;
+  const displayColumns = tempColumns ?? columns;
 
   const moveTaskMutation = useMoveTaskOptimistic(boardId);
+  const moveColumnMutation = useMoveColumnOptimistic(boardId);
 
   // Configure sensors with activation constraints to avoid conflicts with clicks
   const sensors = useSensors(
@@ -64,23 +82,40 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     }),
   );
 
-  // Sort columns by position
-  const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
+  // Sort columns by position (memoized to avoid re-sorting on every render)
+  const sortedColumns = useMemo(
+    () => [...displayColumns].sort((a, b) => a.position - b.position),
+    [displayColumns],
+  );
 
-  // Group tasks by column using display state for live preview
-  const columnTasksMap = groupTasksByColumn(displayTasks, sortedColumns);
+  // Column IDs for sortable context
+  const columnIds = useMemo(
+    () => sortedColumns.map((col) => col.id),
+    [sortedColumns],
+  );
 
-  // Find which column contains a given task or column ID (uses displayTasks for preview)
-  const findColumnByItemId = useCallback(
-    (itemId: UniqueIdentifier): string | undefined => {
-      // Check if it's a column ID
-      if (columns.some((col) => col.id === itemId)) {
-        return itemId as string;
-      }
-      // Find the column containing this task
-      return displayTasks.find((task) => task.id === itemId)?.columnId;
+  // Group tasks by column using display state for live preview (memoized)
+  const columnTasksMap = useMemo(
+    () => groupTasksByColumn(displayTasks, sortedColumns),
+    [displayTasks, sortedColumns],
+  );
+
+  // Determine if an ID belongs to a column or a task
+  const getItemType = useCallback(
+    (id: UniqueIdentifier): DragItemType | null => {
+      if (columns.some((col) => col.id === id)) return "column";
+      if (tasks.some((task) => task.id === id)) return "task";
+      return null;
     },
-    [columns, displayTasks],
+    [columns, tasks],
+  );
+
+  // Find which column contains a given task (uses displayTasks for preview)
+  const findColumnByTaskId = useCallback(
+    (taskId: UniqueIdentifier): string | undefined => {
+      return displayTasks.find((task) => task.id === taskId)?.columnId;
+    },
+    [displayTasks],
   );
 
   // Find original column from props (not affected by drag preview state)
@@ -93,26 +128,44 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    setActiveId(active.id);
-    // Initialize tempTasks from current tasks on drag start
-    setTempTasks(tasks);
-    const task = tasks.find((t) => t.id === active.id);
-    setActiveTask(task ?? null);
+    const type = getItemType(active.id);
+
+    if (type === "task") {
+      const task = tasks.find((t) => t.id === active.id);
+      if (task) {
+        setActiveItem({ id: active.id, type: "task", data: task });
+        setTempTasks(tasks);
+      }
+    } else if (type === "column") {
+      const column = columns.find((c) => c.id === active.id);
+      if (column) {
+        setActiveItem({ id: active.id, type: "column", data: column });
+        setTempColumns(columns);
+      }
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    if (!over) return;
+    if (!over || !activeItem) return;
 
-    const activeColumnId = findColumnByItemId(active.id);
-    const overColumnId = findColumnByItemId(over.id);
+    // Only handle task cross-column moves here
+    if (activeItem.type !== "task") return;
+
+    const activeColumnId = findColumnByTaskId(active.id);
+    const overType = getItemType(over.id);
+
+    // Determine the target column
+    let overColumnId: string | undefined;
+    if (overType === "column") {
+      overColumnId = over.id as string;
+    } else if (overType === "task") {
+      overColumnId = findColumnByTaskId(over.id);
+    }
 
     if (!activeColumnId || !overColumnId) return;
 
-    // Same column, same item - no action needed
-    if (activeColumnId === overColumnId && active.id === over.id) return;
-
-    // Same column reorder is handled by SortableContext, skip here
+    // Same column - let SortableContext handle it
     if (activeColumnId === overColumnId) return;
 
     // Cross-column move: update temp state for preview
@@ -155,87 +208,116 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    const currentActiveItem = activeItem;
 
-    setActiveId(null);
-    setActiveTask(null);
+    setActiveItem(null);
 
-    if (!over) {
-      setTempTasks(null); // Reset to props
-      return;
-    }
-
-    // Use ORIGINAL column from props to detect actual change
-    const originalColumnId = findOriginalColumnByTaskId(active.id);
-    const overColumnId = findColumnByItemId(over.id);
-
-    if (!originalColumnId || !overColumnId) {
+    if (!over || !currentActiveItem) {
       setTempTasks(null);
+      setTempColumns(null);
       return;
     }
 
-    // Same column reorder
-    if (originalColumnId === overColumnId && active.id !== over.id) {
-      const columnTasks = columnTasksMap[originalColumnId] || [];
-      const activeIndex = columnTasks.findIndex((t) => t.id === active.id);
-      const overIndex = columnTasks.findIndex((t) => t.id === over.id);
+    // Handle column reorder
+    if (currentActiveItem.type === "column") {
+      const activeIndex = sortedColumns.findIndex((c) => c.id === active.id);
+      const overIndex = sortedColumns.findIndex((c) => c.id === over.id);
 
-      if (activeIndex !== -1 && overIndex !== -1) {
-        const newColumnTasks = arrayMove(
-          columnTasks,
-          activeIndex,
-          overIndex,
-        ).map((task, index) => ({
-          ...task,
-          columnId: originalColumnId,
-          position: index,
-        }));
-
+      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
         // Update temp state for final position
-        setTempTasks((prevTasks) => {
-          if (!prevTasks) return prevTasks;
-          const otherTasks = prevTasks.filter(
-            (t) => t.columnId !== originalColumnId,
-          );
-          return [...otherTasks, ...newColumnTasks];
-        });
+        const newColumns = arrayMove(sortedColumns, activeIndex, overIndex).map(
+          (col, index) => ({ ...col, position: index }),
+        );
+        setTempColumns(newColumns);
 
-        // Call mutation and wait for it to settle
-        await moveTaskMutation.mutateAsync({
+        // Call mutation
+        await moveColumnMutation.mutateAsync({
           boardId,
-          taskId: active.id as string,
-          newColumnId: originalColumnId,
+          columnId: active.id as string,
           newPosition: overIndex,
         });
       }
-    } else if (originalColumnId !== overColumnId) {
-      // Cross-column move - temp state already updated in handleDragOver
-      // Calculate final position from the current display state
-      const destColumnTasks = columnTasksMap[overColumnId] || [];
 
-      // Find where the task is now in the destination column
-      const taskIndexInDest = destColumnTasks.findIndex(
-        (t) => t.id === active.id,
-      );
-      const newPosition =
-        taskIndexInDest === -1 ? destColumnTasks.length : taskIndexInDest;
-
-      // Call mutation and wait for it to settle
-      await moveTaskMutation.mutateAsync({
-        boardId,
-        taskId: active.id as string,
-        newColumnId: overColumnId,
-        newPosition,
-      });
+      setTempColumns(null);
+      return;
     }
 
-    // Clear temp state after mutation settles - falls back to React Query cache
-    setTempTasks(null);
+    // Handle task reorder
+    if (currentActiveItem.type === "task") {
+      const originalColumnId = findOriginalColumnByTaskId(active.id);
+      const overType = getItemType(over.id);
+      let overColumnId: string | undefined;
+
+      if (overType === "column") {
+        overColumnId = over.id as string;
+      } else if (overType === "task") {
+        overColumnId = findColumnByTaskId(over.id);
+      }
+
+      if (!originalColumnId || !overColumnId) {
+        setTempTasks(null);
+        return;
+      }
+
+      // Same column reorder
+      if (originalColumnId === overColumnId && active.id !== over.id) {
+        const columnTasks = columnTasksMap[originalColumnId] || [];
+        const activeIndex = columnTasks.findIndex((t) => t.id === active.id);
+        const overIndex = columnTasks.findIndex((t) => t.id === over.id);
+
+        if (activeIndex !== -1 && overIndex !== -1) {
+          const newColumnTasks = arrayMove(
+            columnTasks,
+            activeIndex,
+            overIndex,
+          ).map((task, index) => ({
+            ...task,
+            columnId: originalColumnId,
+            position: index,
+          }));
+
+          // Update temp state for final position
+          setTempTasks((prevTasks) => {
+            if (!prevTasks) return prevTasks;
+            const otherTasks = prevTasks.filter(
+              (t) => t.columnId !== originalColumnId,
+            );
+            return [...otherTasks, ...newColumnTasks];
+          });
+
+          // Call mutation
+          await moveTaskMutation.mutateAsync({
+            boardId,
+            taskId: active.id as string,
+            newColumnId: originalColumnId,
+            newPosition: overIndex,
+          });
+        }
+      } else if (originalColumnId !== overColumnId) {
+        // Cross-column move - temp state already updated in handleDragOver
+        const destColumnTasks = columnTasksMap[overColumnId] || [];
+        const taskIndexInDest = destColumnTasks.findIndex(
+          (t) => t.id === active.id,
+        );
+        const newPosition =
+          taskIndexInDest === -1 ? destColumnTasks.length : taskIndexInDest;
+
+        await moveTaskMutation.mutateAsync({
+          boardId,
+          taskId: active.id as string,
+          newColumnId: overColumnId,
+          newPosition,
+        });
+      }
+
+      setTempTasks(null);
+    }
   };
 
   const handleDragCancel = () => {
-    setActiveId(null);
-    setActiveTask(null);
-    setTempTasks(null); // Reset to props on cancel
+    setActiveItem(null);
+    setTempTasks(null);
+    setTempColumns(null);
   };
 
   return (
@@ -250,14 +332,20 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
       <div className="flex grow px-4">
         <div className="-mx-4 overflow-x-auto">
           <div className="flex space-x-4 px-4">
-            {sortedColumns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                tasks={columnTasksMap[column.id] || []}
-                boardId={boardId}
-              />
-            ))}
+            <SortableContext
+              items={columnIds}
+              strategy={horizontalListSortingStrategy}
+            >
+              {sortedColumns.map((column) => (
+                <SortableColumn
+                  key={column.id}
+                  column={column}
+                  tasks={columnTasksMap[column.id] || []}
+                  boardId={boardId}
+                />
+              ))}
+            </SortableContext>
+            <AddColumnButton boardId={boardId} />
           </div>
         </div>
       </div>
@@ -267,9 +355,22 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
           easing: "cubic-bezier(0.2, 0, 0, 1)",
         }}
       >
-        {activeId && activeTask ? (
+        {activeItem?.type === "task" ? (
           <ItemOverlay>
-            <TaskItem task={activeTask} boardId={boardId} />
+            <TaskItem
+              task={activeItem.data as TaskSummaryDto}
+              boardId={boardId}
+            />
+          </ItemOverlay>
+        ) : activeItem?.type === "column" ? (
+          <ItemOverlay>
+            <Card className="h-fit gap-2 sm:min-w-3xs opacity-90">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {(activeItem.data as ColumnDto).name}
+                </CardTitle>
+              </CardHeader>
+            </Card>
           </ItemOverlay>
         ) : null}
       </DragOverlay>
