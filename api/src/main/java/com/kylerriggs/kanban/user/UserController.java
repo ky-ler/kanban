@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -24,6 +25,7 @@ public class UserController {
      * @return no content
      */
     @PostMapping("/default-board")
+    @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
     public ResponseEntity<Void> setDefaultBoard(@NonNull @Valid @RequestBody UUID boardId) {
         userService.setDefaultBoard(boardId);
         return ResponseEntity.ok().build();
