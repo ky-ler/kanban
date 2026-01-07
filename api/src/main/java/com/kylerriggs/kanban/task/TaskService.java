@@ -234,6 +234,9 @@ public class TaskService {
      * Moves a task to a new position within the same column or to a different column. Automatically
      * recalculates positions of all affected tasks in both source and destination columns.
      *
+     * <p>This method uses pessimistic locking and atomic SQL updates to prevent race conditions
+     * when multiple users move tasks concurrently.
+     *
      * @param taskId the ID of the task to move
      * @param moveTaskRequest the new position and optional new column ID
      * @throws ResourceNotFoundException if the task or column doesn't exist
@@ -243,9 +246,10 @@ public class TaskService {
         Integer newPosition = moveTaskRequest.newPosition();
         UUID newColumnId = moveTaskRequest.newColumnId();
 
+        // Use pessimistic write lock to prevent concurrent modifications
         Task taskToMove =
                 taskRepository
-                        .findById(taskId)
+                        .findByIdWithLock(taskId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
@@ -264,16 +268,10 @@ public class TaskService {
                                                     "Column not found: " + newColumnId));
 
             // Adjust positions in old column (shift down tasks after the moved task)
-            board.getTasks().stream()
-                    .filter(t -> t.getColumn().getId().equals(oldColumnId))
-                    .filter(t -> t.getPosition() > oldPosition)
-                    .forEach(t -> t.setPosition(t.getPosition() - 1));
+            taskRepository.decrementPositionsAfter(oldColumnId, oldPosition);
 
             // Adjust positions in new column (shift up tasks at/after new position)
-            board.getTasks().stream()
-                    .filter(t -> t.getColumn().getId().equals(newColumnId))
-                    .filter(t -> t.getPosition() >= newPosition)
-                    .forEach(t -> t.setPosition(t.getPosition() + 1));
+            taskRepository.incrementPositionsFrom(newColumnId, newPosition);
 
             taskToMove.setColumn(newColumn);
             taskToMove.setPosition(newPosition);
@@ -285,23 +283,11 @@ public class TaskService {
             }
 
             if (newPosition > oldPosition) {
-                // Moving down: shift tasks between old and new position up
-                board.getTasks().stream()
-                        .filter(t -> t.getColumn().getId().equals(oldColumnId))
-                        .filter(
-                                t ->
-                                        t.getPosition() > oldPosition
-                                                && t.getPosition() <= newPosition)
-                        .forEach(t -> t.setPosition(t.getPosition() - 1));
+                // Moving down: Shift tasks between old and new position up
+                taskRepository.decrementPositionsInRange(oldColumnId, oldPosition, newPosition);
             } else {
-                // Moving up: shift tasks between new and old position down
-                board.getTasks().stream()
-                        .filter(t -> t.getColumn().getId().equals(oldColumnId))
-                        .filter(
-                                t ->
-                                        t.getPosition() >= newPosition
-                                                && t.getPosition() < oldPosition)
-                        .forEach(t -> t.setPosition(t.getPosition() + 1));
+                // Moving up: Shift tasks between new and old position down
+                taskRepository.incrementPositionsInRange(oldColumnId, newPosition, oldPosition);
             }
 
             taskToMove.setPosition(newPosition);

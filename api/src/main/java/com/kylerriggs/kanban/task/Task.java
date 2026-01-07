@@ -1,7 +1,5 @@
 package com.kylerriggs.kanban.task;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.common.BaseEntity;
@@ -24,7 +22,7 @@ import java.util.UUID;
 @SuperBuilder(toBuilder = true)
 @Entity
 @Table(name = "tasks")
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+// @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Task extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
