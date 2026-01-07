@@ -27,7 +27,8 @@ public class UserMapper {
 
         user.setId(jwt.getClaimAsString("sub"));
 
-        String username = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "username");
+        String username =
+                jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "username");
 
         if (username == null) {
             username = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "nickname");
@@ -37,7 +38,8 @@ public class UserMapper {
 
         user.setEmail(jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "email"));
 
-        user.setProfileImageUrl(jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "picture"));
+        user.setProfileImageUrl(
+                jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "picture"));
 
         return user;
     }
@@ -50,7 +52,8 @@ public class UserMapper {
      * @param jwt the JWT token containing updated user claims
      */
     public void updateUserFromToken(User user, Jwt jwt) {
-        String username = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "nickname");
+        String username =
+                jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "nickname");
         if (StringUtils.hasText(username) && !username.equals(user.getUsername())) {
             user.setUsername(username);
         }
@@ -60,7 +63,8 @@ public class UserMapper {
             user.setEmail(email);
         }
 
-        String profileImageUrl = jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "picture");
+        String profileImageUrl =
+                jwt.getClaimAsString(securityProperties.getCustomClaimPrefix() + "picture");
         if (StringUtils.hasText(profileImageUrl)
                 && !profileImageUrl.equals(user.getProfileImageUrl())) {
             user.setProfileImageUrl(profileImageUrl);
