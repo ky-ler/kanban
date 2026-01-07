@@ -9,6 +9,8 @@ import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.sse.SseService;
+import com.kylerriggs.kanban.sse.dto.BoardEvent;
 import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
@@ -36,6 +38,7 @@ public class BoardService {
     private final BoardProperties boardProperties;
     private final TaskMapper taskMapper;
     private final TaskRepository taskRepository;
+    private final SseService sseService;
 
     /**
      * Creates a new board with default columns and assigns the creator as an admin. The board is
@@ -177,6 +180,10 @@ public class BoardService {
         boardToUpdate.setDescription(boardRequest.description());
 
         boardRepository.save(boardToUpdate);
+
+        // Broadcast SSE event for real-time updates
+        BoardEvent event = new BoardEvent("BOARD_UPDATED", boardId, boardId, null);
+        sseService.broadcast(boardId, event);
 
         UUID requestUserDefaultBoard = userService.getCurrentUserDefaultBoardId();
         boolean isDefault = Objects.equals(boardToUpdate.getId(), requestUserDefaultBoard);

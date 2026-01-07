@@ -4,9 +4,12 @@ import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.column.ColumnRepository;
+import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
+import com.kylerriggs.kanban.sse.SseService;
+import com.kylerriggs.kanban.sse.dto.BoardEvent;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
@@ -35,6 +38,7 @@ public class TaskService {
     private final ColumnRepository columnRepository;
     private final TaskMapper taskMapper;
     private final UserService userService;
+    private final SseService sseService;
 
     /**
      * Retrieves a single task by its ID.
@@ -97,6 +101,11 @@ public class TaskService {
                                                 "Column not found: "
                                                         + createTaskRequest.columnId()));
 
+        // Validate column belongs to the specified board
+        if (!column.getBoard().getId().equals(board.getId())) {
+            throw new BadRequestException("Column does not belong to this board");
+        }
+
         User assignedTo = null;
 
         String requestAssigneeId = createTaskRequest.assigneeId();
@@ -127,12 +136,20 @@ public class TaskService {
 
         Task newTask = taskMapper.toEntity(createTaskRequest, board, createdBy, assignedTo, column);
         newTask.setPosition(newOrder);
-        board.getTasks().add(newTask);
+
+        // Save task directly to ensure ID is generated before broadcasting
+        Task savedTask = taskRepository.save(newTask);
+        board.getTasks().add(savedTask);
 
         // TODO: Fix having to set the date modified manually
         board.setDateModified(Instant.now());
         boardRepository.save(board);
-        return taskMapper.toDto(newTask);
+
+        // Broadcast SSE event for real-time updates
+        BoardEvent event = new BoardEvent("TASK_CREATED", board.getId(), savedTask.getId(), null);
+        sseService.broadcast(board.getId(), event);
+
+        return taskMapper.toDto(savedTask);
     }
 
     /**
@@ -174,6 +191,12 @@ public class TaskService {
                                             new ResourceNotFoundException(
                                                     "Column not found: "
                                                             + updateTaskRequest.columnId()));
+
+            // Validate new column belongs to the same board
+            if (!newColumn.getBoard().getId().equals(boardToUpdate.getId())) {
+                throw new BadRequestException("Column does not belong to this board");
+            }
+
             taskToUpdate.setColumn(newColumn);
         }
 
@@ -209,6 +232,11 @@ public class TaskService {
         // TODO: Fix having to set the date modified manually
         boardToUpdate.setDateModified(Instant.now());
         boardRepository.save(boardToUpdate);
+
+        // Broadcast SSE event for real-time updates
+        BoardEvent event = new BoardEvent("TASK_UPDATED", boardToUpdate.getId(), taskId, null);
+        sseService.broadcast(boardToUpdate.getId(), event);
+
         return taskMapper.toDto(taskToUpdate);
     }
 
@@ -227,7 +255,19 @@ public class TaskService {
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         Board board = taskToDelete.getBoard();
+        UUID boardId = board.getId();
+
+        // Remove from board's collection and delete the task
         board.getTasks().remove(taskToDelete);
+        taskRepository.delete(taskToDelete);
+
+        // Update board's modification timestamp
+        board.setDateModified(Instant.now());
+        boardRepository.save(board);
+
+        // Broadcast SSE event for real-time updates
+        BoardEvent event = new BoardEvent("TASK_DELETED", boardId, taskId, null);
+        sseService.broadcast(boardId, event);
     }
 
     /**
@@ -267,6 +307,11 @@ public class TaskService {
                                             new ResourceNotFoundException(
                                                     "Column not found: " + newColumnId));
 
+            // Validate new column belongs to the same board
+            if (!newColumn.getBoard().getId().equals(board.getId())) {
+                throw new BadRequestException("Column does not belong to this board");
+            }
+
             // Adjust positions in old column (shift down tasks after the moved task)
             taskRepository.decrementPositionsAfter(oldColumnId, oldPosition);
 
@@ -295,5 +340,9 @@ public class TaskService {
 
         board.setDateModified(Instant.now());
         boardRepository.save(board);
+
+        // Broadcast SSE event for real-time updates
+        BoardEvent event = new BoardEvent("TASK_MOVED", board.getId(), taskId, null);
+        sseService.broadcast(board.getId(), event);
     }
 }
