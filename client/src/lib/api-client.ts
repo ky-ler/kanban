@@ -51,13 +51,20 @@ export const apiClient = async <T>(
   if (response.status === 401) {
     handleAuthError();
   } else if (response.status === 403) {
-    queryClient.invalidateQueries();
+    // Invalidate only board-related queries, not the entire cache
+    // Using predicate to match query keys starting with /boards
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === "string" && key.startsWith("/boards");
+      },
+    });
     router.navigate({
       to: "/",
       search: { redirect: window.location.pathname },
     });
 
-    throw new Error("User is not authenticated!");
+    throw new Error("User is not authorized to access this resource");
   } else if (!response.ok) {
     throw new Error(`API error: ${response.status} ${data}`);
   }
@@ -66,7 +73,9 @@ export const apiClient = async <T>(
 };
 
 const handleAuthError = () => {
-  queryClient.invalidateQueries();
+  // Clear cache entirely on auth failure - user needs to re-authenticate
+  // Using clear() instead of invalidateQueries() to avoid triggering refetches
+  queryClient.clear();
   router.options.context.auth.logout();
   router.navigate({ to: "/", search: { redirect: window.location.pathname } });
 
