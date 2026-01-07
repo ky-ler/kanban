@@ -17,4 +17,7 @@ export interface TaskRequest {
   columnId: string;
   isCompleted?: boolean;
   isArchived?: boolean;
+  priority?: string;
+  dueDate?: string;
+  labelIds?: string[];
 }

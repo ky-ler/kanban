@@ -25,6 +25,8 @@ export const getBoardParams = zod.object({
 export const getBoardResponseTasksItemPositionMin = 0;
 
 
+
+
 export const getBoardResponseColumnsItemPositionMin = 0;
 
 
@@ -59,7 +61,14 @@ export const getBoardResponse = zod.object({
 }).optional(),
   "position": zod.number().min(getBoardResponseTasksItemPositionMin),
   "isCompleted": zod.boolean(),
-  "isArchived": zod.boolean()
+  "isArchived": zod.boolean(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().optional(),
+  "labels": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "color": zod.string().min(1)
+})).optional()
 })).optional(),
   "columns": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -101,6 +110,8 @@ export const updateBoardBody = zod.object({
 export const updateBoardResponseTasksItemPositionMin = 0;
 
 
+
+
 export const updateBoardResponseColumnsItemPositionMin = 0;
 
 
@@ -135,7 +146,14 @@ export const updateBoardResponse = zod.object({
 }).optional(),
   "position": zod.number().min(updateBoardResponseTasksItemPositionMin),
   "isCompleted": zod.boolean(),
-  "isArchived": zod.boolean()
+  "isArchived": zod.boolean(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().optional(),
+  "labels": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "color": zod.string().min(1)
+})).optional()
 })).optional(),
   "columns": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -206,6 +224,8 @@ export const createBoardBody = zod.object({
 export const createBoardResponseTasksItemPositionMin = 0;
 
 
+
+
 export const createBoardResponseColumnsItemPositionMin = 0;
 
 
@@ -240,7 +260,14 @@ export const createBoardResponse = zod.object({
 }).optional(),
   "position": zod.number().min(createBoardResponseTasksItemPositionMin),
   "isCompleted": zod.boolean(),
-  "isArchived": zod.boolean()
+  "isArchived": zod.boolean(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().optional(),
+  "labels": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "color": zod.string().min(1)
+})).optional()
 })).optional(),
   "columns": zod.array(zod.object({
   "id": zod.string().uuid(),
@@ -277,6 +304,8 @@ export const getTasksForBoardResponsePositionMin = 0;
 
 
 
+
+
 export const getTasksForBoardResponseItem = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string().min(1),
@@ -288,7 +317,14 @@ export const getTasksForBoardResponseItem = zod.object({
 }).optional(),
   "position": zod.number().min(getTasksForBoardResponsePositionMin),
   "isCompleted": zod.boolean(),
-  "isArchived": zod.boolean()
+  "isArchived": zod.boolean(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().optional(),
+  "labels": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "color": zod.string().min(1)
+})).optional()
 })
 export const getTasksForBoardResponse = zod.array(getTasksForBoardResponseItem)
 

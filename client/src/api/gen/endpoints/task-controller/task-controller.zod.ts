@@ -24,6 +24,8 @@ export const getTaskResponsePositionMin = 0;
 
 
 
+
+
 export const getTaskResponse = zod.object({
   "id": zod.string().uuid(),
   "createdBy": zod.object({
@@ -42,6 +44,13 @@ export const getTaskResponse = zod.object({
   "position": zod.number().min(getTaskResponsePositionMin),
   "isCompleted": zod.boolean(),
   "isArchived": zod.boolean(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().optional(),
+  "labels": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "color": zod.string().min(1)
+})).optional(),
   "dateCreated": zod.string().min(1),
   "dateModified": zod.string().min(1)
 })
@@ -62,7 +71,10 @@ export const updateTaskBody = zod.object({
   "description": zod.string().optional(),
   "columnId": zod.string().uuid(),
   "isCompleted": zod.boolean().optional(),
-  "isArchived": zod.boolean().optional()
+  "isArchived": zod.boolean().optional(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().date().optional(),
+  "labelIds": zod.array(zod.string().uuid()).optional()
 })
 
 
@@ -73,6 +85,8 @@ export const updateTaskBody = zod.object({
 
 
 export const updateTaskResponsePositionMin = 0;
+
+
 
 
 
@@ -96,6 +110,13 @@ export const updateTaskResponse = zod.object({
   "position": zod.number().min(updateTaskResponsePositionMin),
   "isCompleted": zod.boolean(),
   "isArchived": zod.boolean(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().optional(),
+  "labels": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "color": zod.string().min(1)
+})).optional(),
   "dateCreated": zod.string().min(1),
   "dateModified": zod.string().min(1)
 })
@@ -129,7 +150,10 @@ export const createTaskBody = zod.object({
   "description": zod.string().optional(),
   "columnId": zod.string().uuid(),
   "isCompleted": zod.boolean().optional(),
-  "isArchived": zod.boolean().optional()
+  "isArchived": zod.boolean().optional(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().date().optional(),
+  "labelIds": zod.array(zod.string().uuid()).optional()
 })
 
 
@@ -140,6 +164,8 @@ export const createTaskBody = zod.object({
 
 
 export const createTaskResponsePositionMin = 0;
+
+
 
 
 
@@ -163,6 +189,13 @@ export const createTaskResponse = zod.object({
   "position": zod.number().min(createTaskResponsePositionMin),
   "isCompleted": zod.boolean(),
   "isArchived": zod.boolean(),
+  "priority": zod.string().optional(),
+  "dueDate": zod.string().optional(),
+  "labels": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1),
+  "color": zod.string().min(1)
+})).optional(),
   "dateCreated": zod.string().min(1),
   "dateModified": zod.string().min(1)
 })

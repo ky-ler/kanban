@@ -5,6 +5,7 @@
  * OpenAPI spec version: v0
  */
 import type { UserSummaryDto } from "./userSummaryDto";
+import type { LabelSummaryDto } from "./labelSummaryDto";
 
 export interface TaskDto {
   id: string;
@@ -18,6 +19,9 @@ export interface TaskDto {
   position: number;
   isCompleted: boolean;
   isArchived: boolean;
+  priority?: string;
+  dueDate?: string;
+  labels?: LabelSummaryDto[];
   /** @minLength 1 */
   dateCreated: string;
   /** @minLength 1 */
