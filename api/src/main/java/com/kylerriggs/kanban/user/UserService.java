@@ -99,5 +99,7 @@ public class UserService {
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         user.setDefaultBoard(board);
+
+        userRepository.save(user);
     }
 }
