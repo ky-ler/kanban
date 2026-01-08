@@ -8,10 +8,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { router } from "@/lib/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { User, UserMinus, Shield, Users } from "lucide-react";
+import { User, UserMinus, Shield, Users, Link2 } from "lucide-react";
+import { InvitesTab } from "@/features/boards/components/invites-tab";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { toast } from "sonner";
 import {
@@ -30,14 +32,17 @@ import {
   useGetBoardSuspense,
   useRemoveCollaborator,
 } from "@/api/gen/endpoints/board-controller/board-controller";
+
 import { CollaboratorDtoRole } from "@/api/gen/model";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 export const Route = createFileRoute(
   "/_protected/boards/$boardId/collaborators",
 )({
-  loader: ({ context: { queryClient }, params: { boardId } }) =>
-    queryClient.ensureQueryData(getGetBoardQueryOptions(boardId)),
+  loader: async ({ context: { queryClient }, params: { boardId } }) => {
+    // Only prefetch board data, invites will be fetched on demand by the InvitesTab
+    await queryClient.ensureQueryData(getGetBoardQueryOptions(boardId));
+  },
   component: CollaboratorsComponent,
 });
 
@@ -80,7 +85,13 @@ function CollaboratorsComponent() {
       router.navigate({
         to: "/boards/$boardId",
         params: { boardId },
-        search: { q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined },
+        search: {
+          q: undefined,
+          assignee: undefined,
+          priority: undefined,
+          labels: undefined,
+          due: undefined,
+        },
       });
     }
   };
@@ -137,99 +148,122 @@ function CollaboratorsComponent() {
       onOpenChange={returnToBoard}
       key={`collaborators-${boardId}`}
     >
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Board Collaborators
+            <Users className="h-5 w-5" />
+            Manage Team
           </DialogTitle>
           <DialogDescription>
-            Team members working on {board.data.name}
+            Collaborators and invites for {board.data.name}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-96 space-y-4 overflow-y-auto">
-          {sortedCollaborators.map((collaborator) => (
-            <div
-              key={collaborator.user?.id}
-              className="bg-card hover:bg-accent/50 flex items-center gap-4 rounded-lg border p-4 transition-colors"
-            >
-              <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-                {collaborator.user?.profileImageUrl ? (
-                  <img
-                    src={collaborator.user.profileImageUrl}
-                    alt={collaborator.user.username}
-                    className="rounded-full object-cover"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <User className="text-primary h-5 w-5" />
-                )}
-              </div>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-medium">
-                    {collaborator.user?.username}
-                  </h4>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium ${getRoleBadgeColor(
-                      collaborator.role ?? CollaboratorDtoRole.GUEST,
-                    )}`}
-                  >
-                    {getRoleIcon(
-                      collaborator.role ?? CollaboratorDtoRole.GUEST,
+        <Tabs defaultValue="collaborators">
+          {isCurrentUserAdmin && (
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="collaborators">
+                <User className="mr-2 h-4 w-4" />
+                Collaborators
+              </TabsTrigger>
+              <TabsTrigger value="invites">
+                <Link2 className="mr-2 h-4 w-4" />
+                Invites
+              </TabsTrigger>
+            </TabsList>
+          )}
+
+          <TabsContent value="collaborators" className="mt-4">
+            <div className="max-h-80 space-y-3 overflow-y-auto">
+              {sortedCollaborators.map((collaborator) => (
+                <div
+                  key={collaborator.user?.id}
+                  className="bg-card hover:bg-accent/50 flex items-center gap-4 rounded-lg border p-4 transition-colors"
+                >
+                  <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
+                    {collaborator.user?.profileImageUrl ? (
+                      <img
+                        src={collaborator.user.profileImageUrl}
+                        alt={collaborator.user.username}
+                        className="rounded-full object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <User className="text-primary h-5 w-5" />
                     )}
-                    {collaborator.role ?? CollaboratorDtoRole.GUEST}
-                  </span>
-                </div>
-              </div>
-              {isCurrentUserAdmin &&
-                collaborator.role !== "ADMIN" &&
-                collaborator.user?.id !== currentUserId && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={removeCollaboratorMutation.isPending}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-medium">
+                        {collaborator.user?.username}
+                      </h4>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium ${getRoleBadgeColor(
+                          collaborator.role ?? CollaboratorDtoRole.GUEST,
+                        )}`}
                       >
-                        <UserMinus className="h-4 w-4" />
-                        {removeCollaboratorMutation.isPending
-                          ? "Removing..."
-                          : "Remove"}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Are you sure you want to remove this collaborator?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <Button
-                          variant="destructive"
-                          onClick={() =>
-                            handleRemoveCollaborator(collaborator.user!.id)
-                          }
-                          disabled={removeCollaboratorMutation.isPending}
-                        >
-                          {removeCollaboratorMutation.isPending
-                            ? "Removing..."
-                            : "Remove"}
-                        </Button>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+                        {getRoleIcon(
+                          collaborator.role ?? CollaboratorDtoRole.GUEST,
+                        )}
+                        {collaborator.role ?? CollaboratorDtoRole.GUEST}
+                      </span>
+                    </div>
+                  </div>
+                  {isCurrentUserAdmin &&
+                    collaborator.role !== "ADMIN" &&
+                    collaborator.user?.id !== currentUserId && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={removeCollaboratorMutation.isPending}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <UserMinus className="h-4 w-4" />
+                            {removeCollaboratorMutation.isPending
+                              ? "Removing..."
+                              : "Remove"}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you sure you want to remove this collaborator?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <Button
+                              variant="destructive"
+                              onClick={() =>
+                                handleRemoveCollaborator(collaborator.user!.id)
+                              }
+                              disabled={removeCollaboratorMutation.isPending}
+                            >
+                              {removeCollaboratorMutation.isPending
+                                ? "Removing..."
+                                : "Remove"}
+                            </Button>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </TabsContent>
+
+          {isCurrentUserAdmin && (
+            <TabsContent value="invites" className="mt-4">
+              <InvitesTab boardId={boardId} />
+            </TabsContent>
+          )}
+        </Tabs>
 
         <DialogFooter>
           <DialogClose asChild>
