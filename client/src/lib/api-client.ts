@@ -34,14 +34,20 @@ export const apiClient = async <T>(
   const requestUrl = `${baseUrl}${url}`;
   const requestHeaders = getHeaders(options.headers);
 
-  const token = await getAuthToken();
-  if (!token) {
-    handleAuthError();
+  let token: string | null = null;
+  try {
+    token = await getAuthToken();
+  } catch {
+    console.debug(
+      "No auth token available, proceeding without authentication.",
+    );
   }
 
   const requestInit: RequestInit = {
     ...options,
-    headers: { ...requestHeaders, Authorization: `Bearer ${token}` },
+    headers: token
+      ? { ...requestHeaders, Authorization: `Bearer ${token}` }
+      : requestHeaders,
   };
 
   const request = new Request(requestUrl, requestInit);
@@ -49,6 +55,8 @@ export const apiClient = async <T>(
   const data = await getBody<T>(response);
 
   if (response.status === 401) {
+    // Backend returned 401 - authentication required but missing/invalid
+    // This is different from not having a token (which is OK for public endpoints)
     handleAuthError();
   } else if (response.status === 403) {
     // Invalidate only board-related queries, not the entire cache
