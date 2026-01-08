@@ -53,11 +53,8 @@ export const previewInviteParams = zod.object({
   "code": zod.string()
 })
 
-
-
-
 export const previewInviteResponse = zod.object({
-  "boardName": zod.string().min(1),
+  "boardName": zod.string().optional(),
   "valid": zod.boolean(),
   "errorMessage": zod.string().optional()
 })

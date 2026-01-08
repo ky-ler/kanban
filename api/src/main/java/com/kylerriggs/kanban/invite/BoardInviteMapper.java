@@ -30,7 +30,9 @@ public class BoardInviteMapper {
 
     public InvitePreviewDto toPreviewDto(BoardInvite invite) {
         String error = validateInvite(invite);
-        return new InvitePreviewDto(invite.getBoard().getName(), error == null, error);
+        boolean isValid = error == null;
+        String boardName = isValid ? invite.getBoard().getName() : null;
+        return new InvitePreviewDto(boardName, isValid, error);
     }
 
     private String validateInvite(BoardInvite invite) {

@@ -140,17 +140,10 @@ function InvitePage() {
             <CardTitle>{error.title}</CardTitle>
             <CardDescription>{error.description}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <Kanban className="h-4 w-4" />
-              <AlertTitle>Board</AlertTitle>
-              <AlertDescription>{preview.boardName}</AlertDescription>
-            </Alert>
-            <div className="text-center">
-              <Button onClick={() => navigate({ to: "/" })} variant="outline">
-                Go to Home
-              </Button>
-            </div>
+          <CardContent className="text-center">
+            <Button onClick={() => navigate({ to: "/" })} variant="outline">
+              Go to Home
+            </Button>
           </CardContent>
         </Card>
       </div>

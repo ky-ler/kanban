@@ -6,8 +6,7 @@
  */
 
 export interface InvitePreviewDto {
-  /** @minLength 1 */
-  boardName: string;
+  boardName?: string;
   valid: boolean;
   errorMessage?: string;
 }
