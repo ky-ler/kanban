@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylerriggs.kanban.activity.ActivityLogService;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.board.BoardRole;
@@ -15,7 +17,7 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
-import com.kylerriggs.kanban.sse.BoardEventPublisher;
+import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
@@ -23,6 +25,7 @@ import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
+import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -52,9 +55,12 @@ class TaskServiceTest {
     @Mock private BoardRepository boardRepository;
     @Mock private UserRepository userRepository;
     @Mock private ColumnRepository columnRepository;
+    @Mock private LabelRepository labelRepository;
     @Mock private TaskMapper taskMapper;
     @Mock private UserService userService;
     @Mock private BoardEventPublisher eventPublisher;
+    @Mock private ActivityLogService activityLogService;
+    @Mock private ObjectMapper objectMapper;
     @InjectMocks private TaskService taskService;
 
     private User user;
@@ -111,6 +117,7 @@ class TaskServiceTest {
                         .column(column)
                         .createdBy(user)
                         .position(0)
+                        .labels(new HashSet<>())
                         .build();
         task.setDateCreated(Instant.now());
         task.setDateModified(Instant.now());
@@ -202,7 +209,7 @@ class TaskServiceTest {
             // Then
             assertNotNull(result);
             verify(taskRepository).save(any(Task.class));
-            verify(boardRepository).save(board);
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
@@ -362,13 +369,12 @@ class TaskServiceTest {
                             null,
                             null,
                             null);
-            board.getTasks().add(task);
         }
 
         @Test
         void updateTask_WhenValid_ReturnsUpdatedTask() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
@@ -378,15 +384,14 @@ class TaskServiceTest {
             assertNotNull(result);
             assertEquals("Updated Task", task.getTitle());
             assertEquals("Updated Description", task.getDescription());
-            verify(boardRepository).save(board);
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
         void updateTask_WhenTaskNotFound_ThrowsResourceNotFoundException() {
             // Given
-            board.getTasks().clear();
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
@@ -395,14 +400,26 @@ class TaskServiceTest {
         }
 
         @Test
-        void updateTask_WhenBoardNotFound_ThrowsResourceNotFoundException() {
+        void updateTask_WhenBoardMismatch_ThrowsBadRequestException() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.empty());
+            TaskRequest requestWithWrongBoard =
+                    new TaskRequest(
+                            UUID.randomUUID(), // Different board ID
+                            null,
+                            "Updated Task",
+                            "Updated Description",
+                            COLUMN_ID,
+                            false,
+                            false,
+                            null,
+                            null,
+                            null);
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
 
             // When & Then
             assertThrows(
-                    ResourceNotFoundException.class,
-                    () -> taskService.updateTask(TASK_ID, updateTaskRequest));
+                    BadRequestException.class,
+                    () -> taskService.updateTask(TASK_ID, requestWithWrongBoard));
         }
 
         @Test
@@ -421,7 +438,7 @@ class TaskServiceTest {
                             null,
                             null);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(columnRepository.findById(NEW_COLUMN_ID)).thenReturn(Optional.of(newColumn));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
@@ -458,7 +475,7 @@ class TaskServiceTest {
                             null,
                             null);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(columnRepository.findById(NEW_COLUMN_ID))
                     .thenReturn(Optional.of(columnFromOtherBoard));
 
@@ -488,7 +505,7 @@ class TaskServiceTest {
                             null,
                             null);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(userRepository.findById(ASSIGNEE_ID)).thenReturn(Optional.of(assignee));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
@@ -516,7 +533,7 @@ class TaskServiceTest {
                             null,
                             null);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
@@ -529,11 +546,6 @@ class TaskServiceTest {
 
     @Nested
     class DeleteTaskTests {
-        @BeforeEach
-        void setUp() {
-            board.getTasks().add(task);
-        }
-
         @Test
         void deleteTask_WhenTaskExists_DeletesTask() {
             // Given
@@ -543,9 +555,8 @@ class TaskServiceTest {
             taskService.deleteTask(TASK_ID);
 
             // Then
-            assertFalse(board.getTasks().contains(task));
             verify(taskRepository).delete(task);
-            verify(boardRepository).save(board);
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
@@ -595,7 +606,7 @@ class TaskServiceTest {
             // Then
             assertEquals(3, task.getPosition());
             verify(taskRepository).decrementPositionsInRange(COLUMN_ID, 1, 3);
-            verify(boardRepository).save(board);
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
@@ -612,7 +623,7 @@ class TaskServiceTest {
             // Then
             assertEquals(1, task.getPosition());
             verify(taskRepository).incrementPositionsInRange(COLUMN_ID, 1, 3);
-            verify(boardRepository).save(board);
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
         }
 
         @Test
@@ -630,7 +641,7 @@ class TaskServiceTest {
             assertEquals(0, task.getPosition());
             verify(taskRepository).decrementPositionsAfter(COLUMN_ID, 1);
             verify(taskRepository).incrementPositionsFrom(NEW_COLUMN_ID, 0);
-            verify(boardRepository).save(board);
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
         }
 
         @Test

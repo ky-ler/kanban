@@ -14,13 +14,13 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.label.Label;
 import com.kylerriggs.kanban.label.LabelRepository;
-import com.kylerriggs.kanban.sse.BoardEventPublisher;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.RequiredArgsConstructor;
 
@@ -174,9 +174,8 @@ public class TaskService {
         // Note: Don't manually add to board.getTasks() - JPA manages this via mappedBy relationship
         // Adding manually with List (not Set) causes duplicates in memory
 
-        // TODO: Fix having to set the date modified manually
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
+        // Atomically update board's dateModified to avoid optimistic locking conflicts
+        boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("TASK_CREATED", board.getId(), savedTask.getId());
@@ -199,20 +198,18 @@ public class TaskService {
      */
     @Transactional
     public TaskDto updateTask(@NonNull UUID taskId, TaskRequest updateTaskRequest) {
-        Board boardToUpdate =
-                boardRepository
-                        .findById(updateTaskRequest.boardId())
-                        .orElseThrow(
-                                () ->
-                                        new ResourceNotFoundException(
-                                                "Board not found: " + updateTaskRequest.boardId()));
-
+        // Load task directly instead of through board to avoid version conflicts
         Task taskToUpdate =
-                boardToUpdate.getTasks().stream()
-                        .filter(i -> Objects.equals(i.getId(), taskId))
-                        .findFirst()
+                taskRepository
+                        .findById(taskId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        // Validate task belongs to the specified board
+        Board board = taskToUpdate.getBoard();
+        if (!board.getId().equals(updateTaskRequest.boardId())) {
+            throw new BadRequestException("Task does not belong to this board");
+        }
 
         // Capture old values for activity logging
         String oldTitle = taskToUpdate.getTitle();
@@ -249,7 +246,7 @@ public class TaskService {
                                                             + updateTaskRequest.columnId()));
 
             // Validate new column belongs to the same board
-            if (!newColumn.getBoard().getId().equals(boardToUpdate.getId())) {
+            if (!newColumn.getBoard().getId().equals(board.getId())) {
                 throw new BadRequestException("Column does not belong to this board");
             }
 
@@ -260,7 +257,7 @@ public class TaskService {
 
         if (!Objects.equals(oldAssigneeId, requestAssigneeId)) {
             if (StringUtils.hasText(requestAssigneeId)) {
-                boardToUpdate.getCollaborators().stream()
+                board.getCollaborators().stream()
                         .filter(c -> c.getUser().getId().equals(requestAssigneeId))
                         .findFirst()
                         .orElseThrow(
@@ -289,7 +286,7 @@ public class TaskService {
             for (UUID labelId : requestLabelIds) {
                 Label label =
                         labelRepository
-                                .findByIdAndBoardId(labelId, boardToUpdate.getId())
+                                .findByIdAndBoardId(labelId, board.getId())
                                 .orElseThrow(
                                         () ->
                                                 new BadRequestException(
@@ -301,12 +298,11 @@ public class TaskService {
             taskToUpdate.getLabels().addAll(newLabels);
         }
 
-        // TODO: Fix having to set the date modified manually
-        boardToUpdate.setDateModified(Instant.now());
-        boardRepository.save(boardToUpdate);
+        // Atomically update board's dateModified to avoid optimistic locking conflicts
+        boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_UPDATED", boardToUpdate.getId(), taskId);
+        eventPublisher.publish("TASK_UPDATED", board.getId(), taskId);
 
         // Log activity for changes
         logTaskUpdateActivities(
@@ -422,13 +418,11 @@ public class TaskService {
         details.put("taskTitle", taskToDelete.getTitle());
         activityLogService.logActivity(taskToDelete, ActivityType.TASK_DELETED, toJson(details));
 
-        // Remove from board's collection and delete the task
-        board.getTasks().remove(taskToDelete);
+        // Delete the task directly
         taskRepository.delete(taskToDelete);
 
-        // Update board's modification timestamp
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
+        // Atomically update board's dateModified to avoid optimistic locking conflicts
+        boardRepository.touchDateModified(boardId, Instant.now());
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("TASK_DELETED", boardId, taskId);
@@ -502,8 +496,8 @@ public class TaskService {
             taskToMove.setPosition(newPosition);
         }
 
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
+        // Atomically update board's dateModified to avoid optimistic locking conflicts
+        boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("TASK_MOVED", board.getId(), taskId);
