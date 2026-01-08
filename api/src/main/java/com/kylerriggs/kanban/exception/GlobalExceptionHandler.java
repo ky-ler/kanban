@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> body =
                 Map.of(
                         "timestamp", System.currentTimeMillis(),
-                        "column", HttpStatus.NOT_FOUND.value(),
+                        "status", HttpStatus.NOT_FOUND.value(),
                         "error", "Not Found",
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> body =
                 Map.of(
                         "timestamp", System.currentTimeMillis(),
-                        "column", HttpStatus.FORBIDDEN.value(),
+                        "status", HttpStatus.FORBIDDEN.value(),
                         "error", "Board Limit Exceeded",
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> body =
                 Map.of(
                         "timestamp", System.currentTimeMillis(),
-                        "column", HttpStatus.FORBIDDEN.value(),
+                        "status", HttpStatus.FORBIDDEN.value(),
                         "error", "Forbidden",
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> body =
                 Map.of(
                         "timestamp", System.currentTimeMillis(),
-                        "column", HttpStatus.UNAUTHORIZED.value(),
+                        "status", HttpStatus.UNAUTHORIZED.value(),
                         "error", "Unauthorized",
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> body =
                 Map.of(
                         "timestamp", System.currentTimeMillis(),
-                        "column", HttpStatus.FORBIDDEN.value(),
+                        "status", HttpStatus.FORBIDDEN.value(),
                         "error", "Forbidden",
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> body =
                 Map.of(
                         "timestamp", System.currentTimeMillis(),
-                        "column", HttpStatus.BAD_REQUEST.value(),
+                        "status", HttpStatus.BAD_REQUEST.value(),
                         "error", "Bad Request",
                         "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
