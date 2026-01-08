@@ -25,7 +25,6 @@ import java.util.UUID;
 public class BoardController {
 
     private final BoardService boardService;
-    private final BoardAccess boardAccess;
 
     /**
      * Creates a new board with the given name and description. The creator is automatically added
