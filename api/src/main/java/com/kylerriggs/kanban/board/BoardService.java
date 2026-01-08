@@ -10,13 +10,13 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
-import com.kylerriggs.kanban.sse.BoardEventPublisher;
 import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.RequiredArgsConstructor;
 

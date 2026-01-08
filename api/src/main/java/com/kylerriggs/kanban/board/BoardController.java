@@ -1,7 +1,6 @@
 package com.kylerriggs.kanban.board;
 
 import com.kylerriggs.kanban.board.dto.*;
-import com.kylerriggs.kanban.sse.SseService;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
 
 import jakarta.validation.Valid;
@@ -9,12 +8,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -28,7 +25,7 @@ import java.util.UUID;
 public class BoardController {
 
     private final BoardService boardService;
-    private final SseService sseService;
+    private final BoardAccess boardAccess;
 
     /**
      * Creates a new board with the given name and description. The creator is automatically added
@@ -107,20 +104,20 @@ public class BoardController {
         return ResponseEntity.ok(updatedBoard);
     }
 
-    //    /**
-    //     * Deletes a board and all its associated data.
-    //     * Requires admin privileges on the board.
-    //     * Disabled for now, I want to implement archiving instead.
-    //     *
-    //     * @param boardId the ID of the board to delete
-    //     * @return no content
-    //     */
-    //    @DeleteMapping("/{boardId}")
-    //    @PreAuthorize("@boardAccess.isAdmin(#boardId)")
-    //    public ResponseEntity<Void> deleteBoard(@PathVariable UUID boardId) {
-    //        boardService.deleteBoard(boardId);
-    //        return ResponseEntity.noContent().build();
-    //    }
+    // /**
+    // * Deletes a board and all its associated data.
+    // * Requires admin privileges on the board.
+    // * Disabled for now, I want to implement archiving instead.
+    // *
+    // * @param boardId the ID of the board to delete
+    // * @return no content
+    // */
+    // @DeleteMapping("/{boardId}")
+    // @PreAuthorize("@boardAccess.isAdmin(#boardId)")
+    // public ResponseEntity<Void> deleteBoard(@PathVariable UUID boardId) {
+    // boardService.deleteBoard(boardId);
+    // return ResponseEntity.noContent().build();
+    // }
 
     /**
      * Adds a new collaborator to a board with the specified role. Requires admin privileges on the
@@ -170,20 +167,5 @@ public class BoardController {
             @Valid @RequestBody RoleUpdateRequest req) {
         boardService.updateCollaboratorRole(boardId, userId, req.newRole());
         return ResponseEntity.ok().build();
-    }
-
-    /**
-     * SSE endpoint for real-time board updates. Establishes a Server-Sent Events connection to
-     * receive live updates when tasks or the board are modified. Requires the user to be a
-     * collaborator on the board.
-     *
-     * @param boardId the ID of the board to subscribe to
-     * @return SseEmitter for the connection
-     */
-    @GetMapping(value = "/{boardId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
-    public SseEmitter streamEvents(@NonNull @PathVariable UUID boardId) {
-        log.debug("Client requesting SSE connection for board: {}", boardId);
-        return sseService.subscribe(boardId);
     }
 }
