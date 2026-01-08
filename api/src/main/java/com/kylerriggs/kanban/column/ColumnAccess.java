@@ -7,6 +7,7 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class ColumnAccess extends BaseAccess {
      * @return true if the user is a collaborator
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isCollaborator(UUID columnId) {
+    public boolean isCollaborator(@NonNull UUID columnId) {
         Column column =
                 columnRepository
                         .findById(columnId)
@@ -45,7 +46,7 @@ public class ColumnAccess extends BaseAccess {
      * @return true if the user is an admin
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isAdmin(UUID columnId) {
+    public boolean isAdmin(@NonNull UUID columnId) {
         Column column =
                 columnRepository
                         .findById(columnId)

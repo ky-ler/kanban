@@ -5,6 +5,7 @@ import com.kylerriggs.kanban.websocket.dto.BoardEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,7 @@ public class WebSocketEventService {
      * @param boardId the board ID to broadcast to
      * @param event the event to broadcast
      */
-    public void broadcast(UUID boardId, BoardEvent event) {
+    public void broadcast(@NonNull UUID boardId, @NonNull BoardEvent event) {
         String destination = "/topic/boards/" + boardId;
         log.info("WebSocket broadcasting: {} to {}", event.type(), destination);
         messagingTemplate.convertAndSend(destination, event);

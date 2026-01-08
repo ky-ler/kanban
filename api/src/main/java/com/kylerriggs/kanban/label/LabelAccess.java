@@ -7,6 +7,7 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class LabelAccess extends BaseAccess {
      * @throws ResourceNotFoundException if the label doesn't exist
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isCollaborator(UUID labelId) {
+    public boolean isCollaborator(@NonNull UUID labelId) {
         Label label =
                 labelRepository
                         .findByIdWithBoard(labelId)

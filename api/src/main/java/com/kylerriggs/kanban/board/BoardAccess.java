@@ -6,6 +6,7 @@ import com.kylerriggs.kanban.exception.ForbiddenException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class BoardAccess extends BaseAccess {
      * @return true if the user is a collaborator, false otherwise
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isCollaborator(UUID boardId) {
+    public boolean isCollaborator(@NonNull UUID boardId) {
         String requestUserId = currentUserId();
         boolean requestUserIsCollaborator =
                 boardUserRepository.existsByBoardIdAndUserId(boardId, requestUserId);
@@ -49,7 +50,7 @@ public class BoardAccess extends BaseAccess {
      * @return true if the user is an admin, false otherwise
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isAdmin(UUID boardId) {
+    public boolean isAdmin(@NonNull UUID boardId) {
         String requestUserId = currentUserId();
         boolean requestUserIsAdmin =
                 boardUserRepository.existsByBoardIdAndUserIdAndRole(
@@ -68,7 +69,7 @@ public class BoardAccess extends BaseAccess {
      * @return "true" if the user is the creator, "false" otherwise
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isCreator(UUID boardId) {
+    public boolean isCreator(@NonNull UUID boardId) {
         String requestUserId = currentUserId();
         boolean requestUserIsCreator =
                 boardRepository.existsByIdAndCreatedById(boardId, requestUserId);

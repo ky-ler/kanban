@@ -7,6 +7,7 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,7 @@ public class CommentAccess extends BaseAccess {
      * Checks if the current user is the author of the comment. Required for edit/delete operations.
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isAuthor(UUID commentId) {
+    public boolean isAuthor(@NonNull UUID commentId) {
         String requestUserId = currentUserId();
 
         Comment comment =

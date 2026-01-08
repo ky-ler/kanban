@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -29,7 +31,7 @@ public class BoardEventPublisher {
      * @param boardId The board ID to broadcast to
      * @param entityId The ID of the entity that changed (can be null)
      */
-    public void publish(String type, UUID boardId, UUID entityId) {
+    public void publish(@NonNull String type, @NonNull UUID boardId, @Nullable UUID entityId) {
         log.info("Publishing event: type={}, boardId={}, entityId={}", type, boardId, entityId);
         BoardEvent event = new BoardEvent(type, boardId, entityId, null);
         eventPublisher.publishEvent(new BoardEventWrapper(event));

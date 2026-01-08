@@ -6,6 +6,7 @@ import com.kylerriggs.kanban.exception.ForbiddenException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,7 @@ public class TaskAccess extends BaseAccess {
      * All board collaborators have access to view and modify tasks.
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isCollaborator(UUID taskId) {
+    public boolean isCollaborator(@NonNull UUID taskId) {
         String requestUserId = currentUserId();
         boolean requestUserIsCollaborator =
                 taskRepository.isUserAuthorizedForTask(taskId, requestUserId);

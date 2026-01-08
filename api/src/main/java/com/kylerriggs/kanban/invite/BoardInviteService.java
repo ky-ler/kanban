@@ -88,7 +88,7 @@ public class BoardInviteService {
     }
 
     @Transactional(readOnly = true)
-    public List<BoardInviteDto> getInvitesForBoard(UUID boardId) {
+    public List<BoardInviteDto> getInvitesForBoard(@NonNull UUID boardId) {
         return inviteRepository.findActiveByBoardId(boardId).stream()
                 .map(inviteMapper::toDto)
                 .toList();
