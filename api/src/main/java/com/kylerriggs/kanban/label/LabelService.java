@@ -7,9 +7,9 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.label.dto.LabelDto;
 import com.kylerriggs.kanban.label.dto.LabelRequest;
 import com.kylerriggs.kanban.label.dto.LabelSummaryDto;
-import com.kylerriggs.kanban.sse.BoardEventPublisher;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
+import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.RequiredArgsConstructor;
 
