@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -24,6 +26,7 @@ public class BoardAccess extends BaseAccess {
      * @param boardId the ID of the board to check
      * @return true if the user is a collaborator, false otherwise
      */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isCollaborator(UUID boardId) {
         String requestUserId = currentUserId();
         boolean requestUserIsCollaborator =
@@ -45,6 +48,7 @@ public class BoardAccess extends BaseAccess {
      * @param boardId the ID of the board to check
      * @return true if the user is an admin, false otherwise
      */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isAdmin(UUID boardId) {
         String requestUserId = currentUserId();
         boolean requestUserIsAdmin =
@@ -63,6 +67,7 @@ public class BoardAccess extends BaseAccess {
      * @param boardId the ID of the board to check
      * @return "true" if the user is the creator, "false" otherwise
      */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isCreator(UUID boardId) {
         String requestUserId = currentUserId();
         boolean requestUserIsCreator =

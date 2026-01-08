@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -24,6 +26,7 @@ public class ColumnAccess extends BaseAccess {
      * @param columnId the ID of the column
      * @return true if the user is a collaborator
      */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isCollaborator(UUID columnId) {
         Column column =
                 columnRepository
@@ -41,6 +44,7 @@ public class ColumnAccess extends BaseAccess {
      * @param columnId the ID of the column
      * @return true if the user is an admin
      */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isAdmin(UUID columnId) {
         Column column =
                 columnRepository

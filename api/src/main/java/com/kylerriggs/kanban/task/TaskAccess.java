@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -20,6 +22,7 @@ public class TaskAccess extends BaseAccess {
      * Checks if the current user is a collaborator/creator of the board that the column belongs to.
      * All board collaborators have access to view and modify tasks.
      */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isCollaborator(UUID taskId) {
         String requestUserId = currentUserId();
         boolean requestUserIsCollaborator =

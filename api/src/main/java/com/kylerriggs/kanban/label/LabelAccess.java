@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -25,6 +27,7 @@ public class LabelAccess extends BaseAccess {
      * @return true if the user is a collaborator on the label's board
      * @throws ResourceNotFoundException if the label doesn't exist
      */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isCollaborator(UUID labelId) {
         Label label =
                 labelRepository
