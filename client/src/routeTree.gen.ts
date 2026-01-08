@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as ProtectedRouteImport } from './routes/_protected/route'
 import { Route as IndexImport } from './routes/index'
+import { Route as InviteCodeImport } from './routes/invite/$code'
 import { Route as ProtectedSettingsImport } from './routes/_protected/settings'
 import { Route as ProtectedHomeImport } from './routes/_protected/home'
 import { Route as ProtectedBoardsCreateImport } from './routes/_protected/boards/create'
@@ -32,6 +33,12 @@ const ProtectedRouteRoute = ProtectedRouteImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const InviteCodeRoute = InviteCodeImport.update({
+  id: '/invite/$code',
+  path: '/invite/$code',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -119,6 +126,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof ProtectedSettingsImport
       parentRoute: typeof ProtectedRouteImport
+    }
+    '/invite/$code': {
+      id: '/invite/$code'
+      path: '/invite/$code'
+      fullPath: '/invite/$code'
+      preLoaderRoute: typeof InviteCodeImport
+      parentRoute: typeof rootRoute
     }
     '/_protected/boards/$boardId': {
       id: '/_protected/boards/$boardId'
@@ -213,6 +227,7 @@ export interface FileRoutesByFullPath {
   '': typeof ProtectedRouteRouteWithChildren
   '/home': typeof ProtectedHomeRoute
   '/settings': typeof ProtectedSettingsRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards/create': typeof ProtectedBoardsCreateRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
@@ -226,6 +241,7 @@ export interface FileRoutesByTo {
   '': typeof ProtectedRouteRouteWithChildren
   '/home': typeof ProtectedHomeRoute
   '/settings': typeof ProtectedSettingsRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards/create': typeof ProtectedBoardsCreateRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
@@ -240,6 +256,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/_protected/home': typeof ProtectedHomeRoute
   '/_protected/settings': typeof ProtectedSettingsRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/_protected/boards/create': typeof ProtectedBoardsCreateRoute
   '/_protected/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
@@ -255,6 +272,7 @@ export interface FileRouteTypes {
     | ''
     | '/home'
     | '/settings'
+    | '/invite/$code'
     | '/boards/$boardId'
     | '/boards/create'
     | '/boards/$boardId/collaborators'
@@ -267,6 +285,7 @@ export interface FileRouteTypes {
     | ''
     | '/home'
     | '/settings'
+    | '/invite/$code'
     | '/boards/$boardId'
     | '/boards/create'
     | '/boards/$boardId/collaborators'
@@ -279,6 +298,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/_protected/home'
     | '/_protected/settings'
+    | '/invite/$code'
     | '/_protected/boards/$boardId'
     | '/_protected/boards/create'
     | '/_protected/boards/$boardId/collaborators'
@@ -291,11 +311,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  InviteCodeRoute: typeof InviteCodeRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
+  InviteCodeRoute: InviteCodeRoute,
 }
 
 export const routeTree = rootRoute
@@ -309,7 +331,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/_protected"
+        "/_protected",
+        "/invite/$code"
       ]
     },
     "/": {
@@ -331,6 +354,9 @@ export const routeTree = rootRoute
     "/_protected/settings": {
       "filePath": "_protected/settings.tsx",
       "parent": "/_protected"
+    },
+    "/invite/$code": {
+      "filePath": "invite/$code.tsx"
     },
     "/_protected/boards/$boardId": {
       "filePath": "_protected/boards/$boardId.tsx",
