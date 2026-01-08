@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +30,8 @@ public class LabelController {
      */
     @GetMapping("/boards/{boardId}/labels")
     @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
-    public ResponseEntity<List<LabelSummaryDto>> getLabelsByBoard(@PathVariable UUID boardId) {
+    public ResponseEntity<List<LabelSummaryDto>> getLabelsByBoard(
+            @NonNull @PathVariable UUID boardId) {
         return ResponseEntity.ok(labelService.getLabelsByBoard(boardId));
     }
 
@@ -41,7 +43,7 @@ public class LabelController {
      */
     @GetMapping("/labels/{labelId}")
     @PreAuthorize("@labelAccess.isCollaborator(#labelId)")
-    public ResponseEntity<LabelDto> getLabel(@PathVariable UUID labelId) {
+    public ResponseEntity<LabelDto> getLabel(@NonNull @PathVariable UUID labelId) {
         return ResponseEntity.ok(labelService.getLabel(labelId));
     }
 
@@ -68,7 +70,7 @@ public class LabelController {
     @PutMapping("/labels/{labelId}")
     @PreAuthorize("@labelAccess.isCollaborator(#labelId)")
     public ResponseEntity<LabelDto> updateLabel(
-            @PathVariable UUID labelId, @Valid @RequestBody LabelRequest request) {
+            @NonNull @PathVariable UUID labelId, @Valid @RequestBody LabelRequest request) {
         return ResponseEntity.ok(labelService.updateLabel(labelId, request));
     }
 
@@ -80,7 +82,7 @@ public class LabelController {
      */
     @DeleteMapping("/labels/{labelId}")
     @PreAuthorize("@labelAccess.isCollaborator(#labelId)")
-    public ResponseEntity<Void> deleteLabel(@PathVariable UUID labelId) {
+    public ResponseEntity<Void> deleteLabel(@NonNull @PathVariable UUID labelId) {
         labelService.deleteLabel(labelId);
         return ResponseEntity.noContent().build();
     }
@@ -95,7 +97,7 @@ public class LabelController {
     @PostMapping("/tasks/{taskId}/labels/{labelId}")
     @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
     public ResponseEntity<Void> addLabelToTask(
-            @PathVariable UUID taskId, @PathVariable UUID labelId) {
+            @NonNull @PathVariable UUID taskId, @NonNull @PathVariable UUID labelId) {
         labelService.addLabelToTask(taskId, labelId);
         return ResponseEntity.noContent().build();
     }
@@ -110,7 +112,7 @@ public class LabelController {
     @DeleteMapping("/tasks/{taskId}/labels/{labelId}")
     @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
     public ResponseEntity<Void> removeLabelFromTask(
-            @PathVariable UUID taskId, @PathVariable UUID labelId) {
+            @NonNull @PathVariable UUID taskId, @NonNull @PathVariable UUID labelId) {
         labelService.removeLabelFromTask(taskId, labelId);
         return ResponseEntity.noContent().build();
     }

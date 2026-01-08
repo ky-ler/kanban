@@ -123,25 +123,26 @@ public class TaskService {
         User assignedTo = null;
 
         String requestAssigneeId = createTaskRequest.assigneeId();
+
         if (StringUtils.hasText(requestAssigneeId)) {
-            // This null check is only here to prevent Null type safety issues
+            String assigneeId = Objects.requireNonNull(requestAssigneeId);
 
             board.getCollaborators().stream()
-                    .filter(c -> c.getUser().getId().equals(requestAssigneeId))
+                    .filter(c -> c.getUser().getId().equals(assigneeId))
                     .findFirst()
                     .orElseThrow(
                             () ->
                                     new BoardAccessException(
                                             "User is not a collaborator on the board: "
-                                                    + requestAssigneeId));
+                                                    + assigneeId));
 
             assignedTo =
                     userRepository
-                            .findById(requestAssigneeId)
+                            .findById(assigneeId)
                             .orElseThrow(
                                     () ->
                                             new ResourceNotFoundException(
-                                                    "User not found: " + requestAssigneeId));
+                                                    "User not found: " + assigneeId));
         }
 
         // Get the next position (append to end)
@@ -161,7 +162,8 @@ public class TaskService {
                                 .orElseThrow(
                                         () ->
                                                 new BadRequestException(
-                                                        "Label not found or doesn't belong to this board: "
+                                                        "Label not found or doesn't belong to this"
+                                                                + " board: "
                                                                 + labelId));
                 labels.add(label);
             }
@@ -170,9 +172,6 @@ public class TaskService {
 
         // Save task directly to ensure ID is generated before broadcasting
         Task savedTask = taskRepository.save(newTask);
-
-        // Note: Don't manually add to board.getTasks() - JPA manages this via mappedBy relationship
-        // Adding manually with List (not Set) causes duplicates in memory
 
         // Atomically update board's dateModified to avoid optimistic locking conflicts
         boardRepository.touchDateModified(board.getId(), Instant.now());
@@ -257,22 +256,24 @@ public class TaskService {
 
         if (!Objects.equals(oldAssigneeId, requestAssigneeId)) {
             if (StringUtils.hasText(requestAssigneeId)) {
+                String newAssigneeId = Objects.requireNonNull(requestAssigneeId);
+
                 board.getCollaborators().stream()
-                        .filter(c -> c.getUser().getId().equals(requestAssigneeId))
+                        .filter(c -> c.getUser().getId().equals(newAssigneeId))
                         .findFirst()
                         .orElseThrow(
                                 () ->
                                         new BoardAccessException(
                                                 "User is not a collaborator on the board: "
-                                                        + requestAssigneeId));
+                                                        + newAssigneeId));
 
                 User newAssignee =
                         userRepository
-                                .findById(requestAssigneeId)
+                                .findById(newAssigneeId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
-                                                        "User not found: " + requestAssigneeId));
+                                                        "User not found: " + newAssigneeId));
                 taskToUpdate.setAssignedTo(newAssignee);
             } else {
                 taskToUpdate.setAssignedTo(null);
@@ -290,7 +291,8 @@ public class TaskService {
                                 .orElseThrow(
                                         () ->
                                                 new BadRequestException(
-                                                        "Label not found or doesn't belong to this board: "
+                                                        "Label not found or doesn't belong to this"
+                                                                + " board: "
                                                                 + labelId));
                 newLabels.add(label);
             }

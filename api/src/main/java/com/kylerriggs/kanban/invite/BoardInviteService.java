@@ -19,6 +19,7 @@ import com.kylerriggs.kanban.user.UserService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,11 +47,17 @@ public class BoardInviteService {
     @Transactional
     public BoardInviteDto createInvite(CreateInviteRequest request) {
         String userId = userService.getCurrentUserId();
+
+        if (userId == null) {
+            throw new BadRequestException("Invalid user");
+        }
+
         User creator =
                 userRepository
                         .findById(userId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("User not found: " + userId));
+
         Board board =
                 boardRepository
                         .findById(request.boardId())
@@ -73,6 +80,10 @@ public class BoardInviteService {
                         .maxUses(request.maxUses().getUses())
                         .build();
 
+        if (invite == null) {
+            throw new BadRequestException("Failed to create invite");
+        }
+
         return inviteMapper.toDto(inviteRepository.save(invite));
     }
 
@@ -84,7 +95,7 @@ public class BoardInviteService {
     }
 
     @Transactional(readOnly = true)
-    public InvitePreviewDto getInvitePreview(String code) {
+    public InvitePreviewDto getInvitePreview(@NonNull String code) {
         BoardInvite invite =
                 inviteRepository
                         .findByCodeWithBoard(code)
@@ -94,8 +105,13 @@ public class BoardInviteService {
     }
 
     @Transactional
-    public AcceptInviteResponse acceptInvite(String code) {
+    public AcceptInviteResponse acceptInvite(@NonNull String code) {
         String userId = userService.getCurrentUserId();
+
+        if (userId == null) {
+            throw new BadRequestException("Invalid user");
+        }
+
         BoardInvite invite =
                 inviteRepository
                         .findByCodeWithBoard(code)
@@ -155,7 +171,7 @@ public class BoardInviteService {
     }
 
     @Transactional
-    public void revokeInvite(UUID inviteId) {
+    public void revokeInvite(@NonNull UUID inviteId) {
         BoardInvite invite =
                 inviteRepository
                         .findById(inviteId)

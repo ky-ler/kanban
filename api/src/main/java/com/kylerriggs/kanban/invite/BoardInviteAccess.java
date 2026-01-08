@@ -7,6 +7,7 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class BoardInviteAccess extends BaseAccess {
      * @throws ResourceNotFoundException if the invite doesn't exist
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public boolean isAdmin(UUID inviteId) {
+    public boolean isAdmin(@NonNull UUID inviteId) {
         BoardInvite invite =
                 inviteRepository
                         .findById(inviteId)

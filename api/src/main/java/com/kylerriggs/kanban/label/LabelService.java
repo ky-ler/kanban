@@ -38,7 +38,7 @@ public class LabelService {
      * @throws ResourceNotFoundException if the board doesn't exist
      */
     @Transactional
-    public LabelDto createLabel(@NonNull LabelRequest request) {
+    public LabelDto createLabel(LabelRequest request) {
         Board board =
                 boardRepository
                         .findById(request.boardId())
@@ -48,6 +48,11 @@ public class LabelService {
                                                 "Board not found: " + request.boardId()));
 
         Label label = labelMapper.toEntity(request, board);
+
+        if (label == null) {
+            throw new BadRequestException("Failed to create label");
+        }
+
         Label savedLabel = labelRepository.save(label);
 
         board.setDateModified(Instant.now());
@@ -67,7 +72,7 @@ public class LabelService {
      * @throws ResourceNotFoundException if the label doesn't exist
      */
     @Transactional
-    public LabelDto updateLabel(@NonNull UUID labelId, @NonNull LabelRequest request) {
+    public LabelDto updateLabel(@NonNull UUID labelId, LabelRequest request) {
         Label label =
                 labelRepository
                         .findByIdWithBoard(labelId)

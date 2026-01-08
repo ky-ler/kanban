@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,7 +57,7 @@ public class BoardInviteController {
      */
     @DeleteMapping("/invites/{inviteId}")
     @PreAuthorize("@inviteAccess.isAdmin(#inviteId)")
-    public ResponseEntity<Void> revokeInvite(@PathVariable UUID inviteId) {
+    public ResponseEntity<Void> revokeInvite(@NonNull @PathVariable UUID inviteId) {
         inviteService.revokeInvite(inviteId);
         return ResponseEntity.noContent().build();
     }
@@ -69,7 +70,7 @@ public class BoardInviteController {
      * @return the invite preview
      */
     @GetMapping("/invites/{code}/preview")
-    public ResponseEntity<InvitePreviewDto> previewInvite(@PathVariable String code) {
+    public ResponseEntity<InvitePreviewDto> previewInvite(@NonNull @PathVariable String code) {
         return ResponseEntity.ok(inviteService.getInvitePreview(code));
     }
 
@@ -80,7 +81,7 @@ public class BoardInviteController {
      * @return the accept response with board information
      */
     @PostMapping("/invites/{code}/accept")
-    public ResponseEntity<AcceptInviteResponse> acceptInvite(@PathVariable String code) {
+    public ResponseEntity<AcceptInviteResponse> acceptInvite(@NonNull @PathVariable String code) {
         return ResponseEntity.ok(inviteService.acceptInvite(code));
     }
 }
