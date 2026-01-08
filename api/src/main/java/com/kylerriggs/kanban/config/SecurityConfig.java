@@ -45,7 +45,9 @@ public class SecurityConfig {
                                                 "/configuration/security",
                                                 "/swagger-ui/**",
                                                 "/swagger-ui.html",
-                                                "/webjars/**")
+                                                "/webjars/**",
+                                                "/invites/*/preview",
+                                                "/ws/**") // WebSocket - auth via STOMP
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())
@@ -75,19 +77,13 @@ public class SecurityConfig {
     }
 
     /**
-     * Configures bearer token resolution to allow JWT extraction from both the Authorization header
-     * and query parameter (?access_token=...). Query parameter support is required for Server-Sent
-     * Events (SSE) since the browser's EventSource API cannot send custom headers.
+     * Configures bearer token resolution. Default behavior is to look for Authorization: Bearer
+     * <token> header.
      *
-     * <p>Security Note: Query parameters may be logged by web servers and proxies. For production,
-     * consider using short-lived tokens for SSE connections or implementing token refresh.
-     *
-     * @return BearerTokenResolver supporting both header and query parameter token extraction
+     * @return BearerTokenResolver
      */
     @Bean
     public BearerTokenResolver bearerTokenResolver() {
-        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
-        resolver.setAllowUriQueryParameter(true);
-        return resolver;
+        return new DefaultBearerTokenResolver();
     }
 }
