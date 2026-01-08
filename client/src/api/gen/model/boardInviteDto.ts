@@ -6,13 +6,16 @@
  */
 import type { UserSummaryDto } from "./userSummaryDto";
 
-export interface ActivityLogDto {
+export interface BoardInviteDto {
   id: string;
   /** @minLength 1 */
-  type: string;
-  details?: string;
-  taskId: string;
-  user: UserSummaryDto;
+  code: string;
+  boardId: string;
+  createdBy: UserSummaryDto;
+  expiresAt?: string;
+  maxUses?: number;
+  useCount: number;
+  revoked: boolean;
   /** @minLength 1 */
   dateCreated: string;
 }

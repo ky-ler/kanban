@@ -5,10 +5,9 @@
  * OpenAPI spec version: v0
  */
 
-export interface ColumnDto {
-  id: string;
+export interface InvitePreviewDto {
   /** @minLength 1 */
-  name: string;
-  /** @minimum 0 */
-  position: number;
+  boardName: string;
+  valid: boolean;
+  errorMessage?: string;
 }

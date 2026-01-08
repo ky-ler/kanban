@@ -5,10 +5,7 @@
  * OpenAPI spec version: v0
  */
 
-export interface ColumnDto {
-  id: string;
+export interface CommentRequest {
   /** @minLength 1 */
-  name: string;
-  /** @minimum 0 */
-  position: number;
+  content: string;
 }

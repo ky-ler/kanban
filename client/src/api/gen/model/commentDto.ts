@@ -6,13 +6,13 @@
  */
 import type { UserSummaryDto } from "./userSummaryDto";
 
-export interface ActivityLogDto {
+export interface CommentDto {
   id: string;
   /** @minLength 1 */
-  type: string;
-  details?: string;
+  content: string;
+  author: UserSummaryDto;
   taskId: string;
-  user: UserSummaryDto;
   /** @minLength 1 */
   dateCreated: string;
+  dateModified?: string;
 }
