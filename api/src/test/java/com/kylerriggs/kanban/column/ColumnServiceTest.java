@@ -13,8 +13,8 @@ import com.kylerriggs.kanban.column.dto.MoveColumnRequest;
 import com.kylerriggs.kanban.column.dto.UpdateColumnRequest;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
-import com.kylerriggs.kanban.sse.SseService;
 import com.kylerriggs.kanban.user.User;
+import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -38,7 +38,7 @@ class ColumnServiceTest {
     @Mock private ColumnRepository columnRepository;
     @Mock private ColumnMapper columnMapper;
     @Mock private BoardRepository boardRepository;
-    @Mock private SseService sseService;
+    @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private ColumnService columnService;
 
     private User user;
@@ -95,7 +95,7 @@ class ColumnServiceTest {
             assertEquals(3, result.position());
             verify(columnRepository, never()).incrementPositionsFrom(any(), anyInt());
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq("COLUMN_CREATED"), eq(BOARD_ID), any());
         }
 
         @Test
@@ -155,7 +155,7 @@ class ColumnServiceTest {
             // Then
             assertEquals("Renamed Column", result.name());
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq("COLUMN_UPDATED"), eq(BOARD_ID), any());
         }
 
         @Test
@@ -186,7 +186,7 @@ class ColumnServiceTest {
             verify(columnRepository).decrementPositionsAfter(BOARD_ID, 0);
             verify(columnRepository).delete(column);
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq("COLUMN_DELETED"), eq(BOARD_ID), any());
         }
 
         @Test
@@ -247,7 +247,7 @@ class ColumnServiceTest {
             assertEquals(3, column.getPosition());
             verify(columnRepository).decrementPositionsInRange(BOARD_ID, 1, 3);
             verify(boardRepository).save(board);
-            verify(sseService).broadcast(eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq("COLUMN_MOVED"), eq(BOARD_ID), any());
         }
 
         @Test

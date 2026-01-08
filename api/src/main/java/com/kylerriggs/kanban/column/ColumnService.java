@@ -8,8 +8,7 @@ import com.kylerriggs.kanban.column.dto.MoveColumnRequest;
 import com.kylerriggs.kanban.column.dto.UpdateColumnRequest;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
-import com.kylerriggs.kanban.sse.SseService;
-import com.kylerriggs.kanban.sse.dto.BoardEvent;
+import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -26,7 +25,7 @@ public class ColumnService {
     private final ColumnRepository columnRepository;
     private final ColumnMapper columnMapper;
     private final BoardRepository boardRepository;
-    private final SseService sseService;
+    private final BoardEventPublisher eventPublisher;
 
     /**
      * Creates a new column in the specified board.
@@ -61,9 +60,8 @@ public class ColumnService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        // Broadcast SSE event
-        BoardEvent event = new BoardEvent("COLUMN_CREATED", boardId, column.getId(), null);
-        sseService.broadcast(boardId, event);
+        // Broadcast event via WebSocket
+        eventPublisher.publish("COLUMN_CREATED", boardId, column.getId());
 
         return columnMapper.toDto(column);
     }
@@ -92,9 +90,8 @@ public class ColumnService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        // Broadcast SSE event
-        BoardEvent event = new BoardEvent("COLUMN_UPDATED", board.getId(), columnId, null);
-        sseService.broadcast(board.getId(), event);
+        // Broadcast event via WebSocket
+        eventPublisher.publish("COLUMN_UPDATED", board.getId(), columnId);
 
         return columnMapper.toDto(column);
     }
@@ -133,9 +130,8 @@ public class ColumnService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        // Broadcast SSE event
-        BoardEvent event = new BoardEvent("COLUMN_DELETED", boardId, columnId, null);
-        sseService.broadcast(boardId, event);
+        // Broadcast event via WebSocket
+        eventPublisher.publish("COLUMN_DELETED", boardId, columnId);
     }
 
     /**
@@ -188,8 +184,7 @@ public class ColumnService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        // Broadcast SSE event
-        BoardEvent event = new BoardEvent("COLUMN_MOVED", boardId, columnId, null);
-        sseService.broadcast(boardId, event);
+        // Broadcast event via WebSocket
+        eventPublisher.publish("COLUMN_MOVED", boardId, columnId);
     }
 }

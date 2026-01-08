@@ -27,14 +27,14 @@ public class ColumnController {
     private final ColumnService columnService;
 
     /**
-     * Creates a new column in the specified board. Requires admin privileges on the board.
+     * Creates a new column in the specified board. Requires collaborator access on the board.
      *
      * @param boardId the ID of the board
      * @param request the column creation request
      * @return the created column DTO with location header
      */
     @PostMapping
-    @PreAuthorize("@boardAccess.isAdmin(#boardId)")
+    @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
     public ResponseEntity<ColumnDto> createColumn(
             @NonNull @PathVariable UUID boardId,
             @NonNull @Valid @RequestBody CreateColumnRequest request) {
@@ -50,7 +50,7 @@ public class ColumnController {
     }
 
     /**
-     * Updates a column's name. Requires admin privileges on the board.
+     * Updates a column's name. Requires collaborator access on the board.
      *
      * @param boardId the ID of the board (for URL structure)
      * @param columnId the ID of the column to update
@@ -58,7 +58,7 @@ public class ColumnController {
      * @return the updated column DTO
      */
     @PutMapping("/{columnId}")
-    @PreAuthorize("@columnAccess.isAdmin(#columnId)")
+    @PreAuthorize("@columnAccess.isCollaborator(#columnId)")
     public ResponseEntity<ColumnDto> updateColumn(
             @NonNull @PathVariable UUID boardId,
             @NonNull @PathVariable UUID columnId,
@@ -68,15 +68,15 @@ public class ColumnController {
     }
 
     /**
-     * Deletes a column from the board. Requires admin privileges. Fails if the column contains any
-     * tasks.
+     * Deletes a column from the board. Requires collaborator access. Fails if the column contains
+     * any tasks.
      *
      * @param boardId the ID of the board (for URL structure)
      * @param columnId the ID of the column to delete
      * @return no content
      */
     @DeleteMapping("/{columnId}")
-    @PreAuthorize("@columnAccess.isAdmin(#columnId)")
+    @PreAuthorize("@columnAccess.isCollaborator(#columnId)")
     public ResponseEntity<Void> deleteColumn(
             @NonNull @PathVariable UUID boardId, @NonNull @PathVariable UUID columnId) {
         columnService.deleteColumn(columnId);
@@ -84,7 +84,7 @@ public class ColumnController {
     }
 
     /**
-     * Moves a column to a new position within the board. Requires admin privileges. Uses
+     * Moves a column to a new position within the board. Requires collaborator access. Uses
      * pessimistic locking to handle concurrent modifications.
      *
      * @param boardId the ID of the board (for URL structure)
@@ -93,7 +93,7 @@ public class ColumnController {
      * @return no content
      */
     @PatchMapping("/{columnId}/move")
-    @PreAuthorize("@columnAccess.isAdmin(#columnId)")
+    @PreAuthorize("@columnAccess.isCollaborator(#columnId)")
     public ResponseEntity<Void> moveColumn(
             @NonNull @PathVariable UUID boardId,
             @NonNull @PathVariable UUID columnId,
