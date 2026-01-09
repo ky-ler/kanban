@@ -144,4 +144,3 @@ export const TaskItem = ({
     </Item>
   );
 };
-export default TaskItem;
