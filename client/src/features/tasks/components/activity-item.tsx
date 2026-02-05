@@ -85,6 +85,14 @@ function formatActivityDetails(
       }
       return parts.length > 0 ? `Changed ${parts.join(" and ")}` : null;
     }
+    case "TASK_MOVED": {
+      const oldCol = details.oldColumnName as string | undefined;
+      const newCol = details.newColumnName as string | undefined;
+      if (oldCol && newCol && oldCol !== newCol) {
+        return `From ${oldCol} to ${newCol}`;
+      }
+      return null;
+    }
     case "ASSIGNEE_CHANGED": {
       const newUsername = details.newAssigneeUsername as string | undefined;
       if (newUsername) {

@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+  createFileRoute,
+  Link,
+  Outlet,
+  useNavigate,
+} from "@tanstack/react-router";
 import { Check, Pencil, Users, X } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -66,26 +65,16 @@ function BoardComponent() {
   const queryClient = useQueryClient();
   const auth = useAuth0Context();
   const { data: board, isLoading, error } = useGetBoardSuspense(boardId);
-
-  // Inline editing state
-  const [editingField, setEditingField] = useState<EditingField>(null);
-  const [editValue, setEditValue] = useState("");
-
-  // Subscribe to real-time board events
   useBoardSubscription(boardId);
-
-  // Parse filters from URL search params
   const filters = parseFiltersFromSearch(search);
-
-  // Local state for search input (for debouncing)
   const [searchInput, setSearchInput] = useState(filters.query ?? "");
+  const [editValue, setEditValue] = useState("");
+  const [editingField, setEditingField] = useState<EditingField>(null);
 
-  // Sync searchInput with URL when navigating back/forward
   useEffect(() => {
     setSearchInput(filters.query ?? "");
   }, [filters.query]);
 
-  // Handle filter changes
   const handleFiltersChange = (newFilters: TaskFilters) => {
     const searchParams = filtersToSearchParams(newFilters);
     navigate({
@@ -95,13 +84,15 @@ function BoardComponent() {
     });
   };
 
-  // Debounce URL update for search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput !== (filters.query ?? "")) {
         navigate({
           to: ".",
-          search: filtersToSearchParams({ ...filters, query: searchInput || undefined }),
+          search: filtersToSearchParams({
+            ...filters,
+            query: searchInput || undefined,
+          }),
           replace: true,
         });
       }
@@ -109,14 +100,12 @@ function BoardComponent() {
     return () => clearTimeout(timer);
   }, [searchInput, filters, navigate]);
 
-  // Check if current user is admin
   const currentUserId = auth?.user?.sub;
   const currentUserRole = board?.data.collaborators.find(
     (collaborator) => collaborator.user?.id.toString() === currentUserId,
   )?.role;
   const isAdmin = currentUserRole === CollaboratorDtoRole.ADMIN;
 
-  // Update board mutation
   const updateBoardMutation = useUpdateBoard({
     mutation: {
       onSuccess: () => {
@@ -134,7 +123,6 @@ function BoardComponent() {
   const saveField = (field: "name" | "description", value: string) => {
     if (!board) return;
 
-    // Don't save if name is empty
     if (field === "name" && !value.trim()) {
       setEditingField(null);
       return;
@@ -162,60 +150,62 @@ function BoardComponent() {
     );
   }
 
-  // Filter tasks based on active filters
   const filteredTasks = filterTasks(board.data.tasks ?? [], filters);
 
   return (
     <>
-      {/* Board Info */}
-      <div className="px-4 pt-6">
-        <Card>
-          <CardHeader className="flex flex-col items-center justify-between sm:flex-row">
-            <div className="flex-1 min-w-0">
-              <EditableBoardName
-                value={board.data.name}
-                isEditing={editingField === "name"}
-                canEdit={isAdmin}
-                onEdit={() => {
-                  setEditValue(board.data.name);
-                  setEditingField("name");
-                }}
-                onSave={(value) => saveField("name", value)}
-                onCancel={() => setEditingField(null)}
-                editValue={editValue}
-                setEditValue={setEditValue}
-              />
-              <EditableBoardDescription
-                value={board.data.description ?? ""}
-                isEditing={editingField === "description"}
-                canEdit={isAdmin}
-                onEdit={() => {
-                  setEditValue(board.data.description ?? "");
-                  setEditingField("description");
-                }}
-                onSave={(value) => saveField("description", value)}
-                onCancel={() => setEditingField(null)}
-                editValue={editValue}
-                setEditValue={setEditValue}
-              />
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row mt-4 sm:mt-0 shrink-0">
-              <Button variant="outline" size="sm" asChild>
-                <Link
-                  to={"/boards/$boardId/collaborators"}
-                  params={{ boardId }}
-                  search={{ q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined }}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Collaborators
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-        </Card>
+      {/* Board Info Header */}
+      <div className="flex items-center justify-between px-4 pt-4">
+        <div className="min-w-0 flex-1">
+          <EditableBoardName
+            value={board.data.name}
+            isEditing={editingField === "name"}
+            canEdit={isAdmin}
+            onEdit={() => {
+              setEditValue(board.data.name);
+              setEditingField("name");
+            }}
+            onSave={(value) => saveField("name", value)}
+            onCancel={() => setEditingField(null)}
+            editValue={editValue}
+            setEditValue={setEditValue}
+          />
+          <EditableBoardDescription
+            value={board.data.description ?? ""}
+            isEditing={editingField === "description"}
+            canEdit={isAdmin}
+            onEdit={() => {
+              setEditValue(board.data.description ?? "");
+              setEditingField("description");
+            }}
+            onSave={(value) => saveField("description", value)}
+            onCancel={() => setEditingField(null)}
+            editValue={editValue}
+            setEditValue={setEditValue}
+          />
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+          <Button asChild>
+            <Link
+              to={"/boards/$boardId/collaborators"}
+              params={{ boardId }}
+              search={{
+                q: undefined,
+                assignee: undefined,
+                priority: undefined,
+                labels: undefined,
+                due: undefined,
+              }}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Collaborators
+            </Link>
+          </Button>
+        </div>
       </div>
+
       {/* Filter Bar */}
-      <div className="px-4 pt-4">
+      <div className="px-4">
         <TaskFilterBar
           boardId={boardId}
           collaborators={board.data.collaborators ?? []}
@@ -279,7 +269,7 @@ function EditableBoardName({
               onCancel();
             }
           }}
-          className="text-2xl font-bold h-auto py-1"
+          className="h-auto py-1 text-3xl font-bold tracking-tight"
         />
         <Button size="icon" variant="ghost" onClick={() => onSave(editValue)}>
           <Check className="h-4 w-4" />
@@ -292,18 +282,18 @@ function EditableBoardName({
   }
 
   return (
-    <CardTitle
+    <h1
       className={cn(
-        "text-2xl font-bold",
-        canEdit && "cursor-pointer hover:text-primary transition-colors group",
+        "text-3xl font-bold tracking-tight",
+        canEdit && "hover:text-primary group cursor-pointer transition-colors",
       )}
       onClick={canEdit ? onEdit : undefined}
     >
       {value}
       {canEdit && (
-        <Pencil className="ml-2 inline h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
+        <Pencil className="ml-2 inline h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
       )}
-    </CardTitle>
+    </h1>
   );
 }
 
@@ -366,16 +356,19 @@ function EditableBoardDescription({
   }
 
   return (
-    <CardDescription
+    <p
       className={cn(
-        canEdit && "cursor-pointer hover:text-foreground transition-colors group",
+        "text-muted-foreground",
+        canEdit &&
+          "hover:text-foreground group cursor-pointer transition-colors",
       )}
       onClick={canEdit ? onEdit : undefined}
     >
-      {value || (canEdit ? "Click to add a description..." : "No description provided")}
+      {value ||
+        (canEdit ? "Click to add a description..." : "No description provided")}
       {canEdit && value && (
-        <Pencil className="ml-1 inline h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+        <Pencil className="ml-1 inline h-3 w-3 opacity-0 transition-opacity group-hover:opacity-50" />
       )}
-    </CardDescription>
+    </p>
   );
 }

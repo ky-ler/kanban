@@ -30,7 +30,7 @@ function RootComponent() {
           </div>
           <ThemeToggle />
         </header>
-        <div className="flex h-full flex-col gap-6">
+        <div className="flex h-full flex-col gap-4">
           <Outlet />
         </div>
       </SidebarInset>

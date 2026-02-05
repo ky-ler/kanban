@@ -364,7 +364,7 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
           </ItemOverlay>
         ) : activeItem?.type === "column" ? (
           <ItemOverlay>
-            <Card className="h-fit gap-2 sm:min-w-3xs opacity-90">
+            <Card className="h-fit gap-2 opacity-90 sm:min-w-3xs">
               <CardHeader>
                 <CardTitle className="text-base">
                   {(activeItem.data as ColumnDto).name}

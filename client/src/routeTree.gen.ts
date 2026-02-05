@@ -20,7 +20,6 @@ import { Route as ProtectedBoardsCreateImport } from './routes/_protected/boards
 import { Route as ProtectedBoardsBoardIdImport } from './routes/_protected/boards/$boardId'
 import { Route as ProtectedBoardsBoardIdEditImport } from './routes/_protected/boards/$boardId/edit'
 import { Route as ProtectedBoardsBoardIdCollaboratorsImport } from './routes/_protected/boards/$boardId/collaborators'
-import { Route as ProtectedBoardsBoardIdTasksCreateImport } from './routes/_protected/boards/$boardId.tasks/create'
 import { Route as ProtectedBoardsBoardIdTasksTaskIdImport } from './routes/_protected/boards/$boardId.tasks/$taskId'
 
 // Create/Update Routes
@@ -78,13 +77,6 @@ const ProtectedBoardsBoardIdCollaboratorsRoute =
   ProtectedBoardsBoardIdCollaboratorsImport.update({
     id: '/collaborators',
     path: '/collaborators',
-    getParentRoute: () => ProtectedBoardsBoardIdRoute,
-  } as any)
-
-const ProtectedBoardsBoardIdTasksCreateRoute =
-  ProtectedBoardsBoardIdTasksCreateImport.update({
-    id: '/tasks/create',
-    path: '/tasks/create',
     getParentRoute: () => ProtectedBoardsBoardIdRoute,
   } as any)
 
@@ -169,13 +161,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedBoardsBoardIdTasksTaskIdImport
       parentRoute: typeof ProtectedBoardsBoardIdImport
     }
-    '/_protected/boards/$boardId/tasks/create': {
-      id: '/_protected/boards/$boardId/tasks/create'
-      path: '/tasks/create'
-      fullPath: '/boards/$boardId/tasks/create'
-      preLoaderRoute: typeof ProtectedBoardsBoardIdTasksCreateImport
-      parentRoute: typeof ProtectedBoardsBoardIdImport
-    }
   }
 }
 
@@ -185,7 +170,6 @@ interface ProtectedBoardsBoardIdRouteChildren {
   ProtectedBoardsBoardIdCollaboratorsRoute: typeof ProtectedBoardsBoardIdCollaboratorsRoute
   ProtectedBoardsBoardIdEditRoute: typeof ProtectedBoardsBoardIdEditRoute
   ProtectedBoardsBoardIdTasksTaskIdRoute: typeof ProtectedBoardsBoardIdTasksTaskIdRoute
-  ProtectedBoardsBoardIdTasksCreateRoute: typeof ProtectedBoardsBoardIdTasksCreateRoute
 }
 
 const ProtectedBoardsBoardIdRouteChildren: ProtectedBoardsBoardIdRouteChildren =
@@ -195,8 +179,6 @@ const ProtectedBoardsBoardIdRouteChildren: ProtectedBoardsBoardIdRouteChildren =
     ProtectedBoardsBoardIdEditRoute: ProtectedBoardsBoardIdEditRoute,
     ProtectedBoardsBoardIdTasksTaskIdRoute:
       ProtectedBoardsBoardIdTasksTaskIdRoute,
-    ProtectedBoardsBoardIdTasksCreateRoute:
-      ProtectedBoardsBoardIdTasksCreateRoute,
   }
 
 const ProtectedBoardsBoardIdRouteWithChildren =
@@ -233,7 +215,6 @@ export interface FileRoutesByFullPath {
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
   '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
-  '/boards/$boardId/tasks/create': typeof ProtectedBoardsBoardIdTasksCreateRoute
 }
 
 export interface FileRoutesByTo {
@@ -247,7 +228,6 @@ export interface FileRoutesByTo {
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
   '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
-  '/boards/$boardId/tasks/create': typeof ProtectedBoardsBoardIdTasksCreateRoute
 }
 
 export interface FileRoutesById {
@@ -262,7 +242,6 @@ export interface FileRoutesById {
   '/_protected/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/_protected/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
   '/_protected/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
-  '/_protected/boards/$boardId/tasks/create': typeof ProtectedBoardsBoardIdTasksCreateRoute
 }
 
 export interface FileRouteTypes {
@@ -278,7 +257,6 @@ export interface FileRouteTypes {
     | '/boards/$boardId/collaborators'
     | '/boards/$boardId/edit'
     | '/boards/$boardId/tasks/$taskId'
-    | '/boards/$boardId/tasks/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -291,7 +269,6 @@ export interface FileRouteTypes {
     | '/boards/$boardId/collaborators'
     | '/boards/$boardId/edit'
     | '/boards/$boardId/tasks/$taskId'
-    | '/boards/$boardId/tasks/create'
   id:
     | '__root__'
     | '/'
@@ -304,7 +281,6 @@ export interface FileRouteTypes {
     | '/_protected/boards/$boardId/collaborators'
     | '/_protected/boards/$boardId/edit'
     | '/_protected/boards/$boardId/tasks/$taskId'
-    | '/_protected/boards/$boardId/tasks/create'
   fileRoutesById: FileRoutesById
 }
 
@@ -364,8 +340,7 @@ export const routeTree = rootRoute
       "children": [
         "/_protected/boards/$boardId/collaborators",
         "/_protected/boards/$boardId/edit",
-        "/_protected/boards/$boardId/tasks/$taskId",
-        "/_protected/boards/$boardId/tasks/create"
+        "/_protected/boards/$boardId/tasks/$taskId"
       ]
     },
     "/_protected/boards/create": {
@@ -382,10 +357,6 @@ export const routeTree = rootRoute
     },
     "/_protected/boards/$boardId/tasks/$taskId": {
       "filePath": "_protected/boards/$boardId.tasks/$taskId.tsx",
-      "parent": "/_protected/boards/$boardId"
-    },
-    "/_protected/boards/$boardId/tasks/create": {
-      "filePath": "_protected/boards/$boardId.tasks/create.tsx",
       "parent": "/_protected/boards/$boardId"
     }
   }

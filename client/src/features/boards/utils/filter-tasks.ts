@@ -1,8 +1,8 @@
 import type { TaskSummaryDto } from "@/api/gen/model";
 
 export interface TaskFilters {
-  query?: string; // search query for title/description
-  assignee?: string; // user ID or "unassigned"
+  query?: string;
+  assignee?: string;
   priorities?: string[];
   labelIds?: string[];
   due?: "overdue" | "today" | "week" | "none";
@@ -20,19 +20,17 @@ export function hasActiveFilters(filters: TaskFilters): boolean {
 
 export function filterTasks(
   tasks: TaskSummaryDto[],
-  filters: TaskFilters
+  filters: TaskFilters,
 ): TaskSummaryDto[] {
   if (!hasActiveFilters(filters)) {
     return tasks;
   }
 
   return tasks.filter((task) => {
-    // Search filter (title and description)
+    // Search filter (title)
     if (filters.query) {
       const q = filters.query.toLowerCase();
-      const titleMatch = task.title.toLowerCase().includes(q);
-      const descMatch = task.description?.toLowerCase().includes(q) ?? false;
-      if (!titleMatch && !descMatch) return false;
+      if (!task.title.toLowerCase().includes(q)) return false;
     }
 
     // Assignee filter
@@ -56,7 +54,7 @@ export function filterTasks(
       if (!task.labels || task.labels.length === 0) return false;
       const taskLabelIds = task.labels.map((l) => l.id);
       const hasMatchingLabel = filters.labelIds.some((id) =>
-        taskLabelIds.includes(id)
+        taskLabelIds.includes(id),
       );
       if (!hasMatchingLabel) return false;
     }
