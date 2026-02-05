@@ -12,13 +12,11 @@ import type { TaskSummaryDto } from "@/api/gen/model";
 import { cn } from "@/lib/utils";
 import { LabelBadge } from "@/features/labels/components/label-badge";
 
-const priorityConfig: Record<
-  string,
-  { label: string; className: string }
-> = {
+const priorityConfig: Record<string, { label: string; className: string }> = {
   LOW: {
     label: "Low",
-    className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    className:
+      "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   },
   MEDIUM: {
     label: "Med",
@@ -26,7 +24,8 @@ const priorityConfig: Record<
   },
   HIGH: {
     label: "High",
-    className: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
+    className:
+      "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
   },
   URGENT: {
     label: "Urgent",
@@ -73,6 +72,13 @@ export const TaskItem = ({
       <Link
         to={"/boards/$boardId/tasks/$taskId"}
         params={{ boardId, taskId: task.id }}
+        search={{
+          q: undefined,
+          assignee: undefined,
+          priority: undefined,
+          labels: undefined,
+          due: undefined,
+        }}
         aria-label={`Open task ${task.title}`}
       >
         <ItemContent className="gap-1.5">
@@ -82,12 +88,14 @@ export const TaskItem = ({
           >
             {task.title}
           </ItemTitle>
-          {(priority || task.dueDate || (task.labels && task.labels.length > 0)) && (
-            <div className="flex items-center gap-1.5 flex-wrap">
+          {(priority ||
+            task.dueDate ||
+            (task.labels && task.labels.length > 0)) && (
+            <div className="flex flex-wrap items-center gap-1.5">
               {priority && (
                 <Badge
                   variant="outline"
-                  className={cn("text-[10px] px-1.5 py-0", priority.className)}
+                  className={cn("px-1.5 py-0 text-[10px]", priority.className)}
                 >
                   {priority.label}
                 </Badge>
@@ -98,7 +106,7 @@ export const TaskItem = ({
                     <LabelBadge key={label.id} label={label} size="sm" />
                   ))}
                   {task.labels.length > 3 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-muted-foreground text-[10px]">
                       +{task.labels.length - 3}
                     </span>
                   )}
@@ -107,7 +115,7 @@ export const TaskItem = ({
               {task.dueDate && (
                 <span
                   className={cn(
-                    "text-[10px] flex items-center gap-0.5",
+                    "flex items-center gap-0.5 text-[10px]",
                     overdue
                       ? "text-red-600 dark:text-red-400"
                       : "text-muted-foreground",
