@@ -8,7 +8,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Check, Plus, Tag, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LABEL_COLORS, getLabelColorClasses } from "../constants";
+import {
+  LABEL_COLORS,
+  getLabelColorClasses,
+  type LabelColor,
+} from "../constants";
 import { LabelBadge } from "./label-badge";
 import {
   getGetLabelsByBoardQueryKey,
@@ -33,7 +37,9 @@ export function LabelPicker({
   const [open, setOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
-  const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[0].name);
+  const [newLabelColor, setNewLabelColor] = useState<LabelColor>(
+    LABEL_COLORS[0].name,
+  );
 
   const queryClient = useQueryClient();
   const { data: labelsResponse } = useGetLabelsByBoard(boardId);
@@ -107,7 +113,7 @@ export function LabelPicker({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-start h-auto min-h-9"
+          className="h-auto min-h-9 w-full justify-start"
         >
           <Tag className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           {selectedLabels.length > 0 ? (
@@ -154,10 +160,10 @@ export function LabelPicker({
                     key={color.name}
                     type="button"
                     className={cn(
-                      "w-6 h-6 rounded border-2",
+                      "h-6 w-6 rounded border-2",
                       classes.bg,
                       newLabelColor === color.name
-                        ? "ring-2 ring-offset-1 ring-primary"
+                        ? "ring-primary ring-2 ring-offset-1"
                         : classes.border,
                     )}
                     onClick={() => setNewLabelColor(color.name)}
@@ -170,9 +176,7 @@ export function LabelPicker({
               size="sm"
               className="w-full"
               onClick={handleCreateLabel}
-              disabled={
-                !newLabelName.trim() || createLabelMutation.isPending
-              }
+              disabled={!newLabelName.trim() || createLabelMutation.isPending}
             >
               {createLabelMutation.isPending ? "Creating..." : "Create"}
             </Button>
@@ -180,7 +184,7 @@ export function LabelPicker({
         ) : (
           <div className="space-y-2">
             {labels.length > 0 ? (
-              <div className="max-h-48 overflow-y-auto space-y-1">
+              <div className="max-h-48 space-y-1 overflow-y-auto">
                 {labels.map((label) => {
                   const isSelected = selectedLabelIds.includes(label.id);
                   return (
@@ -194,26 +198,26 @@ export function LabelPicker({
                     >
                       <button
                         type="button"
-                        className="flex-1 flex items-center gap-2 px-2 py-1.5 text-sm"
+                        className="flex flex-1 items-center gap-2 px-2 py-1.5 text-sm"
                         onClick={() => toggleLabel(label.id)}
                       >
                         <div
                           className={cn(
-                            "w-4 h-4 rounded border flex items-center justify-center",
+                            "flex h-4 w-4 items-center justify-center rounded border",
                             isSelected
                               ? "bg-primary border-primary"
                               : "border-input",
                           )}
                         >
                           {isSelected && (
-                            <Check className="h-3 w-3 text-primary-foreground" />
+                            <Check className="text-primary-foreground h-3 w-3" />
                           )}
                         </div>
                         <LabelBadge label={label} size="sm" />
                       </button>
                       <button
                         type="button"
-                        className="p-1.5 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"
+                        className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded p-1.5 transition-colors"
                         onClick={(e) => handleDeleteLabel(e, label.id)}
                         title="Delete label"
                       >
@@ -224,7 +228,7 @@ export function LabelPicker({
                 })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-2">
+              <p className="text-muted-foreground py-2 text-center text-sm">
                 No labels yet
               </p>
             )}
@@ -234,7 +238,7 @@ export function LabelPicker({
               className="w-full"
               onClick={() => setIsCreating(true)}
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="mr-1 h-4 w-4" />
               Create label
             </Button>
           </div>
