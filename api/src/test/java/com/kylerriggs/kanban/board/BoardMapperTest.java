@@ -30,6 +30,7 @@ class BoardMapperTest {
 
     private static final UUID BOARD_ID = UUID.randomUUID();
     private static final String CREATOR_ID = "auth0|creator123";
+    private static final String OTHER_USER_ID = "auth0|other456";
     private static final String BOARD_NAME = "Test Board";
     private static final String BOARD_DESCRIPTION = "Test Description";
 
@@ -66,6 +67,15 @@ class BoardMapperTest {
         return board;
     }
 
+    private BoardUser createBoardUser(Board board, User user, BoardRole role, boolean isFavorite) {
+        BoardUser boardUser = new BoardUser();
+        boardUser.setBoard(board);
+        boardUser.setUser(user);
+        boardUser.setRole(role);
+        boardUser.setFavorite(isFavorite);
+        return boardUser;
+    }
+
     @Nested
     class ToDto {
 
@@ -80,7 +90,7 @@ class BoardMapperTest {
             when(userMapper.toSummaryDto(creator)).thenReturn(creatorSummary);
 
             // When
-            BoardDto result = boardMapper.toDto(board, false);
+            BoardDto result = boardMapper.toDto(board, CREATOR_ID);
 
             // Then
             assertEquals(BOARD_ID, result.id());
@@ -91,26 +101,54 @@ class BoardMapperTest {
             assertEquals(0, result.tasks().length);
             assertEquals(0, result.columns().length);
             assertFalse(result.isArchived());
-            assertFalse(result.isDefault());
+            assertFalse(result.isFavorite());
             assertNotNull(result.dateCreated());
             assertNotNull(result.dateModified());
         }
 
         @Test
-        void toDto_WhenIsDefault_ShouldReflectDefaultStatus() {
+        void toDto_WhenUserHasFavorite_ShouldReflectFavoriteStatus() {
             // Given
             User creator = createUser(CREATOR_ID, "creator");
             Board board = createBoard(creator);
+
+            BoardUser boardUser = createBoardUser(board, creator, BoardRole.ADMIN, true);
+            board.setCollaborators(Set.of(boardUser));
 
             UserSummaryDto creatorSummary =
                     new UserSummaryDto(CREATOR_ID, "creator", "https://example.com/creator.jpg");
             when(userMapper.toSummaryDto(creator)).thenReturn(creatorSummary);
 
             // When
-            BoardDto result = boardMapper.toDto(board, true);
+            BoardDto result = boardMapper.toDto(board, CREATOR_ID);
 
             // Then
-            assertTrue(result.isDefault());
+            assertTrue(result.isFavorite());
+        }
+
+        @Test
+        void toDto_WhenOtherUserHasFavorite_ShouldNotShowAsFavoriteForCurrentUser() {
+            // Given
+            User creator = createUser(CREATOR_ID, "creator");
+            User otherUser = createUser(OTHER_USER_ID, "other");
+            Board board = createBoard(creator);
+
+            BoardUser creatorMembership = createBoardUser(board, creator, BoardRole.ADMIN, false);
+            BoardUser otherMembership = createBoardUser(board, otherUser, BoardRole.MEMBER, true);
+            board.setCollaborators(Set.of(creatorMembership, otherMembership));
+
+            UserSummaryDto creatorSummary =
+                    new UserSummaryDto(CREATOR_ID, "creator", "https://example.com/creator.jpg");
+            UserSummaryDto otherSummary =
+                    new UserSummaryDto(OTHER_USER_ID, "other", "https://example.com/other.jpg");
+            when(userMapper.toSummaryDto(creator)).thenReturn(creatorSummary);
+            when(userMapper.toSummaryDto(otherUser)).thenReturn(otherSummary);
+
+            // When
+            BoardDto result = boardMapper.toDto(board, CREATOR_ID);
+
+            // Then
+            assertFalse(result.isFavorite());
         }
 
         @Test
@@ -120,9 +158,7 @@ class BoardMapperTest {
             Board board = createBoard(creator);
 
             User collaborator = createUser("auth0|collab", "collab");
-            BoardUser boardUser = new BoardUser();
-            boardUser.setUser(collaborator);
-            boardUser.setRole(BoardRole.MEMBER);
+            BoardUser boardUser = createBoardUser(board, collaborator, BoardRole.MEMBER, false);
             board.setCollaborators(Set.of(boardUser));
 
             UserSummaryDto creatorSummary =
@@ -134,7 +170,7 @@ class BoardMapperTest {
             when(userMapper.toSummaryDto(collaborator)).thenReturn(collabSummary);
 
             // When
-            BoardDto result = boardMapper.toDto(board, false);
+            BoardDto result = boardMapper.toDto(board, CREATOR_ID);
 
             // Then
             assertEquals(1, result.collaborators().length);
@@ -179,7 +215,7 @@ class BoardMapperTest {
             when(taskMapper.toSummaryDto(task)).thenReturn(taskSummary);
 
             // When
-            BoardDto result = boardMapper.toDto(board, false);
+            BoardDto result = boardMapper.toDto(board, CREATOR_ID);
 
             // Then
             assertEquals(1, result.tasks().length);
@@ -204,7 +240,7 @@ class BoardMapperTest {
             when(userMapper.toSummaryDto(creator)).thenReturn(creatorSummary);
 
             // When
-            BoardDto result = boardMapper.toDto(board, false);
+            BoardDto result = boardMapper.toDto(board, CREATOR_ID);
 
             // Then
             assertEquals(1, result.columns().length);
@@ -224,7 +260,7 @@ class BoardMapperTest {
             Board board = createBoard(creator);
 
             // When
-            BoardSummary result = boardMapper.toSummaryDto(board, false);
+            BoardSummary result = boardMapper.toSummaryDto(board, CREATOR_ID);
 
             // Then
             assertEquals(BOARD_ID, result.id());
@@ -233,7 +269,7 @@ class BoardMapperTest {
             assertEquals(0, result.completedTasks());
             assertEquals(0, result.totalTasks());
             assertFalse(result.isArchived());
-            assertFalse(result.isDefault());
+            assertFalse(result.isFavorite());
             assertNotNull(result.dateModified());
         }
 
@@ -268,7 +304,7 @@ class BoardMapperTest {
             board.setTasks(Set.of(completedTask, incompleteTask1, incompleteTask2));
 
             // When
-            BoardSummary result = boardMapper.toSummaryDto(board, false);
+            BoardSummary result = boardMapper.toSummaryDto(board, CREATOR_ID);
 
             // Then
             assertEquals(1, result.completedTasks());
@@ -276,16 +312,19 @@ class BoardMapperTest {
         }
 
         @Test
-        void toSummaryDto_WhenIsDefault_ShouldReflectStatus() {
+        void toSummaryDto_WhenUserHasFavorite_ShouldReflectStatus() {
             // Given
             User creator = createUser(CREATOR_ID, "creator");
             Board board = createBoard(creator);
 
+            BoardUser boardUser = createBoardUser(board, creator, BoardRole.ADMIN, true);
+            board.setCollaborators(Set.of(boardUser));
+
             // When
-            BoardSummary result = boardMapper.toSummaryDto(board, true);
+            BoardSummary result = boardMapper.toSummaryDto(board, CREATOR_ID);
 
             // Then
-            assertTrue(result.isDefault());
+            assertTrue(result.isFavorite());
         }
 
         @Test
@@ -296,7 +335,7 @@ class BoardMapperTest {
             board.setArchived(true);
 
             // When
-            BoardSummary result = boardMapper.toSummaryDto(board, false);
+            BoardSummary result = boardMapper.toSummaryDto(board, CREATOR_ID);
 
             // Then
             assertTrue(result.isArchived());

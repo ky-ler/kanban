@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.column;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -25,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -82,9 +84,11 @@ class ColumnServiceTest {
                             .build();
             ColumnDto newColumnDto = new ColumnDto(newColumn.getId(), "New Column", 3);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
             when(columnRepository.findMaxPositionByBoardId(BOARD_ID)).thenReturn(2);
-            when(columnRepository.save(any(Column.class))).thenReturn(newColumn);
+            when(columnRepository.save(Objects.requireNonNull(any(Column.class))))
+                    .thenReturn(newColumn);
             when(columnMapper.toDto(newColumn)).thenReturn(newColumnDto);
 
             // When
@@ -94,7 +98,7 @@ class ColumnServiceTest {
             assertEquals("New Column", result.name());
             assertEquals(3, result.position());
             verify(columnRepository, never()).incrementPositionsFrom(any(), anyInt());
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq("COLUMN_CREATED"), eq(BOARD_ID), any());
         }
 
@@ -111,8 +115,10 @@ class ColumnServiceTest {
                             .build();
             ColumnDto newColumnDto = new ColumnDto(newColumn.getId(), "New Column", 1);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(columnRepository.save(any(Column.class))).thenReturn(newColumn);
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(columnRepository.save(Objects.requireNonNull(any(Column.class))))
+                    .thenReturn(newColumn);
             when(columnMapper.toDto(newColumn)).thenReturn(newColumnDto);
 
             // When
@@ -121,14 +127,15 @@ class ColumnServiceTest {
             // Then
             assertEquals(1, result.position());
             verify(columnRepository).incrementPositionsFrom(BOARD_ID, 1);
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
         @Test
         void createColumn_WhenBoardNotFound_ThrowsException() {
             // Given
             CreateColumnRequest request = new CreateColumnRequest("New Column", null);
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.empty());
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
@@ -145,8 +152,9 @@ class ColumnServiceTest {
             UpdateColumnRequest request = new UpdateColumnRequest("Renamed Column");
             ColumnDto updatedDto = new ColumnDto(COLUMN_ID, "Renamed Column", 0);
 
-            when(columnRepository.findById(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(columnRepository.save(column)).thenReturn(column);
+            when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.of(column));
+            when(columnRepository.save(Objects.requireNonNull(column))).thenReturn(column);
             when(columnMapper.toDto(column)).thenReturn(updatedDto);
 
             // When
@@ -154,7 +162,7 @@ class ColumnServiceTest {
 
             // Then
             assertEquals("Renamed Column", result.name());
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq("COLUMN_UPDATED"), eq(BOARD_ID), any());
         }
 
@@ -162,7 +170,8 @@ class ColumnServiceTest {
         void updateColumn_WhenNotFound_ThrowsException() {
             // Given
             UpdateColumnRequest request = new UpdateColumnRequest("Renamed Column");
-            when(columnRepository.findById(COLUMN_ID)).thenReturn(Optional.empty());
+            when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
@@ -184,8 +193,8 @@ class ColumnServiceTest {
 
             // Then
             verify(columnRepository).decrementPositionsAfter(BOARD_ID, 0);
-            verify(columnRepository).delete(column);
-            verify(boardRepository).save(board);
+            verify(columnRepository).delete(Objects.requireNonNull(column));
+            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq("COLUMN_DELETED"), eq(BOARD_ID), any());
         }
 
@@ -197,7 +206,7 @@ class ColumnServiceTest {
 
             // When & Then
             assertThrows(BadRequestException.class, () -> columnService.deleteColumn(COLUMN_ID));
-            verify(columnRepository, never()).delete(any());
+            verify(columnRepository, never()).delete(Objects.requireNonNull(any(Column.class)));
         }
 
         @Test
@@ -230,7 +239,7 @@ class ColumnServiceTest {
             // Then
             verify(columnRepository, never()).decrementPositionsInRange(any(), anyInt(), anyInt());
             verify(columnRepository, never()).incrementPositionsInRange(any(), anyInt(), anyInt());
-            verify(boardRepository, never()).save(any());
+            verify(boardRepository, never()).save(Objects.requireNonNull(any()));
         }
 
         @Test
@@ -246,7 +255,7 @@ class ColumnServiceTest {
             // Then
             assertEquals(3, column.getPosition());
             verify(columnRepository).decrementPositionsInRange(BOARD_ID, 1, 3);
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq("COLUMN_MOVED"), eq(BOARD_ID), any());
         }
 
@@ -264,7 +273,7 @@ class ColumnServiceTest {
             // Then
             assertEquals(1, column.getPosition());
             verify(columnRepository).incrementPositionsInRange(BOARD_ID, 1, 3);
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
         @Test

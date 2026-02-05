@@ -3,6 +3,7 @@ package com.kylerriggs.kanban.task;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -147,26 +149,30 @@ class TaskServiceTest {
         @Test
         void getTask_WhenTaskExists_ReturnsTaskDto() {
             // Given
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
-            TaskDto result = taskService.getTask(TASK_ID);
+            TaskDto result = taskService.getTask(Objects.requireNonNull(TASK_ID));
 
             // Then
             assertNotNull(result);
             assertEquals(TASK_ID, result.id());
-            verify(taskRepository).findById(TASK_ID);
+            verify(taskRepository).findById(Objects.requireNonNull(TASK_ID));
             verify(taskMapper).toDto(task);
         }
 
         @Test
         void getTask_WhenTaskNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.empty());
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
-            assertThrows(ResourceNotFoundException.class, () -> taskService.getTask(TASK_ID));
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> taskService.getTask(Objects.requireNonNull(TASK_ID)));
             verify(taskMapper, never()).toDto(any());
         }
     }
@@ -179,11 +185,11 @@ class TaskServiceTest {
         void setUp() {
             createTaskRequest =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             null,
                             "New Task",
                             "Description",
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
@@ -195,21 +201,26 @@ class TaskServiceTest {
         void createTask_WhenValid_ReturnsCreatedTask() {
             // Given
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(columnRepository.findById(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(taskRepository.findMaxPositionByBoardId(BOARD_ID)).thenReturn(-1);
+            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
+                    .thenReturn(Optional.of(user));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.of(column));
+            when(taskRepository.findMaxPositionByBoardId(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(-1);
             when(taskMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(task);
-            when(taskRepository.save(any(Task.class))).thenReturn(task);
+            when(taskRepository.save(Objects.requireNonNull(any(Task.class)))).thenReturn(task);
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
-            TaskDto result = taskService.createTask(createTaskRequest);
+            TaskDto result = taskService.createTask(Objects.requireNonNull(createTaskRequest));
 
             // Then
             assertNotNull(result);
-            verify(taskRepository).save(any(Task.class));
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
+            verify(taskRepository).save(Objects.requireNonNull(any(Task.class)));
+            verify(boardRepository)
+                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
@@ -220,8 +231,9 @@ class TaskServiceTest {
 
             // When & Then
             assertThrows(
-                    UnauthorizedException.class, () -> taskService.createTask(createTaskRequest));
-            verify(taskRepository, never()).save(any());
+                    UnauthorizedException.class,
+                    () -> taskService.createTask(Objects.requireNonNull(createTaskRequest)));
+            verify(taskRepository, never()).save(Objects.requireNonNull(any()));
         }
 
         @Test
@@ -233,34 +245,39 @@ class TaskServiceTest {
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> taskService.createTask(createTaskRequest));
+                    () -> taskService.createTask(Objects.requireNonNull(createTaskRequest)));
         }
 
         @Test
         void createTask_WhenBoardNotFound_ThrowsResourceNotFoundException() {
             // Given
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.empty());
+            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
+                    .thenReturn(Optional.of(user));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> taskService.createTask(createTaskRequest));
+                    () -> taskService.createTask(Objects.requireNonNull(createTaskRequest)));
         }
 
         @Test
         void createTask_WhenColumnNotFound_ThrowsResourceNotFoundException() {
             // Given
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(columnRepository.findById(COLUMN_ID)).thenReturn(Optional.empty());
+            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
+                    .thenReturn(Optional.of(user));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> taskService.createTask(createTaskRequest));
+                    () -> taskService.createTask(Objects.requireNonNull(createTaskRequest)));
         }
 
         @Test
@@ -276,14 +293,17 @@ class TaskServiceTest {
                             .build();
 
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(columnRepository.findById(COLUMN_ID))
+            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
+                    .thenReturn(Optional.of(user));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.of(columnFromOtherBoard));
 
             // When & Then
             assertThrows(
-                    BadRequestException.class, () -> taskService.createTask(createTaskRequest));
+                    BadRequestException.class,
+                    () -> taskService.createTask(Objects.requireNonNull(createTaskRequest)));
         }
 
         @Test
@@ -291,11 +311,11 @@ class TaskServiceTest {
             // Given
             TaskRequest requestWithAssignee =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             "nonCollaboratorId",
                             "New Task",
                             "Description",
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
@@ -303,9 +323,12 @@ class TaskServiceTest {
                             null);
 
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(columnRepository.findById(COLUMN_ID)).thenReturn(Optional.of(column));
+            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
+                    .thenReturn(Optional.of(user));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.of(column));
 
             // When & Then
             assertThrows(
@@ -321,11 +344,11 @@ class TaskServiceTest {
 
             TaskRequest requestWithAssignee =
                     new TaskRequest(
-                            BOARD_ID,
-                            ASSIGNEE_ID,
+                            Objects.requireNonNull(BOARD_ID),
+                            Objects.requireNonNull(ASSIGNEE_ID),
                             "New Task",
                             "Description",
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
@@ -333,13 +356,18 @@ class TaskServiceTest {
                             null);
 
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(userRepository.findById(ASSIGNEE_ID)).thenReturn(Optional.of(assignee));
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(columnRepository.findById(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(taskRepository.findMaxPositionByBoardId(BOARD_ID)).thenReturn(-1);
+            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
+                    .thenReturn(Optional.of(user));
+            when(userRepository.findById(Objects.requireNonNull(ASSIGNEE_ID)))
+                    .thenReturn(Optional.of(assignee));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.of(column));
+            when(taskRepository.findMaxPositionByBoardId(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(-1);
             when(taskMapper.toEntity(any(), any(), any(), eq(assignee), any())).thenReturn(task);
-            when(taskRepository.save(any(Task.class))).thenReturn(task);
+            when(taskRepository.save(Objects.requireNonNull(any(Task.class)))).thenReturn(task);
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
@@ -359,11 +387,11 @@ class TaskServiceTest {
         void setUp() {
             updateTaskRequest =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             null,
                             "Updated Task",
                             "Updated Description",
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
@@ -374,29 +402,35 @@ class TaskServiceTest {
         @Test
         void updateTask_WhenValid_ReturnsUpdatedTask() {
             // Given
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
-            TaskDto result = taskService.updateTask(TASK_ID, updateTaskRequest);
+            TaskDto result =
+                    taskService.updateTask(Objects.requireNonNull(TASK_ID), updateTaskRequest);
 
             // Then
             assertNotNull(result);
             assertEquals("Updated Task", task.getTitle());
             assertEquals("Updated Description", task.getDescription());
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
+            verify(boardRepository)
+                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
         void updateTask_WhenTaskNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.empty());
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> taskService.updateTask(TASK_ID, updateTaskRequest));
+                    () ->
+                            taskService.updateTask(
+                                    Objects.requireNonNull(TASK_ID), updateTaskRequest));
         }
 
         @Test
@@ -404,22 +438,25 @@ class TaskServiceTest {
             // Given
             TaskRequest requestWithWrongBoard =
                     new TaskRequest(
-                            UUID.randomUUID(), // Different board ID
+                            Objects.requireNonNull(UUID.randomUUID()), // Different board ID
                             null,
                             "Updated Task",
                             "Updated Description",
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
                             null,
                             null);
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
 
             // When & Then
             assertThrows(
                     BadRequestException.class,
-                    () -> taskService.updateTask(TASK_ID, requestWithWrongBoard));
+                    () ->
+                            taskService.updateTask(
+                                    Objects.requireNonNull(TASK_ID), requestWithWrongBoard));
         }
 
         @Test
@@ -427,27 +464,29 @@ class TaskServiceTest {
             // Given
             TaskRequest requestWithNewColumn =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             null,
                             "Updated Task",
                             "Updated Description",
-                            NEW_COLUMN_ID,
+                            Objects.requireNonNull(NEW_COLUMN_ID),
                             false,
                             false,
                             null,
                             null,
                             null);
 
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
-            when(columnRepository.findById(NEW_COLUMN_ID)).thenReturn(Optional.of(newColumn));
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
+                    .thenReturn(Optional.of(newColumn));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
-            taskService.updateTask(TASK_ID, requestWithNewColumn);
+            taskService.updateTask(Objects.requireNonNull(TASK_ID), requestWithNewColumn);
 
             // Then
             assertEquals(newColumn, task.getColumn());
-            verify(columnRepository).findById(NEW_COLUMN_ID);
+            verify(columnRepository).findById(Objects.requireNonNull(NEW_COLUMN_ID));
         }
 
         @Test
@@ -464,25 +503,28 @@ class TaskServiceTest {
 
             TaskRequest requestWithNewColumn =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             null,
                             "Updated Task",
                             "Updated Description",
-                            NEW_COLUMN_ID,
+                            Objects.requireNonNull(NEW_COLUMN_ID),
                             false,
                             false,
                             null,
                             null,
                             null);
 
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
-            when(columnRepository.findById(NEW_COLUMN_ID))
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
                     .thenReturn(Optional.of(columnFromOtherBoard));
 
             // When & Then
             assertThrows(
                     BadRequestException.class,
-                    () -> taskService.updateTask(TASK_ID, requestWithNewColumn));
+                    () ->
+                            taskService.updateTask(
+                                    Objects.requireNonNull(TASK_ID), requestWithNewColumn));
         }
 
         @Test
@@ -494,23 +536,25 @@ class TaskServiceTest {
 
             TaskRequest requestWithAssignee =
                     new TaskRequest(
-                            BOARD_ID,
-                            ASSIGNEE_ID,
+                            Objects.requireNonNull(BOARD_ID),
+                            Objects.requireNonNull(ASSIGNEE_ID),
                             "Updated Task",
                             "Updated Description",
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
                             null,
                             null);
 
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
-            when(userRepository.findById(ASSIGNEE_ID)).thenReturn(Optional.of(assignee));
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(userRepository.findById(Objects.requireNonNull(ASSIGNEE_ID)))
+                    .thenReturn(Optional.of(assignee));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
-            taskService.updateTask(TASK_ID, requestWithAssignee);
+            taskService.updateTask(Objects.requireNonNull(TASK_ID), requestWithAssignee);
 
             // Then
             assertEquals(assignee, task.getAssignedTo());
@@ -522,23 +566,23 @@ class TaskServiceTest {
             task.setAssignedTo(assignee);
             TaskRequest requestClearAssignee =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             null,
                             "Updated Task",
                             "Updated Description",
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
                             null,
                             null);
 
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
-            taskService.updateTask(TASK_ID, requestClearAssignee);
-
+            taskService.updateTask(Objects.requireNonNull(TASK_ID), requestClearAssignee);
             // Then
             assertNull(task.getAssignedTo());
         }
@@ -549,25 +593,30 @@ class TaskServiceTest {
         @Test
         void deleteTask_WhenTaskExists_DeletesTask() {
             // Given
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
 
             // When
-            taskService.deleteTask(TASK_ID);
+            taskService.deleteTask(Objects.requireNonNull(TASK_ID));
 
             // Then
-            verify(taskRepository).delete(task);
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
+            verify(taskRepository).delete(Objects.requireNonNull(task));
+            verify(boardRepository)
+                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
         void deleteTask_WhenTaskNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.empty());
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
-            assertThrows(ResourceNotFoundException.class, () -> taskService.deleteTask(TASK_ID));
-            verify(taskRepository, never()).delete(any());
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> taskService.deleteTask(Objects.requireNonNull(TASK_ID)));
+            verify(taskRepository, never()).delete(Objects.requireNonNull(any()));
         }
     }
 
@@ -586,12 +635,12 @@ class TaskServiceTest {
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
 
             // When
-            taskService.moveTask(TASK_ID, request);
+            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
 
             // Then
             verify(taskRepository, never()).decrementPositionsInRange(any(), any(), any());
             verify(taskRepository, never()).incrementPositionsInRange(any(), any(), any());
-            verify(boardRepository, never()).save(any());
+            verify(boardRepository, never()).save(Objects.requireNonNull(any()));
         }
 
         @Test
@@ -601,12 +650,13 @@ class TaskServiceTest {
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
 
             // When
-            taskService.moveTask(TASK_ID, request);
+            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
 
             // Then
             assertEquals(3, task.getPosition());
             verify(taskRepository).decrementPositionsInRange(COLUMN_ID, 1, 3);
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
+            verify(boardRepository)
+                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
@@ -618,53 +668,62 @@ class TaskServiceTest {
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
 
             // When
-            taskService.moveTask(TASK_ID, request);
+            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
 
             // Then
             assertEquals(1, task.getPosition());
             verify(taskRepository).incrementPositionsInRange(COLUMN_ID, 1, 3);
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
+            verify(boardRepository)
+                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
         }
 
         @Test
         void moveTask_ToDifferentColumn_ShiftsPositionsInBothColumns() {
             // Given
             MoveTaskRequest request = new MoveTaskRequest(0, NEW_COLUMN_ID);
-            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(columnRepository.findById(NEW_COLUMN_ID)).thenReturn(Optional.of(newColumn));
+            when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
+                    .thenReturn(Optional.of(newColumn));
 
             // When
-            taskService.moveTask(TASK_ID, request);
+            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
 
             // Then
             assertEquals(newColumn, task.getColumn());
             assertEquals(0, task.getPosition());
-            verify(taskRepository).decrementPositionsAfter(COLUMN_ID, 1);
-            verify(taskRepository).incrementPositionsFrom(NEW_COLUMN_ID, 0);
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
+            verify(taskRepository).decrementPositionsAfter(Objects.requireNonNull(COLUMN_ID), 1);
+            verify(taskRepository).incrementPositionsFrom(Objects.requireNonNull(NEW_COLUMN_ID), 0);
+            verify(boardRepository)
+                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
         }
 
         @Test
         void moveTask_WhenTaskNotFound_ThrowsResourceNotFoundException() {
             // Given
             MoveTaskRequest request = new MoveTaskRequest(0, null);
-            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.empty());
+            when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
-                    ResourceNotFoundException.class, () -> taskService.moveTask(TASK_ID, request));
+                    ResourceNotFoundException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
         }
 
         @Test
         void moveTask_WhenNewColumnNotFound_ThrowsResourceNotFoundException() {
             // Given
-            MoveTaskRequest request = new MoveTaskRequest(0, NEW_COLUMN_ID);
-            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(columnRepository.findById(NEW_COLUMN_ID)).thenReturn(Optional.empty());
+            MoveTaskRequest request = new MoveTaskRequest(0, Objects.requireNonNull(NEW_COLUMN_ID));
+            when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
-                    ResourceNotFoundException.class, () -> taskService.moveTask(TASK_ID, request));
+                    ResourceNotFoundException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
         }
 
         @Test
@@ -673,19 +732,22 @@ class TaskServiceTest {
             Board otherBoard = Board.builder().id(UUID.randomUUID()).name("Other Board").build();
             Column columnFromOtherBoard =
                     Column.builder()
-                            .id(NEW_COLUMN_ID)
+                            .id(Objects.requireNonNull(NEW_COLUMN_ID))
                             .name("Other Column")
                             .position(0)
                             .board(otherBoard)
                             .build();
 
-            MoveTaskRequest request = new MoveTaskRequest(0, NEW_COLUMN_ID);
-            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(columnRepository.findById(NEW_COLUMN_ID))
+            MoveTaskRequest request = new MoveTaskRequest(0, Objects.requireNonNull(NEW_COLUMN_ID));
+            when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
                     .thenReturn(Optional.of(columnFromOtherBoard));
 
             // When & Then
-            assertThrows(BadRequestException.class, () -> taskService.moveTask(TASK_ID, request));
+            assertThrows(
+                    BadRequestException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
         }
     }
 }

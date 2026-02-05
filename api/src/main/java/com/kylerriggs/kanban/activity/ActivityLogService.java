@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -70,10 +71,11 @@ public class ActivityLogService {
         ActivityLog activityLog =
                 ActivityLog.builder().task(task).user(user).type(type).details(details).build();
 
-        activityLogRepository.save(activityLog);
+        activityLogRepository.save(Objects.requireNonNull(activityLog));
 
         // Broadcast activity event after transaction commits
-        eventPublisher.publish("ACTIVITY_LOGGED", task.getBoard().getId(), task.getId());
+        eventPublisher.publish(
+                "ACTIVITY_LOGGED", Objects.requireNonNull(task.getBoard().getId()), task.getId());
     }
 
     /**
@@ -92,6 +94,6 @@ public class ActivityLogService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
-        logActivity(task, type, details);
+        logActivity(Objects.requireNonNull(task), type, details);
     }
 }

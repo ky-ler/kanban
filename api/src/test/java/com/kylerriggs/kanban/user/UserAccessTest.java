@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.user;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.kylerriggs.kanban.exception.ForbiddenException;
@@ -15,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.Objects;
 
 @ExtendWith(MockitoExtension.class)
 class UserAccessTest {
@@ -108,7 +111,7 @@ class UserAccessTest {
                             IllegalStateException.class,
                             () -> userAccess.canModify(CURRENT_USER_ID));
             assertEquals("User is not authenticated", exception.getMessage());
-            verify(userRepository, never()).existsById(any());
+            verify(userRepository, never()).existsById(Objects.requireNonNull(any()));
         }
 
         @Test
@@ -123,7 +126,7 @@ class UserAccessTest {
                             IllegalStateException.class,
                             () -> userAccess.canModify(CURRENT_USER_ID));
             assertEquals("User is not authenticated", exception.getMessage());
-            verify(userRepository, never()).existsById(any());
+            verify(userRepository, never()).existsById(Objects.requireNonNull(any()));
         }
     }
 }

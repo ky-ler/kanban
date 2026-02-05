@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,7 +50,7 @@ class BoardAccessTest {
         when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, USER_ID)).thenReturn(true);
 
         // When
-        boolean result = boardAccess.isCollaborator(BOARD_ID);
+        boolean result = boardAccess.isCollaborator(Objects.requireNonNull(BOARD_ID));
 
         // Then
         assertTrue(result);
@@ -63,7 +64,9 @@ class BoardAccessTest {
         when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, USER_ID)).thenReturn(false);
 
         // When & Then
-        assertThrows(ForbiddenException.class, () -> boardAccess.isCollaborator(BOARD_ID));
+        assertThrows(
+                ForbiddenException.class,
+                () -> boardAccess.isCollaborator(Objects.requireNonNull(BOARD_ID)));
     }
 
     @Test
@@ -72,7 +75,9 @@ class BoardAccessTest {
         when(securityContext.getAuthentication()).thenReturn(null);
 
         // When & Then
-        assertThrows(IllegalStateException.class, () -> boardAccess.isCollaborator(BOARD_ID));
+        assertThrows(
+                IllegalStateException.class,
+                () -> boardAccess.isCollaborator(Objects.requireNonNull(BOARD_ID)));
         verify(boardUserRepository, never()).existsByBoardIdAndUserId(any(), any());
     }
 
@@ -83,7 +88,9 @@ class BoardAccessTest {
         when(authentication.isAuthenticated()).thenReturn(false);
 
         // When & Then
-        assertThrows(IllegalStateException.class, () -> boardAccess.isCollaborator(BOARD_ID));
+        assertThrows(
+                IllegalStateException.class,
+                () -> boardAccess.isCollaborator(Objects.requireNonNull(BOARD_ID)));
     }
 
     // isAdmin tests
@@ -97,7 +104,7 @@ class BoardAccessTest {
                 .thenReturn(true);
 
         // When
-        boolean result = boardAccess.isAdmin(BOARD_ID);
+        boolean result = boardAccess.isAdmin(Objects.requireNonNull(BOARD_ID));
 
         // Then
         assertTrue(result);
@@ -114,7 +121,9 @@ class BoardAccessTest {
                 .thenReturn(false);
 
         // When & Then
-        assertThrows(ForbiddenException.class, () -> boardAccess.isAdmin(BOARD_ID));
+        assertThrows(
+                ForbiddenException.class,
+                () -> boardAccess.isAdmin(Objects.requireNonNull(BOARD_ID)));
     }
 
     @Test
@@ -126,7 +135,9 @@ class BoardAccessTest {
                 .thenReturn(false);
 
         // When & Then
-        assertThrows(ForbiddenException.class, () -> boardAccess.isAdmin(BOARD_ID));
+        assertThrows(
+                ForbiddenException.class,
+                () -> boardAccess.isAdmin(Objects.requireNonNull(BOARD_ID)));
     }
 
     @Test
@@ -135,7 +146,9 @@ class BoardAccessTest {
         when(securityContext.getAuthentication()).thenReturn(null);
 
         // When & Then
-        assertThrows(IllegalStateException.class, () -> boardAccess.isAdmin(BOARD_ID));
+        assertThrows(
+                IllegalStateException.class,
+                () -> boardAccess.isAdmin(Objects.requireNonNull(BOARD_ID)));
         verify(boardUserRepository, never()).existsByBoardIdAndUserIdAndRole(any(), any(), any());
     }
 
@@ -148,11 +161,11 @@ class BoardAccessTest {
         when(boardRepository.existsByIdAndCreatedById(BOARD_ID, USER_ID)).thenReturn(true);
 
         // When
-        boolean result = boardAccess.isCreator(BOARD_ID);
+        boolean result = boardAccess.isCreator(Objects.requireNonNull(BOARD_ID));
 
         // Then
         assertTrue(result);
-        verify(boardRepository).existsByIdAndCreatedById(BOARD_ID, USER_ID);
+        verify(boardRepository).existsByIdAndCreatedById(Objects.requireNonNull(BOARD_ID), USER_ID);
     }
 
     @Test
@@ -162,7 +175,9 @@ class BoardAccessTest {
         when(boardRepository.existsByIdAndCreatedById(BOARD_ID, USER_ID)).thenReturn(false);
 
         // When & Then
-        assertThrows(ForbiddenException.class, () -> boardAccess.isCreator(BOARD_ID));
+        assertThrows(
+                ForbiddenException.class,
+                () -> boardAccess.isCreator(Objects.requireNonNull(BOARD_ID)));
     }
 
     @Test
@@ -171,7 +186,9 @@ class BoardAccessTest {
         when(securityContext.getAuthentication()).thenReturn(null);
 
         // When & Then
-        assertThrows(IllegalStateException.class, () -> boardAccess.isCreator(BOARD_ID));
+        assertThrows(
+                IllegalStateException.class,
+                () -> boardAccess.isCreator(Objects.requireNonNull(BOARD_ID)));
         verify(boardRepository, never()).existsByIdAndCreatedById(any(), any());
     }
 
@@ -186,11 +203,12 @@ class BoardAccessTest {
                 .thenReturn(true);
 
         // When
-        boolean result = boardAccess.isCollaborator(BOARD_ID);
+        boolean result = boardAccess.isCollaborator(Objects.requireNonNull(BOARD_ID));
 
         // Then
         assertTrue(result);
-        verify(boardUserRepository).existsByBoardIdAndUserId(BOARD_ID, differentUserId);
+        verify(boardUserRepository)
+                .existsByBoardIdAndUserId(Objects.requireNonNull(BOARD_ID), differentUserId);
     }
 
     @Test
@@ -203,11 +221,12 @@ class BoardAccessTest {
                 .thenReturn(true);
 
         // When
-        boolean result = boardAccess.isAdmin(differentBoardId);
+        boolean result = boardAccess.isAdmin(Objects.requireNonNull(differentBoardId));
 
         // Then
         assertTrue(result);
         verify(boardUserRepository)
-                .existsByBoardIdAndUserIdAndRole(differentBoardId, USER_ID, BoardRole.ADMIN);
+                .existsByBoardIdAndUserIdAndRole(
+                        Objects.requireNonNull(differentBoardId), USER_ID, BoardRole.ADMIN);
     }
 }

@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,7 +26,7 @@ class WebSocketEventServiceTest {
         UUID boardId = UUID.randomUUID();
         BoardEvent event = new BoardEvent("TEST", boardId, UUID.randomUUID(), null);
 
-        webSocketEventService.broadcast(boardId, event);
+        webSocketEventService.broadcast(Objects.requireNonNull(boardId), event);
 
         verify(messagingTemplate).convertAndSend("/topic/boards/" + boardId, event);
     }

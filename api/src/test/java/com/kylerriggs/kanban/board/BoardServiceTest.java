@@ -128,57 +128,30 @@ class BoardServiceTest {
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
             when(boardProperties.getDefaultColumns())
                     .thenReturn(List.of("Backlog", "To Do", "In Progress", "Done"));
-            when(boardRepository.save(any(Board.class)))
+            when(boardRepository.save(Objects.requireNonNull(any(Board.class))))
                     .thenAnswer(
                             inv -> {
-                                Board savedBoard = inv.getArgument(0);
+                                Board savedBoard = inv.getArgument(0, Board.class);
                                 savedBoard.setId(BOARD_ID);
                                 savedBoard.setDateCreated(Instant.now());
                                 savedBoard.setDateModified(Instant.now());
                                 return savedBoard;
                             });
-            when(boardMapper.toDto(any(Board.class), eq(true))).thenReturn(boardDto);
+            when(boardMapper.toDto(any(Board.class), eq(USER_ID))).thenReturn(boardDto);
 
             // When
             BoardDto result = boardService.createBoard(boardRequest);
 
             // Then
             assertNotNull(result);
-            verify(boardRepository).save(any(Board.class));
+            verify(boardRepository).save(Objects.requireNonNull(any(Board.class)));
 
             // Verify default columns are created
             ArgumentCaptor<Board> boardCaptor = ArgumentCaptor.forClass(Board.class);
-            verify(boardRepository).save(boardCaptor.capture());
+            verify(boardRepository).save(Objects.requireNonNull(boardCaptor.capture()));
             Board savedBoard = boardCaptor.getValue();
             assertEquals(4, savedBoard.getColumns().size());
             assertEquals(1, savedBoard.getCollaborators().size());
-        }
-
-        @Test
-        void createBoard_WhenUserHasNoDefaultBoard_SetsAsDefault() {
-            // Given
-            user.setDefaultBoard(null);
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(boardRepository.countByCollaboratorsUserId(USER_ID)).thenReturn(0L);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
-            when(boardProperties.getDefaultColumns()).thenReturn(List.of("To Do", "Done"));
-            when(boardRepository.save(any(Board.class)))
-                    .thenAnswer(
-                            inv -> {
-                                Board savedBoard = inv.getArgument(0);
-                                savedBoard.setId(BOARD_ID);
-                                savedBoard.setDateCreated(Instant.now());
-                                savedBoard.setDateModified(Instant.now());
-                                return savedBoard;
-                            });
-            when(boardMapper.toDto(any(Board.class), eq(true))).thenReturn(boardDto);
-
-            // When
-            boardService.createBoard(boardRequest);
-
-            // Then
-            assertNotNull(user.getDefaultBoard());
         }
 
         @Test
@@ -192,7 +165,7 @@ class BoardServiceTest {
             assertThrows(
                     BoardLimitExceededException.class,
                     () -> boardService.createBoard(boardRequest));
-            verify(boardRepository, never()).save(any());
+            verify(boardRepository, never()).save(Objects.requireNonNull(any()));
         }
 
         @Test
@@ -225,15 +198,14 @@ class BoardServiceTest {
             // Given
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findDefaultBoardIdById(USER_ID)).thenReturn(Optional.of(BOARD_ID));
-            when(boardMapper.toDto(board, true)).thenReturn(boardDto);
+            when(boardMapper.toDto(board, USER_ID)).thenReturn(boardDto);
 
             // When
-            BoardDto result = boardService.getBoard(BOARD_ID);
+            BoardDto result = boardService.getBoard(Objects.requireNonNull(BOARD_ID));
 
             // Then
             assertNotNull(result);
-            verify(boardMapper).toDto(board, true);
+            verify(boardMapper).toDto(board, USER_ID);
         }
 
         @Test
@@ -242,24 +214,9 @@ class BoardServiceTest {
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.empty());
 
             // When & Then
-            assertThrows(ResourceNotFoundException.class, () -> boardService.getBoard(BOARD_ID));
-        }
-
-        @Test
-        void getBoard_WhenNotDefaultBoard_PassesFalseToMapper() {
-            // Given
-            UUID differentBoardId = UUID.randomUUID();
-            when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findDefaultBoardIdById(USER_ID))
-                    .thenReturn(Optional.of(differentBoardId));
-            when(boardMapper.toDto(board, false)).thenReturn(boardDto);
-
-            // When
-            boardService.getBoard(BOARD_ID);
-
-            // Then
-            verify(boardMapper).toDto(board, false);
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> boardService.getBoard(Objects.requireNonNull(BOARD_ID)));
         }
     }
 
@@ -280,10 +237,9 @@ class BoardServiceTest {
                             true);
 
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userService.getCurrentUserDefaultBoardId()).thenReturn(BOARD_ID);
             when(boardRepository.findAllByCollaboratorsUserIdWithTasksAndColumn(USER_ID))
                     .thenReturn(List.of(board));
-            when(boardMapper.toSummaryDto(board, true)).thenReturn(summary);
+            when(boardMapper.toSummaryDto(board, USER_ID)).thenReturn(summary);
 
             // When
             List<BoardSummary> result = boardService.getBoardsForUser();
@@ -306,29 +262,33 @@ class BoardServiceTest {
         @Test
         void updateBoard_WhenBoardExists_UpdatesAndReturnsBoardDto() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(userService.getCurrentUserDefaultBoardId()).thenReturn(BOARD_ID);
-            when(boardMapper.toDto(board, true)).thenReturn(boardDto);
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(boardMapper.toDto(board, USER_ID)).thenReturn(boardDto);
 
             // When
-            BoardDto result = boardService.updateBoard(BOARD_ID, updateRequest);
-
+            boardService.updateBoard(Objects.requireNonNull(BOARD_ID), updateRequest);
             // Then
             assertEquals("Updated Board", board.getName());
             assertEquals("Updated Description", board.getDescription());
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
         void updateBoard_WhenBoardNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.empty());
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> boardService.updateBoard(BOARD_ID, updateRequest));
+                    () ->
+                            boardService.updateBoard(
+                                    Objects.requireNonNull(BOARD_ID), updateRequest));
         }
     }
 
@@ -346,35 +306,18 @@ class BoardServiceTest {
             // Given
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
-            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+            when(boardUserRepository.existsByBoardIdAndUserId(
+                            Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
             when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.of(otherUser));
 
             // When
-            boardService.addCollaborator(BOARD_ID, collaboratorRequest);
-
+            boardService.addCollaborator(Objects.requireNonNull(BOARD_ID), collaboratorRequest);
             // Then
             assertEquals(2, board.getCollaborators().size());
-            verify(boardRepository).save(board);
-        }
-
-        @Test
-        void addCollaborator_WhenUserHasNoDefaultBoard_SetsAsDefault() {
-            // Given
-            otherUser.setDefaultBoard(null);
-            when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
-            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
-                    .thenReturn(false);
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-            when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.of(otherUser));
-
-            // When
-            boardService.addCollaborator(BOARD_ID, collaboratorRequest);
-
-            // Then
-            assertEquals(board, otherUser.getDefaultBoard());
+            verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
         @Test
@@ -388,7 +331,9 @@ class BoardServiceTest {
             // When & Then
             assertThrows(
                     BadRequestException.class,
-                    () -> boardService.addCollaborator(BOARD_ID, collaboratorRequest));
+                    () ->
+                            boardService.addCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), collaboratorRequest));
         }
 
         @Test
@@ -400,7 +345,9 @@ class BoardServiceTest {
             // When & Then
             assertThrows(
                     BoardLimitExceededException.class,
-                    () -> boardService.addCollaborator(BOARD_ID, collaboratorRequest));
+                    () ->
+                            boardService.addCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), collaboratorRequest));
         }
 
         @Test
@@ -408,14 +355,18 @@ class BoardServiceTest {
             // Given
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
-            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+            when(boardUserRepository.existsByBoardIdAndUserId(
+                            Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.empty());
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> boardService.addCollaborator(BOARD_ID, collaboratorRequest));
+                    () ->
+                            boardService.addCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), collaboratorRequest));
         }
 
         @Test
@@ -423,15 +374,19 @@ class BoardServiceTest {
             // Given
             when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
-            when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
+            when(boardUserRepository.existsByBoardIdAndUserId(
+                            Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
             when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.empty());
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> boardService.addCollaborator(BOARD_ID, collaboratorRequest));
+                    () ->
+                            boardService.addCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), collaboratorRequest));
         }
     }
 
@@ -449,14 +404,15 @@ class BoardServiceTest {
         @Test
         void removeCollaborator_WhenValid_RemovesCollaborator() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When
-            boardService.removeCollaborator(BOARD_ID, OTHER_USER_ID);
+            boardService.removeCollaborator(Objects.requireNonNull(BOARD_ID), OTHER_USER_ID);
 
             // Then
             assertEquals(1, board.getCollaborators().size());
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
         @Test
@@ -467,23 +423,29 @@ class BoardServiceTest {
                     BoardUser.builder().board(board).user(user).role(BoardRole.ADMIN).build();
             board.getCollaborators().add(soleCollaborator);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When & Then
             assertThrows(
                     BadRequestException.class,
-                    () -> boardService.removeCollaborator(BOARD_ID, USER_ID));
+                    () ->
+                            boardService.removeCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), USER_ID));
         }
 
         @Test
         void removeCollaborator_WhenLastAdmin_ThrowsBadRequestException() {
             // Given - user is only admin, otherUser is member
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When & Then
             assertThrows(
                     BadRequestException.class,
-                    () -> boardService.removeCollaborator(BOARD_ID, USER_ID));
+                    () ->
+                            boardService.removeCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), USER_ID));
         }
 
         @Test
@@ -500,38 +462,28 @@ class BoardServiceTest {
                             .build();
             board.getTasks().add(task);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When
-            boardService.removeCollaborator(BOARD_ID, OTHER_USER_ID);
+            boardService.removeCollaborator(Objects.requireNonNull(BOARD_ID), OTHER_USER_ID);
 
             // Then
             assertNull(task.getAssignedTo());
         }
 
         @Test
-        void removeCollaborator_WhenBoardIsDefaultForUser_ClearsDefault() {
-            // Given
-            otherUser.setDefaultBoard(board);
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
-
-            // When
-            boardService.removeCollaborator(BOARD_ID, OTHER_USER_ID);
-
-            // Then
-            assertNull(otherUser.getDefaultBoard());
-            verify(userRepository).save(otherUser);
-        }
-
-        @Test
         void removeCollaborator_WhenNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
-                    () -> boardService.removeCollaborator(BOARD_ID, "nonexistentUser"));
+                    () ->
+                            boardService.removeCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), "nonexistentUser"));
         }
     }
 
@@ -549,25 +501,30 @@ class BoardServiceTest {
         @Test
         void updateCollaboratorRole_WhenValid_UpdatesRole() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When
-            boardService.updateCollaboratorRole(BOARD_ID, OTHER_USER_ID, BoardRole.ADMIN);
+            boardService.updateCollaboratorRole(
+                    Objects.requireNonNull(BOARD_ID), OTHER_USER_ID, BoardRole.ADMIN);
 
             // Then
             assertEquals(BoardRole.ADMIN, otherBoardUser.getRole());
-            verify(boardRepository).save(board);
+            verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
         @Test
         void updateCollaboratorRole_WhenDemotingLastAdmin_ThrowsBadRequestException() {
             // Given - user is the only admin
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When & Then
             assertThrows(
                     BadRequestException.class,
-                    () -> boardService.updateCollaboratorRole(BOARD_ID, USER_ID, BoardRole.MEMBER));
+                    () ->
+                            boardService.updateCollaboratorRole(
+                                    Objects.requireNonNull(BOARD_ID), USER_ID, BoardRole.MEMBER));
         }
 
         @Test
@@ -578,12 +535,15 @@ class BoardServiceTest {
                     BoardUser.builder().board(board).user(user).role(BoardRole.ADMIN).build();
             board.getCollaborators().add(soleCollaborator);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When & Then
             assertThrows(
                     BadRequestException.class,
-                    () -> boardService.updateCollaboratorRole(BOARD_ID, USER_ID, BoardRole.MEMBER));
+                    () ->
+                            boardService.updateCollaboratorRole(
+                                    Objects.requireNonNull(BOARD_ID), USER_ID, BoardRole.MEMBER));
         }
 
         @Test
@@ -594,10 +554,12 @@ class BoardServiceTest {
                     BoardUser.builder().board(board).user(user).role(BoardRole.ADMIN).build();
             board.getCollaborators().add(soleCollaborator);
 
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When
-            boardService.updateCollaboratorRole(BOARD_ID, USER_ID, BoardRole.ADMIN);
+            boardService.updateCollaboratorRole(
+                    Objects.requireNonNull(BOARD_ID), USER_ID, BoardRole.ADMIN);
 
             // Then - no exception, role unchanged
             assertEquals(BoardRole.ADMIN, soleCollaborator.getRole());
@@ -606,14 +568,85 @@ class BoardServiceTest {
         @Test
         void updateCollaboratorRole_WhenCollaboratorNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
 
             // When & Then
             assertThrows(
                     ResourceNotFoundException.class,
                     () ->
                             boardService.updateCollaboratorRole(
-                                    BOARD_ID, "nonexistentUser", BoardRole.ADMIN));
+                                    Objects.requireNonNull(BOARD_ID),
+                                    "nonexistentUser",
+                                    BoardRole.ADMIN));
+        }
+    }
+
+    @Nested
+    class ToggleFavoriteTests {
+        @Test
+        void toggleFavorite_WhenNotFavorite_SetsToTrue() {
+            // Given
+            BoardUser boardUser =
+                    BoardUser.builder()
+                            .board(board)
+                            .user(user)
+                            .role(BoardRole.ADMIN)
+                            .isFavorite(false)
+                            .build();
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardUserRepository.findByBoardIdAndUserId(
+                            Objects.requireNonNull(BOARD_ID), USER_ID))
+                    .thenReturn(Optional.of(boardUser));
+            when(boardUserRepository.save(Objects.requireNonNull(any(BoardUser.class))))
+                    .thenReturn(boardUser);
+
+            // When
+            boolean result = boardService.toggleFavorite(Objects.requireNonNull(BOARD_ID));
+
+            // Then
+            assertTrue(result);
+            assertTrue(boardUser.isFavorite());
+            verify(boardUserRepository).save(boardUser);
+        }
+
+        @Test
+        void toggleFavorite_WhenFavorite_SetsToFalse() {
+            // Given
+            BoardUser boardUser =
+                    BoardUser.builder()
+                            .board(board)
+                            .user(user)
+                            .role(BoardRole.ADMIN)
+                            .isFavorite(true)
+                            .build();
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardUserRepository.findByBoardIdAndUserId(
+                            Objects.requireNonNull(BOARD_ID), USER_ID))
+                    .thenReturn(Optional.of(boardUser));
+            when(boardUserRepository.save(Objects.requireNonNull(any(BoardUser.class))))
+                    .thenReturn(boardUser);
+
+            // When
+            boolean result = boardService.toggleFavorite(Objects.requireNonNull(BOARD_ID));
+
+            // Then
+            assertFalse(result);
+            assertFalse(boardUser.isFavorite());
+            verify(boardUserRepository).save(boardUser);
+        }
+
+        @Test
+        void toggleFavorite_WhenNotCollaborator_ThrowsResourceNotFoundException() {
+            // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardUserRepository.findByBoardIdAndUserId(BOARD_ID, USER_ID))
+                    .thenReturn(Optional.empty());
+
+            // When & Then
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> boardService.toggleFavorite(Objects.requireNonNull(BOARD_ID)));
         }
     }
 }

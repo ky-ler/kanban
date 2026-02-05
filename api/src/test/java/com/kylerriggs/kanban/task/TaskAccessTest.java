@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.task;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.kylerriggs.kanban.exception.ForbiddenException;
@@ -15,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,14 +40,18 @@ class TaskAccessTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(USER_ID);
-        when(taskRepository.isUserAuthorizedForTask(TASK_ID, USER_ID)).thenReturn(true);
+        when(taskRepository.isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID)))
+                .thenReturn(true);
 
         // When
-        boolean result = taskAccess.isCollaborator(TASK_ID);
+        boolean result = taskAccess.isCollaborator(Objects.requireNonNull(TASK_ID));
 
         // Then
         assertTrue(result);
-        verify(taskRepository).isUserAuthorizedForTask(TASK_ID, USER_ID);
+        verify(taskRepository)
+                .isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID));
     }
 
     @Test
@@ -54,14 +60,18 @@ class TaskAccessTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(USER_ID);
-        when(taskRepository.isUserAuthorizedForTask(TASK_ID, USER_ID)).thenReturn(true);
+        when(taskRepository.isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID)))
+                .thenReturn(true);
 
         // When
-        boolean result = taskAccess.isCollaborator(TASK_ID);
+        boolean result = taskAccess.isCollaborator(Objects.requireNonNull(TASK_ID));
 
         // Then
         assertTrue(result);
-        verify(taskRepository).isUserAuthorizedForTask(TASK_ID, USER_ID);
+        verify(taskRepository)
+                .isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID));
     }
 
     @Test
@@ -69,12 +79,18 @@ class TaskAccessTest {
         // Given
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn(USER_ID);
-        when(taskRepository.isUserAuthorizedForTask(TASK_ID, USER_ID)).thenReturn(false);
+        when(authentication.getName()).thenReturn(Objects.requireNonNull(USER_ID));
+        when(taskRepository.isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID)))
+                .thenReturn(false);
 
         // When & Then
-        assertThrows(ForbiddenException.class, () -> taskAccess.isCollaborator(TASK_ID));
-        verify(taskRepository).isUserAuthorizedForTask(TASK_ID, USER_ID);
+        assertThrows(
+                ForbiddenException.class,
+                () -> taskAccess.isCollaborator(Objects.requireNonNull(TASK_ID)));
+        verify(taskRepository)
+                .isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID));
     }
 
     @Test
@@ -82,12 +98,18 @@ class TaskAccessTest {
         // Given
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn(USER_ID);
-        when(taskRepository.isUserAuthorizedForTask(TASK_ID, USER_ID)).thenReturn(false);
+        when(authentication.getName()).thenReturn(Objects.requireNonNull(USER_ID));
+        when(taskRepository.isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID)))
+                .thenReturn(false);
 
         // When & Then
-        assertThrows(ForbiddenException.class, () -> taskAccess.isCollaborator(TASK_ID));
-        verify(taskRepository).isUserAuthorizedForTask(TASK_ID, USER_ID);
+        assertThrows(
+                ForbiddenException.class,
+                () -> taskAccess.isCollaborator(Objects.requireNonNull(TASK_ID)));
+        verify(taskRepository)
+                .isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(USER_ID));
     }
 
     @Test
@@ -96,7 +118,9 @@ class TaskAccessTest {
         when(securityContext.getAuthentication()).thenReturn(null);
 
         // When & Then
-        assertThrows(IllegalStateException.class, () -> taskAccess.isCollaborator(TASK_ID));
+        assertThrows(
+                IllegalStateException.class,
+                () -> taskAccess.isCollaborator(Objects.requireNonNull(TASK_ID)));
         verify(taskRepository, never()).isUserAuthorizedForTask(any(), any());
     }
 
@@ -107,7 +131,9 @@ class TaskAccessTest {
         when(authentication.isAuthenticated()).thenReturn(false);
 
         // When & Then
-        assertThrows(IllegalStateException.class, () -> taskAccess.isCollaborator(TASK_ID));
+        assertThrows(
+                IllegalStateException.class,
+                () -> taskAccess.isCollaborator(Objects.requireNonNull(TASK_ID)));
         verify(taskRepository, never()).isUserAuthorizedForTask(any(), any());
     }
 
@@ -118,14 +144,18 @@ class TaskAccessTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(differentUserId);
-        when(taskRepository.isUserAuthorizedForTask(TASK_ID, differentUserId)).thenReturn(true);
+        when(taskRepository.isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(differentUserId)))
+                .thenReturn(true);
 
         // When
-        boolean result = taskAccess.isCollaborator(TASK_ID);
+        boolean result = taskAccess.isCollaborator(Objects.requireNonNull(TASK_ID));
 
         // Then
         assertTrue(result);
-        verify(taskRepository).isUserAuthorizedForTask(TASK_ID, differentUserId);
+        verify(taskRepository)
+                .isUserAuthorizedForTask(
+                        Objects.requireNonNull(TASK_ID), Objects.requireNonNull(differentUserId));
     }
 
     @Test
@@ -134,14 +164,18 @@ class TaskAccessTest {
         UUID differentTaskId = UUID.fromString("cbfc2988-d933-4c13-a014-009e8b4d0fb5");
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn(USER_ID);
-        when(taskRepository.isUserAuthorizedForTask(differentTaskId, USER_ID)).thenReturn(true);
+        when(authentication.getName()).thenReturn(Objects.requireNonNull(USER_ID));
+        when(taskRepository.isUserAuthorizedForTask(
+                        Objects.requireNonNull(differentTaskId), Objects.requireNonNull(USER_ID)))
+                .thenReturn(true);
 
         // When
-        boolean result = taskAccess.isCollaborator(differentTaskId);
+        boolean result = taskAccess.isCollaborator(Objects.requireNonNull(differentTaskId));
 
         // Then
         assertTrue(result);
-        verify(taskRepository).isUserAuthorizedForTask(differentTaskId, USER_ID);
+        verify(taskRepository)
+                .isUserAuthorizedForTask(
+                        Objects.requireNonNull(differentTaskId), Objects.requireNonNull(USER_ID));
     }
 }

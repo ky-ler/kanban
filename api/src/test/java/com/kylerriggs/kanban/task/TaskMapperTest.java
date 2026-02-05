@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.task;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.kylerriggs.kanban.board.Board;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
@@ -197,11 +199,11 @@ class TaskMapperTest {
             // Given
             TaskRequest request =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             ASSIGNEE_ID,
                             TASK_TITLE,
                             TASK_DESCRIPTION,
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,
@@ -234,11 +236,11 @@ class TaskMapperTest {
             // Given
             TaskRequest request =
                     new TaskRequest(
-                            BOARD_ID,
+                            Objects.requireNonNull(BOARD_ID),
                             null,
                             TASK_TITLE,
                             TASK_DESCRIPTION,
-                            COLUMN_ID,
+                            Objects.requireNonNull(COLUMN_ID),
                             false,
                             false,
                             null,

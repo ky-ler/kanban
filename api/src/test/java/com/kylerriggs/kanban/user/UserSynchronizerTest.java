@@ -15,6 +15,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,14 +63,14 @@ class UserSynchronizerTest {
             // Given
             when(userMapper.mapUserFromToken(jwt)).thenReturn(user);
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
-            when(userRepository.save(user)).thenReturn(user);
+            when(userRepository.save(Objects.requireNonNull(user))).thenReturn(user);
 
             // When
             userSynchronizer.syncWithIdp(jwt);
 
             // Then
             verify(userRepository).findByEmail(EMAIL);
-            verify(userRepository).save(user);
+            verify(userRepository).save(Objects.requireNonNull(user));
         }
 
         @Test
@@ -84,7 +85,7 @@ class UserSynchronizerTest {
             when(userRepository.findByEmail(EMAIL))
                     .thenReturn(Optional.empty())
                     .thenReturn(Optional.of(existingUser));
-            when(userRepository.save(user))
+            when(userRepository.save(Objects.requireNonNull(user)))
                     .thenThrow(new DataIntegrityViolationException("Duplicate key"));
             when(userRepository.save(existingUser)).thenReturn(existingUser);
 
@@ -102,7 +103,7 @@ class UserSynchronizerTest {
             // Given
             when(userMapper.mapUserFromToken(jwt)).thenReturn(user);
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
-            when(userRepository.save(user))
+            when(userRepository.save(Objects.requireNonNull(user)))
                     .thenThrow(new DataIntegrityViolationException("Duplicate key"));
 
             // When & Then
@@ -150,7 +151,7 @@ class UserSynchronizerTest {
 
             // Then
             verify(userRepository, never()).findByEmail(any());
-            verify(userRepository, never()).save(any());
+            verify(userRepository, never()).save(Objects.requireNonNull(any()));
         }
 
         @Test
@@ -167,7 +168,7 @@ class UserSynchronizerTest {
 
             // Then
             verify(userRepository, never()).findByEmail(any());
-            verify(userRepository, never()).save(any());
+            verify(userRepository, never()).save(Objects.requireNonNull(any()));
         }
 
         @Test
@@ -184,7 +185,7 @@ class UserSynchronizerTest {
 
             // Then
             verify(userRepository, never()).findByEmail(any());
-            verify(userRepository, never()).save(any());
+            verify(userRepository, never()).save(Objects.requireNonNull(any()));
         }
     }
 

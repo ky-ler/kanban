@@ -3,7 +3,6 @@ package com.kylerriggs.kanban.user;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.config.SecurityProperties;
 import com.kylerriggs.kanban.user.dto.UserDto;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
@@ -15,8 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jwt.Jwt;
-
-import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class UserMapperTest {
@@ -181,18 +178,13 @@ class UserMapperTest {
     class ToUserDto {
 
         @Test
-        void toUserDto_WithDefaultBoard_ShouldIncludeBoardId() {
+        void toUserDto_ShouldMapAllFields() {
             // Given
             User user = new User();
             user.setId(USER_ID);
             user.setUsername(USERNAME);
             user.setEmail(EMAIL);
             user.setProfileImageUrl(PROFILE_IMAGE_URL);
-
-            Board board = new Board();
-            UUID boardId = UUID.randomUUID();
-            board.setId(boardId);
-            user.setDefaultBoard(board);
 
             // When
             UserDto result = userMapper.toUserDto(user);
@@ -202,25 +194,6 @@ class UserMapperTest {
             assertEquals(USERNAME, result.username());
             assertEquals(EMAIL, result.email());
             assertEquals(PROFILE_IMAGE_URL, result.profileImageUrl());
-            assertEquals(boardId.toString(), result.defaultBoardId());
-        }
-
-        @Test
-        void toUserDto_WithoutDefaultBoard_ShouldHaveNullBoardId() {
-            // Given
-            User user = new User();
-            user.setId(USER_ID);
-            user.setUsername(USERNAME);
-            user.setEmail(EMAIL);
-            user.setProfileImageUrl(PROFILE_IMAGE_URL);
-            user.setDefaultBoard(null);
-
-            // When
-            UserDto result = userMapper.toUserDto(user);
-
-            // Then
-            assertEquals(USER_ID, result.id());
-            assertNull(result.defaultBoardId());
         }
     }
 

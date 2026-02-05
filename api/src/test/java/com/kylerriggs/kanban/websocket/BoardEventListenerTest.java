@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +29,6 @@ class BoardEventListenerTest {
 
         boardEventListener.handleBoardEvent(wrapper);
 
-        verify(webSocketEventService).broadcast(boardId, event);
+        verify(webSocketEventService).broadcast(Objects.requireNonNull(boardId), event);
     }
 }
