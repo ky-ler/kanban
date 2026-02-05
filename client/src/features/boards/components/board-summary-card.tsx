@@ -110,7 +110,17 @@ export const BoardSummaryCard = ({ board }: { board: BoardSummary }) => {
       </CardContent>
       <CardFooter className="pt-0">
         <Button asChild className="w-full">
-          <Link to="/boards/$boardId" params={{ boardId: String(board.id) }}>
+          <Link
+            to="/boards/$boardId"
+            params={{ boardId: String(board.id) }}
+            search={{
+              q: undefined,
+              assignee: undefined,
+              priority: undefined,
+              labels: undefined,
+              due: undefined,
+            }}
+          >
             Open Board
           </Link>
         </Button>
