@@ -456,6 +456,7 @@ public class TaskService {
         Board board = taskToMove.getBoard();
         Integer oldPosition = taskToMove.getPosition();
         UUID oldColumnId = taskToMove.getColumn().getId();
+        String oldColumnName = taskToMove.getColumn().getName();
 
         // If changing columns
         if (newColumnId != null && !oldColumnId.equals(newColumnId)) {
@@ -508,6 +509,8 @@ public class TaskService {
         Map<String, Object> details = new HashMap<>();
         details.put("oldColumnId", oldColumnId.toString());
         details.put("newColumnId", taskToMove.getColumn().getId().toString());
+        details.put("oldColumnName", oldColumnName);
+        details.put("newColumnName", taskToMove.getColumn().getName());
         details.put("oldPosition", oldPosition);
         details.put("newPosition", taskToMove.getPosition());
         activityLogService.logActivity(taskToMove, ActivityType.TASK_MOVED, toJson(details));
