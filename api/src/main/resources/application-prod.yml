@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.kylerriggs.kanban: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: OFF
