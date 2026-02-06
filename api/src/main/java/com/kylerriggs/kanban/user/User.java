@@ -32,10 +32,6 @@ public class User extends BaseEntity {
     @Column(nullable = false, name = "profile_image_url")
     private String profileImageUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "default_board_id")
-    private Board defaultBoard;
-
     @OneToMany(mappedBy = "createdBy")
     @Builder.Default
     private Set<Board> boardsCreated = new HashSet<>();

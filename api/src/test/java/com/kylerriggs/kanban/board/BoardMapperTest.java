@@ -204,7 +204,7 @@ class BoardMapperTest {
                             "Task 1",
                             column.getId(),
                             null,
-                            0,
+                            0L,
                             false,
                             false,
                             null,

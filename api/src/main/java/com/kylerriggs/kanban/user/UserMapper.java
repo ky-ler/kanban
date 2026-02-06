@@ -79,21 +79,15 @@ public class UserMapper {
     }
 
     /**
-     * Converts a User entity to a detailed DTO including email and default board. Used for user
-     * profile endpoints where full information is needed.
+     * Converts a User entity to a detailed DTO including email. Used for user profile endpoints
+     * where full information is needed.
      *
      * @param user the user entity to convert
      * @return the user as a detailed DTO
      */
     public UserDto toUserDto(User user) {
-        String defaultBoardId =
-                user.getDefaultBoard() != null ? user.getDefaultBoard().getId().toString() : null;
         return new UserDto(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getProfileImageUrl(),
-                defaultBoardId);
+                user.getId(), user.getUsername(), user.getEmail(), user.getProfileImageUrl());
     }
 
     /**

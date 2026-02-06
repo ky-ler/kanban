@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -26,7 +27,8 @@ public class TransactionalAuthHelper {
      * @return the result of the authorization check
      */
     public boolean executeAuthCheck(Supplier<Boolean> authCheck) {
-        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        TransactionTemplate template =
+                new TransactionTemplate(Objects.requireNonNull(transactionManager));
         template.setReadOnly(true);
         template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
 

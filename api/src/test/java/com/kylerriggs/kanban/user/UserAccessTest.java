@@ -17,8 +17,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Objects;
-
 @ExtendWith(MockitoExtension.class)
 class UserAccessTest {
 
@@ -111,7 +109,7 @@ class UserAccessTest {
                             IllegalStateException.class,
                             () -> userAccess.canModify(CURRENT_USER_ID));
             assertEquals("User is not authenticated", exception.getMessage());
-            verify(userRepository, never()).existsById(Objects.requireNonNull(any()));
+            verify(userRepository, never()).existsById(any());
         }
 
         @Test
@@ -126,7 +124,7 @@ class UserAccessTest {
                             IllegalStateException.class,
                             () -> userAccess.canModify(CURRENT_USER_ID));
             assertEquals("User is not authenticated", exception.getMessage());
-            verify(userRepository, never()).existsById(Objects.requireNonNull(any()));
+            verify(userRepository, never()).existsById(any());
         }
     }
 }

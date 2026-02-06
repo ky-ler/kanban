@@ -151,7 +151,7 @@ class UserSynchronizerTest {
 
             // Then
             verify(userRepository, never()).findByEmail(any());
-            verify(userRepository, never()).save(Objects.requireNonNull(any()));
+            verify(userRepository, never()).save(any());
         }
 
         @Test
@@ -168,7 +168,7 @@ class UserSynchronizerTest {
 
             // Then
             verify(userRepository, never()).findByEmail(any());
-            verify(userRepository, never()).save(Objects.requireNonNull(any()));
+            verify(userRepository, never()).save(any());
         }
 
         @Test
@@ -185,7 +185,7 @@ class UserSynchronizerTest {
 
             // Then
             verify(userRepository, never()).findByEmail(any());
-            verify(userRepository, never()).save(Objects.requireNonNull(any()));
+            verify(userRepository, never()).save(any());
         }
     }
 

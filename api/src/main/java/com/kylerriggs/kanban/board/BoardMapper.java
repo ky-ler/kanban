@@ -24,10 +24,10 @@ public class BoardMapper {
      * Converts a Board entity to a detailed DTO with all collaborators, tasks, and columns.
      *
      * @param board the board entity to convert
-     * @param isDefault whether this board is the user's default board
+     * @param currentUserId the ID of the current user to determine favorite status
      * @return the board as a detailed DTO
      */
-    public BoardDto toDto(Board board, boolean isDefault) {
+    public BoardDto toDto(Board board, String currentUserId) {
         UserSummaryDto creatorSummary = userMapper.toSummaryDto(board.getCreatedBy());
 
         CollaboratorDto[] collaborators =
@@ -53,6 +53,10 @@ public class BoardMapper {
                                                 column.getPosition()))
                         .toArray(ColumnDto[]::new);
 
+        boolean isFavorite =
+                board.getCollaborators().stream()
+                        .anyMatch(c -> c.getUser().getId().equals(currentUserId) && c.isFavorite());
+
         return new BoardDto(
                 board.getId(),
                 board.getName(),
@@ -64,7 +68,7 @@ public class BoardMapper {
                 board.isArchived(),
                 board.getDateCreated().toString(),
                 board.getDateModified().toString(),
-                isDefault);
+                isFavorite);
     }
 
     /**
@@ -72,11 +76,15 @@ public class BoardMapper {
      * listing multiple boards without loading all details.
      *
      * @param board the board entity to convert
-     * @param isDefault whether this board is the user's default board
+     * @param currentUserId the ID of the current user to determine favorite status
      * @return the board as a summary DTO
      */
-    public BoardSummary toSummaryDto(Board board, boolean isDefault) {
+    public BoardSummary toSummaryDto(Board board, String currentUserId) {
         int completedTasks = (int) board.getTasks().stream().filter(Task::isCompleted).count();
+
+        boolean isFavorite =
+                board.getCollaborators().stream()
+                        .anyMatch(c -> c.getUser().getId().equals(currentUserId) && c.isFavorite());
 
         return new BoardSummary(
                 board.getId(),
@@ -86,6 +94,6 @@ public class BoardMapper {
                 completedTasks,
                 board.getTasks().size(),
                 board.isArchived(),
-                isDefault);
+                isFavorite);
     }
 }

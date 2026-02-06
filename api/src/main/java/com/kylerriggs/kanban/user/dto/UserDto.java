@@ -6,5 +6,4 @@ public record UserDto(
         @NotBlank String id,
         @NotBlank String username,
         @NotBlank String email,
-        @NotBlank String profileImageUrl,
-        String defaultBoardId) {}
+        @NotBlank String profileImageUrl) {}

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -50,12 +51,12 @@ public class UserSynchronizer {
         if (optionalUser.isPresent()) {
             User existingUser = optionalUser.get();
             userMapper.updateUserFromToken(existingUser, token);
-            userRepository.save(existingUser);
+            userRepository.save(Objects.requireNonNull(existingUser));
             log.debug("Updated existing user: {}", existingUser.getEmail());
         } else {
             try {
                 log.info("Creating new user with email: {}", user.getEmail());
-                userRepository.save(user);
+                userRepository.save(Objects.requireNonNull(user));
             } catch (DataIntegrityViolationException e) {
                 // Race condition: Another request created this user simultaneously
                 // Fetch the user that was just created by the other request
@@ -71,7 +72,7 @@ public class UserSynchronizer {
                                                         "User should exist but was not found: "
                                                                 + user.getEmail()));
                 userMapper.updateUserFromToken(existingUser, token);
-                userRepository.save(existingUser);
+                userRepository.save(Objects.requireNonNull(existingUser));
             }
         }
     }
