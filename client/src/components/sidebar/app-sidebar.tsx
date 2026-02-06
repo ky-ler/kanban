@@ -1,17 +1,19 @@
-import * as React from "react";
+import { useState } from "react";
 import {
   ChevronRight,
-  Home,
+  FolderKanban,
   LogIn,
   LogOut,
+  Plus,
   Settings,
   User,
   UserPlus,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 
-import { BoardSwitcher } from "@/components/sidebar/board-switcher";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
+import { useGetBoardsForUser } from "@/api/gen/endpoints/board-controller/board-controller";
+import { NewBoardDialog } from "@/features/boards/components/new-board-dialog";
 import {
   Collapsible,
   CollapsibleContent,
@@ -38,65 +40,122 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const data = {
-  navMain: [
-    {
-      title: "Navigation",
-      items: [
-        {
-          title: "Home",
-          url: "/home",
-          icon: Home,
-        },
-        {
-          title: "Settings",
-          url: "/settings",
-          icon: Settings,
-        },
-      ],
-    },
-  ],
-};
+const navItems = [
+  {
+    title: "Boards",
+    url: "/boards",
+    icon: FolderKanban,
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: Settings,
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const auth = useAuth0Context();
   const { isMobile } = useSidebar();
+  const params = useParams({ strict: false });
+  const { data: boards } = useGetBoardsForUser({
+    query: { enabled: auth.isAuthenticated },
+  });
+  const [isNewBoardOpen, setIsNewBoardOpen] = useState(false);
+
+  const currentBoardId = params.boardId as string | undefined;
+  const favoriteBoards = (boards?.data.filter((b) => b.isFavorite) ?? []).sort(
+    (a, b) => a.name.localeCompare(b.name),
+  );
 
   return (
     <Sidebar {...props}>
       {auth.isAuthenticated && (
         <SidebarHeader>
-          <BoardSwitcher />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => setIsNewBoardOpen(true)}>
+                <Plus className="size-4" />
+                <span>New Board</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarHeader>
       )}
+
       <SidebarContent className="gap-0">
-        {/* We create a collapsible SidebarGroup for each parent. */}
         {auth.isAuthenticated ? (
-          data.navMain.map((section) => (
-            <Collapsible
-              key={section.title}
-              title={section.title}
-              defaultOpen
-              className="group/collapsible"
-            >
+          <>
+            {/* Favorites Section */}
+            <Collapsible defaultOpen className="group/collapsible">
               <SidebarGroup>
                 <SidebarGroupLabel
                   asChild
                   className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm"
                 >
                   <CollapsibleTrigger>
-                    {section.title}{" "}
+                    Favorites
                     <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
                   </CollapsibleTrigger>
                 </SidebarGroupLabel>
                 <CollapsibleContent>
                   <SidebarGroupContent>
                     <SidebarMenu>
-                      {section.items.map((item) => (
+                      {favoriteBoards.length === 0 ? (
+                        <p className="text-muted-foreground px-2 py-1.5 text-xs">
+                          Star boards for quick access
+                        </p>
+                      ) : (
+                        favoriteBoards.map((board) => (
+                          <SidebarMenuItem key={board.id}>
+                            <SidebarMenuButton
+                              asChild
+                              isActive={board.id === currentBoardId}
+                            >
+                              <Link
+                                to="/boards/$boardId"
+                                params={{ boardId: board.id }}
+                                search={{
+                                  q: undefined,
+                                  assignee: undefined,
+                                  priority: undefined,
+                                  labels: undefined,
+                                  due: undefined,
+                                }}
+                              >
+                                {/* TODO: replace icon, maybe indent instead */}
+                                {/* <FolderKanban className="size-4" /> */}
+                                <span>{board.name}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))
+                      )}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarGroup>
+            </Collapsible>
+
+            {/* Navigation Section */}
+            <Collapsible defaultOpen className="group/collapsible">
+              <SidebarGroup>
+                <SidebarGroupLabel
+                  asChild
+                  className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm"
+                >
+                  <CollapsibleTrigger>
+                    Navigation
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {navItems.map((item) => (
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton asChild>
                             <Link to={item.url}>
-                              {item.icon && <item.icon />}
+                              <item.icon className="size-4" />
                               <span>{item.title}</span>
                             </Link>
                           </SidebarMenuButton>
@@ -107,7 +166,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </CollapsibleContent>
               </SidebarGroup>
             </Collapsible>
-          ))
+          </>
         ) : (
           <SidebarGroup>
             <SidebarMenu>
@@ -121,6 +180,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         )}
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -186,7 +246,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
       <SidebarRail />
+
+      {/* Controlled dialog - rendered outside any dropdown */}
+      <NewBoardDialog open={isNewBoardOpen} onOpenChange={setIsNewBoardOpen} />
     </Sidebar>
   );
 }

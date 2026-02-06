@@ -4,8 +4,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context }) => {
     if (!context.auth.isLoading && context.auth.isAuthenticated) {
-      // If a user IS logged in, redirect them to the authenticated "/home" route
-      throw redirect({ to: "/home" });
+      // If a user IS logged in, redirect them to the authenticated "/boards" route
+      throw redirect({ to: "/boards" });
     }
   },
   component: Index,
