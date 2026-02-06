@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TaskService {
+    private static final long GAP = 1_000_000L;
+
     private final TaskRepository taskRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
@@ -145,12 +147,12 @@ public class TaskService {
                                                     "User not found: " + assigneeId));
         }
 
-        // Get the next position (append to end)
-        Integer maxOrder = taskRepository.findMaxPositionByBoardId(createTaskRequest.boardId());
-        int newOrder = maxOrder + 1;
+        // Get the next position for this column (append to end with GAP spacing)
+        Long maxPosition = taskRepository.findMaxPositionByColumnId(column.getId()).orElse(0L);
+        long newPosition = maxPosition + GAP;
 
         Task newTask = taskMapper.toEntity(createTaskRequest, board, createdBy, assignedTo, column);
-        newTask.setPosition(newOrder);
+        newTask.setPosition(newPosition);
 
         // Handle labels
         if (createTaskRequest.labelIds() != null && !createTaskRequest.labelIds().isEmpty()) {
@@ -177,7 +179,8 @@ public class TaskService {
         boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_CREATED", board.getId(), savedTask.getId());
+        eventPublisher.publish(
+                "TASK_CREATED", Objects.requireNonNull(board.getId()), savedTask.getId());
 
         // Log activity
         activityLogService.logActivity(savedTask, ActivityType.TASK_CREATED, null);
@@ -304,7 +307,7 @@ public class TaskService {
         boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_UPDATED", board.getId(), taskId);
+        eventPublisher.publish("TASK_UPDATED", Objects.requireNonNull(board.getId()), taskId);
 
         // Log activity for changes
         logTaskUpdateActivities(
@@ -427,24 +430,26 @@ public class TaskService {
         boardRepository.touchDateModified(boardId, Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_DELETED", boardId, taskId);
+        eventPublisher.publish("TASK_DELETED", Objects.requireNonNull(boardId), taskId);
     }
 
     /**
-     * Moves a task to a new position within the same column or to a different column. Automatically
-     * recalculates positions of all affected tasks in both source and destination columns.
+     * Moves a task to a new position within the same column or to a different column. Uses
+     * fractional indexing positioning so that only the moved task's row is updated
      *
-     * <p>This method uses pessimistic locking and atomic SQL updates to prevent race conditions
-     * when multiple users move tasks concurrently.
+     * <p>The caller specifies neighbor task IDs (afterTaskId, beforeTaskId) instead of an absolute
+     * position. The backend computes the physical position as the midpoint between the two
+     * neighbors. If no gap remains, the column is rebalanced.
      *
      * @param taskId the ID of the task to move
-     * @param moveTaskRequest the new position and optional new column ID
+     * @param moveTaskRequest the move request containing neighbor references and optional column ID
      * @throws ResourceNotFoundException if the task or column doesn't exist
      */
     @Transactional
     public void moveTask(@NonNull UUID taskId, MoveTaskRequest moveTaskRequest) {
-        Integer newPosition = moveTaskRequest.newPosition();
         UUID newColumnId = moveTaskRequest.newColumnId();
+        UUID afterTaskId = moveTaskRequest.afterTaskId();
+        UUID beforeTaskId = moveTaskRequest.beforeTaskId();
 
         // Use pessimistic write lock to prevent concurrent modifications
         Task taskToMove =
@@ -454,13 +459,16 @@ public class TaskService {
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         Board board = taskToMove.getBoard();
-        Integer oldPosition = taskToMove.getPosition();
+        Long oldPosition = taskToMove.getPosition();
         UUID oldColumnId = taskToMove.getColumn().getId();
         String oldColumnName = taskToMove.getColumn().getName();
 
-        // If changing columns
+        // Determine the target column
+        UUID targetColumnId = (newColumnId != null) ? newColumnId : oldColumnId;
+        Column targetColumn = taskToMove.getColumn();
+
         if (newColumnId != null && !oldColumnId.equals(newColumnId)) {
-            Column newColumn =
+            targetColumn =
                     columnRepository
                             .findById(newColumnId)
                             .orElseThrow(
@@ -469,41 +477,28 @@ public class TaskService {
                                                     "Column not found: " + newColumnId));
 
             // Validate new column belongs to the same board
-            if (!newColumn.getBoard().getId().equals(board.getId())) {
+            if (!targetColumn.getBoard().getId().equals(board.getId())) {
                 throw new BadRequestException("Column does not belong to this board");
             }
 
-            // Adjust positions in old column (shift down tasks after the moved task)
-            taskRepository.decrementPositionsAfter(oldColumnId, oldPosition);
-
-            // Adjust positions in new column (shift up tasks at/after new position)
-            taskRepository.incrementPositionsFrom(newColumnId, newPosition);
-
-            taskToMove.setColumn(newColumn);
-            taskToMove.setPosition(newPosition);
+            taskToMove.setColumn(targetColumn);
         }
-        // Same column reordering
-        else {
-            if (oldPosition.equals(newPosition)) {
-                return; // No change needed
-            }
 
-            if (newPosition > oldPosition) {
-                // Moving down: Shift tasks between old and new position up
-                taskRepository.decrementPositionsInRange(oldColumnId, oldPosition, newPosition);
-            } else {
-                // Moving up: Shift tasks between new and old position down
-                taskRepository.incrementPositionsInRange(oldColumnId, newPosition, oldPosition);
-            }
+        // Compute the new position based on neighbor references
+        long newPosition = computePosition(targetColumnId, afterTaskId, beforeTaskId, taskId);
 
-            taskToMove.setPosition(newPosition);
+        // Check if position actually changed (same column, same position)
+        if (oldColumnId.equals(targetColumnId) && oldPosition.equals(newPosition)) {
+            return;
         }
+
+        taskToMove.setPosition(newPosition);
 
         // Atomically update board's dateModified to avoid optimistic locking conflicts
         boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_MOVED", board.getId(), taskId);
+        eventPublisher.publish("TASK_MOVED", Objects.requireNonNull(board.getId()), taskId);
 
         // Log activity for move
         Map<String, Object> details = new HashMap<>();
@@ -514,5 +509,104 @@ public class TaskService {
         details.put("oldPosition", oldPosition);
         details.put("newPosition", taskToMove.getPosition());
         activityLogService.logActivity(taskToMove, ActivityType.TASK_MOVED, toJson(details));
+    }
+
+    /**
+     * Computes a fractional indexing position between two neighbor tasks. If both neighbors are
+     * null, places at the end. If only afterTaskId is set, places after it. If only beforeTaskId is
+     * set, places before it. If both are set, computes the midpoint. Triggers rebalance if the gap
+     * is exhausted.
+     */
+    private long computePosition(
+            UUID columnId, UUID afterTaskId, UUID beforeTaskId, UUID movingTaskId) {
+        Long afterPos = null;
+        Long beforePos = null;
+
+        if (afterTaskId != null) {
+            afterPos =
+                    taskRepository
+                            .findPositionById(afterTaskId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "After-task not found: " + afterTaskId));
+        }
+
+        if (beforeTaskId != null) {
+            beforePos =
+                    taskRepository
+                            .findPositionById(beforeTaskId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "Before-task not found: " + beforeTaskId));
+        }
+
+        // Case: placing at the end of the column (no before neighbor)
+        if (afterPos != null && beforePos == null) {
+            return afterPos + GAP;
+        }
+
+        // Case: placing at the beginning of the column (no after neighbor)
+        if (afterPos == null && beforePos != null) {
+            long pos = beforePos / 2;
+            if (pos <= 0 || pos == beforePos) {
+                rebalanceColumn(columnId, movingTaskId);
+                // Recompute after rebalance
+                beforePos =
+                        taskRepository
+                                .findPositionById(beforeTaskId)
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "Before-task not found: " + beforeTaskId));
+                return beforePos / 2;
+            }
+            return pos;
+        }
+
+        // Case: placing between two tasks
+        if (afterPos != null) {
+            long mid = afterPos + (beforePos - afterPos) / 2;
+            if (mid <= afterPos || mid >= beforePos) {
+                rebalanceColumn(columnId, movingTaskId);
+                // Recompute positions after rebalance
+                afterPos =
+                        taskRepository
+                                .findPositionById(afterTaskId)
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "After-task not found: " + afterTaskId));
+                beforePos =
+                        taskRepository
+                                .findPositionById(beforeTaskId)
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "Before-task not found: " + beforeTaskId));
+                mid = afterPos + (beforePos - afterPos) / 2;
+            }
+            return mid;
+        }
+
+        // Case: empty column or no neighbors specified — place at the end
+        Long maxPos = taskRepository.findMaxPositionByColumnId(columnId).orElse(0L);
+        return maxPos + GAP;
+    }
+
+    /**
+     * Rebalances all task positions in a column by redistributing them with even fractional
+     * indexing spacing. Excludes the task currently being moved to avoid constraint violations.
+     */
+    private void rebalanceColumn(UUID columnId, UUID movingTaskId) {
+        List<Task> tasks = taskRepository.findByColumnIdOrderByPosition(columnId);
+        long pos = GAP;
+        for (Task t : tasks) {
+            if (!t.getId().equals(movingTaskId)) {
+                taskRepository.updatePosition(t.getId(), pos);
+                pos += GAP;
+            }
+        }
     }
 }

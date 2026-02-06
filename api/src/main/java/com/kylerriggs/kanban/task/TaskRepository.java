@@ -29,75 +29,45 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      * @param boardId the ID of the board
      * @return the maximum position value, or -1 if there are no tasks in the board
      */
-    @Query("SELECT COALESCE(MAX(t.position), -1) FROM Task t WHERE t.board.id = :boardId")
-    Integer findMaxPositionByBoardId(@Param("boardId") UUID boardId);
+    @Query("SELECT COALESCE(MAX(t.position), -1L) FROM Task t WHERE t.board.id = :boardId")
+    Long findMaxPositionByBoardId(@Param("boardId") UUID boardId);
 
     /**
-     * Decrements the position of all tasks in a column that have a position greater than the
-     * specified threshold. Used when removing a task or moving it to another column.
+     * Finds the position of a task by its ID.
      *
-     * @param columnId the column ID
-     * @param positionThreshold only tasks with position > threshold will be updated
-     * @return the number of tasks updated
+     * @param taskId the task ID
+     * @return the position value
      */
-    @Modifying
-    @Query(
-            "UPDATE Task t SET t.position = t.position - 1 WHERE t.column.id = :columnId AND"
-                    + " t.position > :positionThreshold")
-    int decrementPositionsAfter(
-            @Param("columnId") UUID columnId,
-            @Param("positionThreshold") Integer positionThreshold);
+    @Query("SELECT t.position FROM Task t WHERE t.id = :taskId")
+    Optional<Long> findPositionById(@Param("taskId") UUID taskId);
 
     /**
-     * Increments the position of all tasks in a column that have a position greater than or equal
-     * to the specified threshold. Used when inserting a task at a specific position.
+     * Finds the maximum position value among tasks in the specified column.
      *
-     * @param columnId the column ID
-     * @param positionThreshold only tasks with position >= threshold will be updated
-     * @return the number of tasks updated
+     * @param columnId the ID of the column
+     * @return the maximum position value, or null if there are no tasks in the column
      */
-    @Modifying
-    @Query(
-            "UPDATE Task t SET t.position = t.position + 1 WHERE t.column.id = :columnId AND"
-                    + " t.position >= :positionThreshold")
-    int incrementPositionsFrom(
-            @Param("columnId") UUID columnId,
-            @Param("positionThreshold") Integer positionThreshold);
+    @Query("SELECT MAX(t.position) FROM Task t WHERE t.column.id = :columnId")
+    Optional<Long> findMaxPositionByColumnId(@Param("columnId") UUID columnId);
 
     /**
-     * Decrements positions of tasks in a range (used when moving a task down within the same
-     * column).
+     * Finds all task IDs and positions in a column, ordered by position. Used for rebalancing.
      *
      * @param columnId the column ID
-     * @param minPosition the minimum position (exclusive)
-     * @param maxPosition the maximum position (inclusive)
-     * @return the number of tasks updated
+     * @return list of tasks ordered by position
      */
-    @Modifying
-    @Query(
-            "UPDATE Task t SET t.position = t.position - 1 WHERE t.column.id = :columnId AND"
-                    + " t.position > :minPosition AND t.position <= :maxPosition")
-    int decrementPositionsInRange(
-            @Param("columnId") UUID columnId,
-            @Param("minPosition") Integer minPosition,
-            @Param("maxPosition") Integer maxPosition);
+    @Query("SELECT t FROM Task t WHERE t.column.id = :columnId ORDER BY t.position")
+    List<Task> findByColumnIdOrderByPosition(@Param("columnId") UUID columnId);
 
     /**
-     * Increments positions of tasks in a range (used when moving a task up within the same column).
+     * Updates a single task's position.
      *
-     * @param columnId the column ID
-     * @param minPosition the minimum position (inclusive)
-     * @param maxPosition the maximum position (exclusive)
-     * @return the number of tasks updated
+     * @param taskId the task ID
+     * @param position the new position
      */
     @Modifying
-    @Query(
-            "UPDATE Task t SET t.position = t.position + 1 WHERE t.column.id = :columnId AND"
-                    + " t.position >= :minPosition AND t.position < :maxPosition")
-    int incrementPositionsInRange(
-            @Param("columnId") UUID columnId,
-            @Param("minPosition") Integer minPosition,
-            @Param("maxPosition") Integer maxPosition);
+    @Query("UPDATE Task t SET t.position = :position WHERE t.id = :taskId")
+    void updatePosition(@Param("taskId") UUID taskId, @Param("position") Long position);
 
     /**
      * Checks whether the given user is authorized for the task's board. The query returns true if

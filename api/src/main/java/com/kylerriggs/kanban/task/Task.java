@@ -46,7 +46,7 @@ public class Task extends BaseEntity {
     private String description;
 
     @jakarta.persistence.Column(name = "position", nullable = false)
-    private Integer position;
+    private Long position;
 
     @Builder.Default private boolean isCompleted = false;
 

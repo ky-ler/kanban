@@ -52,6 +52,10 @@ class TaskServiceTest {
     private static final UUID COLUMN_ID = UUID.fromString("c356c2d0-891b-44de-816b-c9259cd00393");
     private static final UUID NEW_COLUMN_ID =
             UUID.fromString("d456c2d0-891b-44de-816b-c9259cd00394");
+    private static final UUID AFTER_TASK_ID =
+            UUID.fromString("e556c2d0-891b-44de-816b-c9259cd00395");
+    private static final UUID BEFORE_TASK_ID =
+            UUID.fromString("f656c2d0-891b-44de-816b-c9259cd00396");
 
     @Mock private TaskRepository taskRepository;
     @Mock private BoardRepository boardRepository;
@@ -118,7 +122,7 @@ class TaskServiceTest {
                         .board(board)
                         .column(column)
                         .createdBy(user)
-                        .position(0)
+                        .position(1_000_000L)
                         .labels(new HashSet<>())
                         .build();
         task.setDateCreated(Instant.now());
@@ -134,7 +138,7 @@ class TaskServiceTest {
                         "Test Task",
                         "Test Description",
                         COLUMN_ID,
-                        0,
+                        1_000_000L,
                         false,
                         false,
                         null, // priority
@@ -207,10 +211,10 @@ class TaskServiceTest {
                     .thenReturn(Optional.of(board));
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.of(column));
-            when(taskRepository.findMaxPositionByBoardId(Objects.requireNonNull(BOARD_ID)))
-                    .thenReturn(-1);
+            when(taskRepository.findMaxPositionByColumnId(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.empty());
             when(taskMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(task);
-            when(taskRepository.save(Objects.requireNonNull(any(Task.class)))).thenReturn(task);
+            when(taskRepository.save(any(Task.class))).thenReturn(task);
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
@@ -218,7 +222,7 @@ class TaskServiceTest {
 
             // Then
             assertNotNull(result);
-            verify(taskRepository).save(Objects.requireNonNull(any(Task.class)));
+            verify(taskRepository).save(any(Task.class));
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
@@ -233,7 +237,7 @@ class TaskServiceTest {
             assertThrows(
                     UnauthorizedException.class,
                     () -> taskService.createTask(Objects.requireNonNull(createTaskRequest)));
-            verify(taskRepository, never()).save(Objects.requireNonNull(any()));
+            verify(taskRepository, never()).save(any());
         }
 
         @Test
@@ -364,10 +368,10 @@ class TaskServiceTest {
                     .thenReturn(Optional.of(board));
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.of(column));
-            when(taskRepository.findMaxPositionByBoardId(Objects.requireNonNull(BOARD_ID)))
-                    .thenReturn(-1);
+            when(taskRepository.findMaxPositionByColumnId(Objects.requireNonNull(COLUMN_ID)))
+                    .thenReturn(Optional.empty());
             when(taskMapper.toEntity(any(), any(), any(), eq(assignee), any())).thenReturn(task);
-            when(taskRepository.save(Objects.requireNonNull(any(Task.class)))).thenReturn(task);
+            when(taskRepository.save(any(Task.class))).thenReturn(task);
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
@@ -616,7 +620,7 @@ class TaskServiceTest {
             assertThrows(
                     ResourceNotFoundException.class,
                     () -> taskService.deleteTask(Objects.requireNonNull(TASK_ID)));
-            verify(taskRepository, never()).delete(Objects.requireNonNull(any()));
+            verify(taskRepository, never()).delete(any());
         }
     }
 
@@ -624,84 +628,125 @@ class TaskServiceTest {
     class MoveTaskTests {
         @BeforeEach
         void setUp() {
-            task.setPosition(1);
+            task.setPosition(1_000_000L);
             task.setColumn(column);
         }
 
         @Test
-        void moveTask_SamePosition_NoChange() {
-            // Given
-            MoveTaskRequest request = new MoveTaskRequest(1, null);
+        void moveTask_NoNeighbors_PlacesAtEndOfColumn() {
+            // Given — no afterTaskId or beforeTaskId, same column
+            MoveTaskRequest request = new MoveTaskRequest(null, null, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findMaxPositionByColumnId(COLUMN_ID))
+                    .thenReturn(Optional.of(1_000_000L));
 
             // When
             taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
 
-            // Then
-            verify(taskRepository, never()).decrementPositionsInRange(any(), any(), any());
-            verify(taskRepository, never()).incrementPositionsInRange(any(), any(), any());
-            verify(boardRepository, never()).save(Objects.requireNonNull(any()));
-        }
-
-        @Test
-        void moveTask_DownInSameColumn_ShiftsPositions() {
-            // Given
-            MoveTaskRequest request = new MoveTaskRequest(3, null);
-            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-
-            // When
-            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
-
-            // Then
-            assertEquals(3, task.getPosition());
-            verify(taskRepository).decrementPositionsInRange(COLUMN_ID, 1, 3);
+            // Then — position = maxPos + GAP = 2_000_000
+            assertEquals(2_000_000L, task.getPosition());
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
         }
 
         @Test
-        void moveTask_UpInSameColumn_ShiftsPositions() {
-            // Given
-            task.setPosition(3);
-            MoveTaskRequest request = new MoveTaskRequest(1, null);
+        void moveTask_AfterNeighborOnly_PlacesAfterIt() {
+            // Given — place after a task at position 2_000_000
+            MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findPositionById(AFTER_TASK_ID))
+                    .thenReturn(Optional.of(2_000_000L));
 
             // When
             taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
 
-            // Then
-            assertEquals(1, task.getPosition());
-            verify(taskRepository).incrementPositionsInRange(COLUMN_ID, 1, 3);
+            // Then — position = afterPos + GAP = 3_000_000
+            assertEquals(3_000_000L, task.getPosition());
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
         }
 
         @Test
-        void moveTask_ToDifferentColumn_ShiftsPositionsInBothColumns() {
-            // Given
-            MoveTaskRequest request = new MoveTaskRequest(0, NEW_COLUMN_ID);
+        void moveTask_BeforeNeighborOnly_PlacesBeforeIt() {
+            // Given — task starts at 3_000_000, place before a task at position 2_000_000
+            task.setPosition(3_000_000L);
+            MoveTaskRequest request = new MoveTaskRequest(null, BEFORE_TASK_ID, null);
+            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findPositionById(BEFORE_TASK_ID))
+                    .thenReturn(Optional.of(2_000_000L));
+
+            // When
+            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
+
+            // Then — position = beforePos / 2 = 1_000_000
+            assertEquals(1_000_000L, task.getPosition());
+            verify(boardRepository)
+                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
+        }
+
+        @Test
+        void moveTask_BetweenTwoNeighbors_PlacesAtMidpoint() {
+            // Given — place between tasks at 1_000_000 and 3_000_000
+            MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, BEFORE_TASK_ID, null);
+            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findPositionById(AFTER_TASK_ID))
+                    .thenReturn(Optional.of(1_000_000L));
+            when(taskRepository.findPositionById(BEFORE_TASK_ID))
+                    .thenReturn(Optional.of(3_000_000L));
+
+            // When
+            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
+
+            // Then — midpoint = 1_000_000 + (3_000_000 - 1_000_000) / 2 = 2_000_000
+            assertEquals(2_000_000L, task.getPosition());
+        }
+
+        @Test
+        void moveTask_ToDifferentColumn_ChangesColumnAndComputesPosition() {
+            // Given — move to a different column, after a neighbor
+            MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, NEW_COLUMN_ID);
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
             when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
                     .thenReturn(Optional.of(newColumn));
+            when(taskRepository.findPositionById(AFTER_TASK_ID))
+                    .thenReturn(Optional.of(1_000_000L));
 
             // When
             taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
 
             // Then
             assertEquals(newColumn, task.getColumn());
-            assertEquals(0, task.getPosition());
-            verify(taskRepository).decrementPositionsAfter(Objects.requireNonNull(COLUMN_ID), 1);
-            verify(taskRepository).incrementPositionsFrom(Objects.requireNonNull(NEW_COLUMN_ID), 0);
+            assertEquals(2_000_000L, task.getPosition());
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
+            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
+        }
+
+        @Test
+        void moveTask_ToDifferentColumnEmptyNoNeighbors_PlacesAtGap() {
+            // Given — move to an empty column with no neighbors specified
+            MoveTaskRequest request = new MoveTaskRequest(null, null, NEW_COLUMN_ID);
+            when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
+                    .thenReturn(Optional.of(newColumn));
+            when(taskRepository.findMaxPositionByColumnId(NEW_COLUMN_ID))
+                    .thenReturn(Optional.empty());
+
+            // When
+            taskService.moveTask(Objects.requireNonNull(TASK_ID), request);
+
+            // Then — empty column: maxPos defaults to 0 + GAP = 1_000_000
+            assertEquals(newColumn, task.getColumn());
+            assertEquals(1_000_000L, task.getPosition());
         }
 
         @Test
         void moveTask_WhenTaskNotFound_ThrowsResourceNotFoundException() {
             // Given
-            MoveTaskRequest request = new MoveTaskRequest(0, null);
+            MoveTaskRequest request = new MoveTaskRequest(null, null, null);
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.empty());
 
@@ -714,7 +759,8 @@ class TaskServiceTest {
         @Test
         void moveTask_WhenNewColumnNotFound_ThrowsResourceNotFoundException() {
             // Given
-            MoveTaskRequest request = new MoveTaskRequest(0, Objects.requireNonNull(NEW_COLUMN_ID));
+            MoveTaskRequest request =
+                    new MoveTaskRequest(null, null, Objects.requireNonNull(NEW_COLUMN_ID));
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
             when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
@@ -738,7 +784,8 @@ class TaskServiceTest {
                             .board(otherBoard)
                             .build();
 
-            MoveTaskRequest request = new MoveTaskRequest(0, Objects.requireNonNull(NEW_COLUMN_ID));
+            MoveTaskRequest request =
+                    new MoveTaskRequest(null, null, Objects.requireNonNull(NEW_COLUMN_ID));
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
             when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
@@ -747,6 +794,19 @@ class TaskServiceTest {
             // When & Then
             assertThrows(
                     BadRequestException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
+        }
+
+        @Test
+        void moveTask_WhenAfterTaskNotFound_ThrowsResourceNotFoundException() {
+            // Given
+            MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, null);
+            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findPositionById(AFTER_TASK_ID)).thenReturn(Optional.empty());
+
+            // When & Then
+            assertThrows(
+                    ResourceNotFoundException.class,
                     () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
         }
     }
