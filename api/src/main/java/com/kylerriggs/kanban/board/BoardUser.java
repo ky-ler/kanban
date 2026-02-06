@@ -6,6 +6,7 @@ import com.kylerriggs.kanban.user.User;
 import jakarta.persistence.*;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,4 +34,8 @@ public class BoardUser extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private BoardRole role;
+
+    @Column(name = "is_favorite", nullable = false)
+    @Builder.Default
+    private boolean isFavorite = false;
 }

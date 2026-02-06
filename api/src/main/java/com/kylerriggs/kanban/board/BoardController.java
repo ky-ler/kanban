@@ -167,4 +167,18 @@ public class BoardController {
         boardService.updateCollaboratorRole(boardId, userId, req.newRole());
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Toggles the favorite status of a board for the current user. Requires the user to be a
+     * collaborator on the board.
+     *
+     * @param boardId the ID of the board to toggle favorite
+     * @return the new favorite status (true if now a favorite, false otherwise)
+     */
+    @PostMapping("/{boardId}/favorite")
+    @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
+    public ResponseEntity<Boolean> toggleFavorite(@NonNull @PathVariable UUID boardId) {
+        boolean isFavorite = boardService.toggleFavorite(boardId);
+        return ResponseEntity.ok(isFavorite);
+    }
 }

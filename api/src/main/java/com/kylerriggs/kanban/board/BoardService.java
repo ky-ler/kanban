@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -42,8 +41,7 @@ public class BoardService {
     private final BoardEventPublisher eventPublisher;
 
     /**
-     * Creates a new board with default columns and assigns the creator as an admin. The board is
-     * automatically set as the user's default if they don't have one.
+     * Creates a new board with default columns and assigns the creator as an admin.
      *
      * @param boardRequest containing name and description of the board to create
      * @return the created board as a DTO
@@ -100,20 +98,14 @@ public class BoardService {
         board.getCollaborators().add(ownerMembership);
         Board savedBoard = boardRepository.save(board);
 
-        boolean isDefault = false;
-        if (owner.getDefaultBoard() == null) {
-            owner.setDefaultBoard(savedBoard);
-            isDefault = true;
-        }
-
-        return boardMapper.toDto(savedBoard, isDefault);
+        return boardMapper.toDto(savedBoard, requestUserId);
     }
 
     /**
      * Retrieves a board by its ID with all details including collaborators, tasks, and columns.
      *
      * @param boardId the ID of the board to retrieve
-     * @return the board as a DTO with isDefault flag
+     * @return the board as a DTO with isFavorite flag
      * @throws ResourceNotFoundException if the board doesn't exist
      */
     public BoardDto getBoard(@NonNull UUID boardId) {
@@ -124,10 +116,8 @@ public class BoardService {
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         String requestUserId = userService.getCurrentUserId();
-        UUID defaultBoardId = userRepository.findDefaultBoardIdById(requestUserId).orElse(null);
-        boolean isDefault = Objects.equals(board.getId(), defaultBoardId);
 
-        return boardMapper.toDto(board, isDefault);
+        return boardMapper.toDto(board, requestUserId);
     }
 
     /**
@@ -145,20 +135,17 @@ public class BoardService {
 
     /**
      * Retrieves all boards that the current user is a collaborator on. Returns summary information
-     * including task counts and default board status.
+     * including task counts and favorite status.
      *
      * @return list of board summaries for the current user
      */
     public List<BoardSummary> getBoardsForUser() {
         String requestUserId = userService.getCurrentUserId();
-        UUID defaultBoardId = userService.getCurrentUserDefaultBoardId();
 
         List<Board> boards =
                 boardRepository.findAllByCollaboratorsUserIdWithTasksAndColumn(requestUserId);
 
-        return boards.stream()
-                .map(p -> boardMapper.toSummaryDto(p, Objects.equals(p.getId(), defaultBoardId)))
-                .toList();
+        return boards.stream().map(p -> boardMapper.toSummaryDto(p, requestUserId)).toList();
     }
 
     /**
@@ -171,6 +158,8 @@ public class BoardService {
      */
     @Transactional
     public BoardDto updateBoard(@NonNull UUID boardId, BoardRequest boardRequest) {
+        String requestUserId = userService.getCurrentUserId();
+
         Board boardToUpdate =
                 boardRepository
                         .findById(boardId)
@@ -185,10 +174,7 @@ public class BoardService {
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("BOARD_UPDATED", boardId, boardId);
 
-        UUID requestUserDefaultBoard = userService.getCurrentUserDefaultBoardId();
-        boolean isDefault = Objects.equals(boardToUpdate.getId(), requestUserDefaultBoard);
-
-        return boardMapper.toDto(boardToUpdate, isDefault);
+        return boardMapper.toDto(boardToUpdate, requestUserId);
     }
 
     // /**
@@ -208,8 +194,7 @@ public class BoardService {
     // }
 
     /**
-     * Adds a new collaborator to a board with the specified role. If the user has no default board,
-     * this board becomes their default.
+     * Adds a new collaborator to a board with the specified role.
      *
      * @param boardId the ID of the board
      * @param collaboratorRequest the collaborator request containing user ID and role
@@ -253,16 +238,12 @@ public class BoardService {
 
         board.getCollaborators().add(newCollaborator);
 
-        if (userToAdd.getDefaultBoard() == null) {
-            userToAdd.setDefaultBoard(board);
-        }
-
         boardRepository.save(board);
     }
 
     /**
      * Removes a collaborator from a board. Prevents removal if they are the only collaborator or
-     * last admin. Unassigns the user from all tasks and clears their default board if needed.
+     * last admin. Unassigns the user from all tasks.
      *
      * @param boardId the ID of the board
      * @param userId the ID of the user to remove
@@ -308,12 +289,6 @@ public class BoardService {
                                 task.setAssignedTo(null);
                             }
                         });
-
-        User user = collaboratorToRemove.getUser();
-        if (user.getDefaultBoard() != null && user.getDefaultBoard().getId().equals(boardId)) {
-            user.setDefaultBoard(null);
-            userRepository.save(user);
-        }
 
         board.getCollaborators().remove(collaboratorToRemove);
 
@@ -382,5 +357,27 @@ public class BoardService {
         collaboratorToUpdate.setRole(newRole);
 
         boardRepository.save(board);
+    }
+
+    /**
+     * Toggles the favorite status of a board for the current user.
+     *
+     * @param boardId the ID of the board to toggle favorite status
+     * @return the new favorite status (true if now a favorite, false otherwise)
+     * @throws ResourceNotFoundException if the user is not a collaborator on the board
+     */
+    @Transactional
+    public boolean toggleFavorite(@NonNull UUID boardId) {
+        String requestUserId = userService.getCurrentUserId();
+        BoardUser boardUser =
+                boardUserRepository
+                        .findByBoardIdAndUserId(boardId, requestUserId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Not a collaborator on this board"));
+        boardUser.setFavorite(!boardUser.isFavorite());
+        boardUserRepository.save(boardUser);
+        return boardUser.isFavorite();
     }
 }
