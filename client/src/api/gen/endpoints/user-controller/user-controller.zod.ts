@@ -4,10 +4,8 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-import * as zod from 'zod';
+import * as zod from "zod";
 
+export const getDefaultBoardResponse = zod.string().uuid();
 
-export const getDefaultBoardResponse = zod.string().uuid()
-
-export const setDefaultBoardBody = zod.string().uuid()
-
+export const setDefaultBoardBody = zod.string().uuid();
