@@ -84,7 +84,13 @@ function EditBoardComponent() {
       router.navigate({
         to: "/boards/$boardId",
         params: { boardId },
-        search: { q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined },
+        search: {
+          q: undefined,
+          assignee: undefined,
+          priority: undefined,
+          labels: undefined,
+          due: undefined,
+        },
       });
     }
   };

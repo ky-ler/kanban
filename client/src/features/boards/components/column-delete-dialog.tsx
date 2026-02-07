@@ -72,9 +72,7 @@ export const ColumnDeleteDialog = ({
               </>
             )}
           </AlertDialogDescription>
-          {error && (
-            <p className="text-sm text-destructive mt-2">{error}</p>
-          )}
+          {error && <p className="text-destructive mt-2 text-sm">{error}</p>}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

@@ -109,7 +109,7 @@ function BoardPreviewContent({ board }: { board: BoardSummary }) {
           />
         </div>
         <CardDescription className="line-clamp-3">
-          {board.description || "No description provided"}
+          {board.description || "No description yet"}
         </CardDescription>
       </CardHeader>
 

@@ -54,10 +54,10 @@ const MAX_USES_OPTIONS = [
 export function InvitesTab({ boardId }: InvitesTabProps) {
   const queryClient = useQueryClient();
   const [expiration, setExpiration] = useState<CreateInviteRequestExpiration>(
-    CreateInviteRequestExpiration.SEVEN_DAYS
+    CreateInviteRequestExpiration.SEVEN_DAYS,
   );
   const [maxUses, setMaxUses] = useState<CreateInviteRequestMaxUses>(
-    CreateInviteRequestMaxUses.UNLIMITED
+    CreateInviteRequestMaxUses.UNLIMITED,
   );
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -97,7 +97,7 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
         loading: "Creating invite...",
         success: "Invite created!",
         error: "Failed to create invite",
-      }
+      },
     );
   };
 
@@ -148,17 +148,21 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
   return (
     <div className="space-y-6">
       {/* Create Invite Form */}
-      <div className="rounded-lg border p-4 space-y-4">
-        <h4 className="font-medium flex items-center gap-2">
+      <div className="space-y-4 rounded-lg border p-4">
+        <h4 className="flex items-center gap-2 font-medium">
           <Link2 className="h-4 w-4" />
           Create New Invite
         </h4>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Expires after</label>
+            <label className="text-muted-foreground text-sm">
+              Expires after
+            </label>
             <Select
               value={expiration}
-              onValueChange={(v) => setExpiration(v as CreateInviteRequestExpiration)}
+              onValueChange={(v) =>
+                setExpiration(v as CreateInviteRequestExpiration)
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -173,7 +177,7 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Max uses</label>
+            <label className="text-muted-foreground text-sm">Max uses</label>
             <Select
               value={maxUses}
               onValueChange={(v) => setMaxUses(v as CreateInviteRequestMaxUses)}
@@ -196,23 +200,27 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
           disabled={createInviteMutation.isPending}
           className="w-full"
         >
-          {createInviteMutation.isPending ? "Creating..." : "Create Invite Link"}
+          {createInviteMutation.isPending
+            ? "Creating..."
+            : "Create Invite Link"}
         </Button>
       </div>
 
       {/* Invites List */}
       <div className="space-y-3">
-        <h4 className="font-medium text-sm text-muted-foreground">
+        <h4 className="text-muted-foreground text-sm font-medium">
           Active Invites ({invites.length})
         </h4>
         {isLoading ? (
-          <div className="text-center py-4 text-muted-foreground">Loading...</div>
+          <div className="text-muted-foreground py-4 text-center">
+            Loading...
+          </div>
         ) : invites.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground">
+          <div className="text-muted-foreground py-4 text-center">
             No active invites. Create one above.
           </div>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="max-h-64 space-y-2 overflow-y-auto">
             {invites.map((invite) => {
               const expired = isInviteExpired(invite);
               const maxedOut = isInviteMaxedOut(invite);
@@ -221,12 +229,12 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
               return (
                 <div
                   key={invite.id}
-                  className={`rounded-lg border p-3 space-y-2 ${
-                    inactive ? "opacity-60 bg-muted/50" : "bg-card"
+                  className={`space-y-2 rounded-lg border p-3 ${
+                    inactive ? "bg-muted/50 opacity-60" : "bg-card"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <code className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                    <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
                       {invite.code}
                     </code>
                     <div className="flex items-center gap-1">
@@ -247,16 +255,19 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            className="text-destructive hover:text-destructive h-8 w-8 p-0"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Revoke this invite?</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              Revoke this invite?
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              This invite link will no longer work. This action cannot be undone.
+                              This invite link will no longer work. This action
+                              cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -266,14 +277,16 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
                               onClick={() => handleRevokeInvite(invite.id)}
                               disabled={revokeInviteMutation.isPending}
                             >
-                              {revokeInviteMutation.isPending ? "Revoking..." : "Revoke"}
+                              {revokeInviteMutation.isPending
+                                ? "Revoking..."
+                                : "Revoke"}
                             </Button>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="text-muted-foreground flex items-center gap-4 text-xs">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {expired ? (
@@ -285,7 +298,9 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
                     <span className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
                       {maxedOut ? (
-                        <span className="text-destructive">Max uses reached</span>
+                        <span className="text-destructive">
+                          Max uses reached
+                        </span>
                       ) : (
                         getUsageStatus(invite)
                       )}

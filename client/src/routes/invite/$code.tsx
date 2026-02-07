@@ -90,8 +90,8 @@ function InvitePage() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-              <AlertCircle className="h-6 w-6 text-destructive" />
+            <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+              <AlertCircle className="text-destructive h-6 w-6" />
             </div>
             <CardTitle>Invite Not Found</CardTitle>
             <CardDescription>
@@ -110,7 +110,10 @@ function InvitePage() {
 
   // Invalid invite (expired, maxed out, revoked)
   if (!preview.valid) {
-    const errorMessages: Record<string, { title: string; description: string }> = {
+    const errorMessages: Record<
+      string,
+      { title: string; description: string }
+    > = {
       expired: {
         title: "Invite Expired",
         description: "This invite link has expired and is no longer valid.",
@@ -134,8 +137,8 @@ function InvitePage() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-              <AlertCircle className="h-6 w-6 text-destructive" />
+            <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+              <AlertCircle className="text-destructive h-6 w-6" />
             </div>
             <CardTitle>{error.title}</CardTitle>
             <CardDescription>{error.description}</CardDescription>
@@ -155,8 +158,8 @@ function InvitePage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Kanban className="h-6 w-6 text-primary" />
+          <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+            <Kanban className="text-primary h-6 w-6" />
           </div>
           <CardTitle>You've been invited!</CardTitle>
           <CardDescription>
@@ -190,7 +193,7 @@ function InvitePage() {
             </Button>
           ) : (
             <div className="space-y-4">
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-center text-sm">
                 Sign in to join this board
               </p>
               <Button onClick={handleSignIn} className="w-full" size="lg">

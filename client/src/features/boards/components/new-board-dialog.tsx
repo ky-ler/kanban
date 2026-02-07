@@ -30,8 +30,23 @@ import {
 import type { BoardRequest } from "@/api/gen/model";
 import { createBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 
-export const NewBoardDialog = ({ trigger }: { trigger: React.ReactNode }) => {
-  const [isOpen, setIsOpen] = useState(false);
+interface NewBoardDialogProps {
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const NewBoardDialog = ({
+  trigger,
+  open,
+  onOpenChange,
+}: NewBoardDialogProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use external state if provided, otherwise internal
+  const isOpen = open ?? internalOpen;
+  const setIsOpen = onOpenChange ?? setInternalOpen;
+
   const queryClient = useQueryClient();
 
   const createBoardMutation = useCreateBoard({
@@ -43,7 +58,13 @@ export const NewBoardDialog = ({ trigger }: { trigger: React.ReactNode }) => {
         router.navigate({
           to: "/boards/$boardId",
           params: { boardId: data.id.toString() },
-          search: { q: undefined, assignee: undefined, priority: undefined, labels: undefined, due: undefined },
+          search: {
+            q: undefined,
+            assignee: undefined,
+            priority: undefined,
+            labels: undefined,
+            due: undefined,
+          },
         });
         setIsOpen(false);
       },
@@ -70,7 +91,7 @@ export const NewBoardDialog = ({ trigger }: { trigger: React.ReactNode }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen} key="create-board">
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>
         <DialogTitle>Create New Board</DialogTitle>
         <DialogDescription>
