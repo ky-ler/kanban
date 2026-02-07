@@ -1,14 +1,15 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { router } from "@/lib/router";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -17,22 +18,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   AlignLeft,
-  Calendar,
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
   Pencil,
   User,
   Flag,
   Columns,
   Tag,
   Clock,
-  Check,
-  X,
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format, isValid, parseISO } from "date-fns";
 import {
   getGetBoardQueryKey,
   getGetBoardQueryOptions,
@@ -57,8 +65,12 @@ import { formatDate } from "@/lib/format-date";
 import { LabelPicker } from "@/features/labels/components/label-picker";
 import { LabelBadge } from "@/features/labels/components/label-badge";
 import { ActivityFeed } from "@/features/tasks/components/activity-feed";
+import { TaskDescriptionEditor } from "@/features/tasks/components/task-description-editor";
+import { TaskDescriptionView } from "@/features/tasks/components/task-description-view";
+import { InlineSaveActions } from "@/components/inline-save-actions";
 import { useBoardSubscription } from "@/features/boards/hooks/use-board-subscription";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
+import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute(
@@ -89,9 +101,14 @@ type EditingField =
   | "description"
   | null;
 
+type SaveFieldOptions = {
+  closeEditor?: boolean;
+};
+
 function TaskComponent() {
   const [editingField, setEditingField] = useState<EditingField>(null);
   const [editValue, setEditValue] = useState<string>("");
+  const [isMobileActivityOpen, setIsMobileActivityOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const { boardId, taskId } = Route.useParams();
@@ -151,7 +168,13 @@ function TaskComponent() {
     },
   });
 
-  const saveField = (field: string, value: string | string[] | undefined) => {
+  const saveField = (
+    field: string,
+    value: string | string[] | undefined,
+    options: SaveFieldOptions = {},
+  ) => {
+    const { closeEditor = true } = options;
+
     if (!task) return;
 
     const data = {
@@ -197,7 +220,9 @@ function TaskComponent() {
     }
 
     updateTaskMutation.mutate({ taskId, data });
-    setEditingField(null);
+    if (closeEditor) {
+      setEditingField(null);
+    }
   };
 
   const returnToBoard = (open: boolean) => {
@@ -236,6 +261,9 @@ function TaskComponent() {
       key={`task-${taskId}`}
     >
       <DialogContent className="flex h-[80vh] max-h-[700px] flex-col gap-0 p-0 sm:max-w-5xl">
+        <DialogDescription className="sr-only">
+          Detailed view and editing options for the task.
+        </DialogDescription>
         {/* Header */}
         <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4">
           <div className="pr-8">
@@ -280,6 +308,7 @@ function TaskComponent() {
                       value === "__none__" ? undefined : value,
                     )
                   }
+                  onCancel={() => setEditingField(null)}
                   options={[
                     { value: "__none__", label: "Unassigned" },
                     ...(board?.data?.collaborators?.map((c) => ({
@@ -305,6 +334,7 @@ function TaskComponent() {
                       value === "__none__" ? undefined : value,
                     )
                   }
+                  onCancel={() => setEditingField(null)}
                   options={[
                     { value: "__none__", label: "None" },
                     { value: "LOW", label: "Low" },
@@ -317,18 +347,19 @@ function TaskComponent() {
                 {/* Due Date */}
                 <EditableDateField
                   icon={
-                    <Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
+                    <CalendarIcon className="text-muted-foreground h-4 w-4 shrink-0" />
                   }
                   label="Due Date"
                   value={task.data.dueDate ?? ""}
                   displayValue={
                     task.data.dueDate
                       ? formatDate(task.data.dueDate)
-                      : "Not Set"
+                      : "Not set"
                   }
                   isEditing={editingField === "dueDate"}
                   onEdit={() => setEditingField("dueDate")}
-                  onSave={(value) => saveField("dueDate", value || undefined)}
+                  onSave={(value) => saveField("dueDate", value)}
+                  onCancel={() => setEditingField(null)}
                 />
 
                 {/* Column */}
@@ -342,6 +373,7 @@ function TaskComponent() {
                   isEditing={editingField === "column"}
                   onEdit={() => setEditingField("column")}
                   onSave={(value) => saveField("column", value)}
+                  onCancel={() => setEditingField(null)}
                   options={
                     board?.data?.columns?.map((col) => ({
                       value: col.id,
@@ -357,7 +389,9 @@ function TaskComponent() {
                 labels={task.data.labels ?? []}
                 isEditing={editingField === "labels"}
                 onEdit={() => setEditingField("labels")}
-                onSave={(value) => saveField("labels", value)}
+                onSave={(value) =>
+                  saveField("labels", value, { closeEditor: false })
+                }
                 onCancel={() => setEditingField(null)}
               />
 
@@ -387,11 +421,48 @@ function TaskComponent() {
                   <span>{formatDate(task.data.dateCreated)}</span>
                 </div>
               </div>
+
+              {/* Mobile comments/activity */}
+              <div className="md:hidden">
+                <Separator />
+                <div className="pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between"
+                    onClick={() =>
+                      setIsMobileActivityOpen((currentValue) => !currentValue)
+                    }
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      {isMobileActivityOpen
+                        ? "Hide comments and activity"
+                        : "Show comments and activity"}
+                    </span>
+                    {isMobileActivityOpen ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+
+                  {isMobileActivityOpen && (
+                    <div className="bg-muted/30 mt-3 rounded-lg border p-4">
+                      <ActivityFeed
+                        boardId={boardId}
+                        taskId={taskId}
+                        currentUserId={currentUserId}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Right side - Activity & Comments */}
-          <div className="bg-muted/30 flex shrink-0 flex-col border-t md:w-96 md:border-t-0 md:border-l">
+          <div className="bg-muted/30 hidden shrink-0 flex-col border-t md:flex md:w-96 md:border-t-0 md:border-l">
             <div className="flex min-h-0 flex-1">
               <ScrollArea className="max-h-full min-h-0 flex-1">
                 <div className="p-4">
@@ -478,6 +549,7 @@ function EditableSelectField({
   isEditing,
   onEdit,
   onSave,
+  onCancel,
   options,
 }: {
   icon: React.ReactNode;
@@ -487,6 +559,7 @@ function EditableSelectField({
   isEditing: boolean;
   onEdit: () => void;
   onSave: (value: string) => void;
+  onCancel: () => void;
   options: { value: string; label: string }[];
 }) {
   return (
@@ -506,7 +579,7 @@ function EditableSelectField({
             onValueChange={(newValue) => onSave(newValue)}
             open={true}
             onOpenChange={(open) => {
-              if (!open) onSave(value);
+              if (!open) onCancel();
             }}
           >
             <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0">
@@ -537,6 +610,7 @@ function EditableDateField({
   isEditing,
   onEdit,
   onSave,
+  onCancel,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -544,15 +618,19 @@ function EditableDateField({
   displayValue: string;
   isEditing: boolean;
   onEdit: () => void;
-  onSave: (value: string) => void;
+  onSave: (value: string | undefined) => void;
+  onCancel: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const selectedDate = useMemo(() => {
+    if (!value) return undefined;
+    const parsed = parseISO(value);
+    return isValid(parsed) ? parsed : undefined;
+  }, [value]);
 
   useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.showPicker?.();
-    }
+    setIsOpen(isEditing);
   }, [isEditing]);
 
   return (
@@ -567,14 +645,54 @@ function EditableDateField({
       <div className="min-w-0 flex-1">
         <p className="text-muted-foreground text-xs">{label}</p>
         {isEditing ? (
-          <Input
-            ref={inputRef}
-            type="date"
-            value={value}
-            onChange={(e) => onSave(e.target.value)}
-            onBlur={() => onSave(value)}
-            className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0"
-          />
+          <Popover
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                onCancel();
+              }
+            }}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 justify-start px-0 text-sm font-medium shadow-none hover:bg-transparent"
+              >
+                {selectedDate
+                  ? format(selectedDate, "MMMM d, yyyy")
+                  : "Not set"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                defaultMonth={selectedDate}
+                onSelect={(date) => {
+                  if (!date) return;
+                  onSave(format(date, "yyyy-MM-dd"));
+                  setIsOpen(false);
+                }}
+              />
+              <div className="border-border border-t p-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start"
+                  disabled={!value}
+                  onClick={() => {
+                    onSave(undefined);
+                    setIsOpen(false);
+                  }}
+                >
+                  Clear date
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         ) : (
           <p className="text-sm font-medium">{displayValue}</p>
         )}
@@ -600,12 +718,17 @@ function EditableLabels({
   onCancel: () => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>(
-    labels.map((l) => l.id),
+    labels.map((label) => label.id),
   );
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
-    setSelectedIds(labels.map((l) => l.id));
+    setSelectedIds(labels.map((label) => label.id));
   }, [labels]);
+
+  useEffect(() => {
+    setIsPickerOpen(isEditing);
+  }, [isEditing]);
 
   return (
     <div>
@@ -618,36 +741,32 @@ function EditableLabels({
           <LabelPicker
             boardId={boardId}
             selectedLabelIds={selectedIds}
-            onChange={setSelectedIds}
-          />
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelectedIds(labels.map((l) => l.id));
+            selectedBadgeSize="md"
+            open={isPickerOpen}
+            onChange={(nextSelectedIds) => {
+              setSelectedIds(nextSelectedIds);
+              onSave(nextSelectedIds);
+            }}
+            onOpenChange={(open) => {
+              setIsPickerOpen(open);
+              if (!open) {
                 onCancel();
-              }}
-            >
-              <X className="mr-1 h-3 w-3" />
-              Cancel
-            </Button>
-            <Button size="sm" onClick={() => onSave(selectedIds)}>
-              <Check className="mr-1 h-3 w-3" />
-              Save
-            </Button>
-          </div>
+              }
+            }}
+          />
         </div>
       ) : (
         <div
-          className="bg-muted/30 hover:bg-muted/50 cursor-pointer rounded-lg p-3 transition-colors"
+          className="bg-muted/30 hover:bg-muted/50 hover:border-border min-h-[44px] cursor-pointer rounded-lg border border-transparent px-3 py-3 transition-colors"
           onClick={onEdit}
         >
           {labels.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {labels.map((label) => (
-                <LabelBadge key={label.id} label={label} size="sm" />
-              ))}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[...labels]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((label) => (
+                  <LabelBadge key={label.id} label={label} size="md" />
+                ))}
             </div>
           ) : (
             <p className="text-muted-foreground text-sm italic">
@@ -678,13 +797,23 @@ function EditableDescription({
   editValue: string;
   setEditValue: (value: string) => void;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('[contenteditable="true"]')) {
+      return;
     }
-  }, [isEditing]);
+
+    if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
+      e.preventDefault();
+      onSave(editValue);
+      return;
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  };
 
   return (
     <div>
@@ -695,38 +824,23 @@ function EditableDescription({
         </h3>
       </div>
       {isEditing ? (
-        <div className="space-y-2">
-          <Textarea
-            ref={textareaRef}
+        <div className="space-y-2" onKeyDownCapture={handleEditorKeyDown}>
+          <TaskDescriptionEditor
             value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            rows={6}
+            onChange={setEditValue}
             placeholder="Add a more detailed description..."
-            className="resize-none"
           />
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={onCancel}>
-              <X className="mr-1 h-3 w-3" />
-              Cancel
-            </Button>
-            <Button size="sm" onClick={() => onSave(editValue)}>
-              <Check className="mr-1 h-3 w-3" />
-              Save
-            </Button>
-          </div>
+          <InlineSaveActions
+            onCancel={onCancel}
+            onSave={() => onSave(editValue)}
+          />
         </div>
       ) : (
         <div
           className="bg-muted/30 hover:bg-muted/50 min-h-[100px] cursor-pointer rounded-lg p-4 transition-colors"
           onClick={onEdit}
         >
-          <p className="text-sm whitespace-pre-wrap">
-            {value || (
-              <span className="text-muted-foreground italic">
-                Click to add a description...
-              </span>
-            )}
-          </p>
+          <TaskDescriptionView value={value} />
         </div>
       )}
     </div>
