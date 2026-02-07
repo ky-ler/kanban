@@ -1,13 +1,22 @@
-import {
-  Item,
-  ItemMedia,
-  ItemContent,
-  ItemTitle,
-  ItemActions,
-} from "@/components/ui/item";
+import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
 import { Badge } from "@/components/ui/badge";
-import { User, Calendar } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { User, Calendar, AlignLeft, MessageSquare } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import {
+  addDays,
+  format,
+  isBefore,
+  isSameDay,
+  isValid,
+  parseISO,
+  startOfDay,
+  startOfToday,
+} from "date-fns";
 import type { TaskSummaryDto } from "@/api/gen/model";
 import { cn } from "@/lib/utils";
 import { LabelBadge } from "@/features/labels/components/label-badge";
@@ -34,27 +43,29 @@ const priorityConfig: Record<string, { label: string; className: string }> = {
 };
 
 function isOverdue(dueDate: string): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  return due < today;
+  const parsedDueDate = parseISO(dueDate);
+  if (!isValid(parsedDueDate)) return false;
+
+  const today = startOfToday();
+  const due = startOfDay(parsedDueDate);
+  return isBefore(due, today);
 }
 
 function formatDueDate(dueDate: string): string {
-  const date = new Date(dueDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const date = parseISO(dueDate);
+  if (!isValid(date)) return "Not set";
 
-  if (date.toDateString() === today.toDateString()) {
+  const today = startOfToday();
+  const tomorrow = addDays(today, 1);
+
+  if (isSameDay(date, today)) {
     return "Today";
   }
-  if (date.toDateString() === tomorrow.toDateString()) {
+  if (isSameDay(date, tomorrow)) {
     return "Tomorrow";
   }
 
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return format(date, "MMM d");
 }
 
 export const TaskItem = ({
@@ -66,6 +77,15 @@ export const TaskItem = ({
 }>) => {
   const priority = task.priority ? priorityConfig[task.priority] : null;
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
+  const commentCount = task.commentCount ?? 0;
+  const hasDescription = task.hasDescription;
+  const hasComments = commentCount > 0;
+  const hasTopMeta = Boolean(
+    priority || (task.labels && task.labels.length > 0),
+  );
+  const hasBottomMeta = Boolean(
+    task.dueDate || task.assignedTo || hasDescription || hasComments,
+  );
 
   return (
     <Item asChild size="sm" variant="outline">
@@ -84,70 +104,104 @@ export const TaskItem = ({
         <ItemContent className="gap-1.5">
           <ItemTitle
             title={task.title}
-            className="w-full wrap-anywhere whitespace-normal"
+            className="w-full text-base leading-snug wrap-anywhere whitespace-normal"
           >
             {task.title}
           </ItemTitle>
-          {(priority ||
-            task.dueDate ||
-            (task.labels && task.labels.length > 0)) && (
+          {hasTopMeta && (
             <div className="flex flex-wrap items-center gap-1.5">
               {priority && (
                 <Badge
                   variant="outline"
-                  className={cn("px-1.5 py-0 text-[10px]", priority.className)}
+                  className={cn(
+                    "h-6 px-2.5 text-sm leading-none",
+                    priority.className,
+                  )}
                 >
                   {priority.label}
                 </Badge>
               )}
               {task.labels && task.labels.length > 0 && (
                 <>
-                  {task.labels.slice(0, 3).map((label) => (
-                    <LabelBadge key={label.id} label={label} size="sm" />
-                  ))}
+                  {[...task.labels]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .slice(0, 3)
+                    .map((label) => (
+                      <LabelBadge key={label.id} label={label} size="md" />
+                    ))}
                   {task.labels.length > 3 && (
-                    <span className="text-muted-foreground text-[10px]">
+                    <span className="text-muted-foreground text-sm leading-none">
                       +{task.labels.length - 3}
                     </span>
                   )}
                 </>
               )}
+            </div>
+          )}
+          {hasBottomMeta && (
+            <div className="flex min-h-6 items-end gap-2">
               {task.dueDate && (
                 <span
                   className={cn(
-                    "flex items-center gap-0.5 text-[10px]",
+                    "flex items-center gap-1 text-sm leading-none",
                     overdue
                       ? "text-red-600 dark:text-red-400"
                       : "text-muted-foreground",
                   )}
                 >
-                  <Calendar className="h-3 w-3" />
+                  <Calendar className="h-3.5 w-3.5" />
                   {formatDueDate(task.dueDate)}
                 </span>
               )}
+              {hasDescription && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-muted-foreground inline-flex items-center">
+                      <AlignLeft className="h-3.5 w-3.5" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    This task has a description
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {hasComments && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-muted-foreground inline-flex items-center gap-1 text-sm leading-none">
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      {commentCount}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {`This task has ${commentCount} ${commentCount === 1 ? "comment" : "comments"}`}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {task.assignedTo ? (
+                <div className="ml-auto">
+                  {task.assignedTo.profileImageUrl ? (
+                    <img
+                      src={task.assignedTo.profileImageUrl}
+                      alt={task.assignedTo.username}
+                      title={task.assignedTo.username}
+                      className="size-6 rounded-full object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div
+                      className="bg-muted flex size-6 items-center justify-center rounded-full"
+                      title={task.assignedTo.username}
+                    >
+                      <User className="text-muted-foreground h-3.5 w-3.5" />
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           )}
         </ItemContent>
-        <ItemActions>
-          {task.assignedTo ? (
-            <ItemMedia className="size-5">
-              {task.assignedTo.profileImageUrl ? (
-                <img
-                  src={task.assignedTo.profileImageUrl}
-                  alt={task.assignedTo.username}
-                  title={task.assignedTo.username}
-                  className="rounded-full object-cover"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="bg-muted flex size-5 items-center justify-center">
-                  <User className="text-muted-foreground h-4 w-4" />
-                </div>
-              )}
-            </ItemMedia>
-          ) : null}
-        </ItemActions>
       </Link>
     </Item>
   );

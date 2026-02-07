@@ -209,10 +209,12 @@ class BoardMapperTest {
                             false,
                             null,
                             null,
-                            null);
+                            null,
+                            0L,
+                            false);
 
             when(userMapper.toSummaryDto(creator)).thenReturn(creatorSummary);
-            when(taskMapper.toSummaryDto(task)).thenReturn(taskSummary);
+            when(taskMapper.toSummaryDto(task, 0L)).thenReturn(taskSummary);
 
             // When
             BoardDto result = boardMapper.toDto(board, CREATOR_ID);

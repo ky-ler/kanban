@@ -14,6 +14,9 @@ import lombok.AllArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+import java.util.UUID;
+
 @AllArgsConstructor
 @Service
 public class BoardMapper {
@@ -28,6 +31,18 @@ public class BoardMapper {
      * @return the board as a detailed DTO
      */
     public BoardDto toDto(Board board, String currentUserId) {
+        return toDto(board, currentUserId, Map.of());
+    }
+
+    /**
+     * Converts a Board entity to a detailed DTO with all collaborators, tasks, and columns.
+     *
+     * @param board the board entity to convert
+     * @param currentUserId the ID of the current user to determine favorite status
+     * @param commentCountByTaskId precomputed comment counts by task ID
+     * @return the board as a detailed DTO
+     */
+    public BoardDto toDto(Board board, String currentUserId, Map<UUID, Long> commentCountByTaskId) {
         UserSummaryDto creatorSummary = userMapper.toSummaryDto(board.getCreatedBy());
 
         CollaboratorDto[] collaborators =
@@ -40,7 +55,12 @@ public class BoardMapper {
 
         TaskSummaryDto[] tasks =
                 board.getTasks().stream()
-                        .map(taskMapper::toSummaryDto)
+                        .map(
+                                task ->
+                                        taskMapper.toSummaryDto(
+                                                task,
+                                                commentCountByTaskId.getOrDefault(
+                                                        task.getId(), 0L)))
                         .toArray(TaskSummaryDto[]::new);
 
         ColumnDto[] columns =

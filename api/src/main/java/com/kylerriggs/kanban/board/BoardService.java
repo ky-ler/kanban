@@ -5,11 +5,13 @@ import com.kylerriggs.kanban.board.dto.BoardRequest;
 import com.kylerriggs.kanban.board.dto.BoardSummary;
 import com.kylerriggs.kanban.board.dto.CollaboratorRequest;
 import com.kylerriggs.kanban.column.Column;
+import com.kylerriggs.kanban.comment.CommentRepository;
 import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
+import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
@@ -25,7 +27,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,7 @@ public class BoardService {
     private final BoardProperties boardProperties;
     private final TaskMapper taskMapper;
     private final TaskRepository taskRepository;
+    private final CommentRepository commentRepository;
     private final BoardEventPublisher eventPublisher;
 
     /**
@@ -98,7 +103,7 @@ public class BoardService {
         board.getCollaborators().add(ownerMembership);
         Board savedBoard = boardRepository.save(board);
 
-        return boardMapper.toDto(savedBoard, requestUserId);
+        return boardMapper.toDto(savedBoard, requestUserId, Map.of());
     }
 
     /**
@@ -117,7 +122,10 @@ public class BoardService {
 
         String requestUserId = userService.getCurrentUserId();
 
-        return boardMapper.toDto(board, requestUserId);
+        List<UUID> taskIds = board.getTasks().stream().map(task -> task.getId()).toList();
+        Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+
+        return boardMapper.toDto(board, requestUserId, commentCountByTaskId);
     }
 
     /**
@@ -128,8 +136,15 @@ public class BoardService {
      * @throws ResourceNotFoundException if the board doesn't exist
      */
     public List<TaskSummaryDto> getTasksForBoard(@NonNull UUID boardId) {
-        return taskRepository.findByBoardId(boardId).stream()
-                .map(taskMapper::toSummaryDto)
+        List<Task> tasks = taskRepository.findByBoardId(boardId);
+        List<UUID> taskIds = tasks.stream().map(task -> task.getId()).toList();
+        Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+
+        return tasks.stream()
+                .map(
+                        task ->
+                                taskMapper.toSummaryDto(
+                                        task, commentCountByTaskId.getOrDefault(task.getId(), 0L)))
                 .toList();
     }
 
@@ -174,7 +189,22 @@ public class BoardService {
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish("BOARD_UPDATED", boardId, boardId);
 
-        return boardMapper.toDto(boardToUpdate, requestUserId);
+        List<UUID> taskIds = boardToUpdate.getTasks().stream().map(task -> task.getId()).toList();
+        Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+
+        return boardMapper.toDto(boardToUpdate, requestUserId, commentCountByTaskId);
+    }
+
+    private Map<UUID, Long> getCommentCountByTaskIds(List<UUID> taskIds) {
+        if (taskIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return commentRepository.countByTaskIds(taskIds).stream()
+                .collect(
+                        Collectors.toMap(
+                                CommentRepository.TaskCommentCount::getTaskId,
+                                CommentRepository.TaskCommentCount::getCommentCount));
     }
 
     // /**
