@@ -51,7 +51,7 @@ const groupTasksByColumn = (
   columns.forEach((column) => {
     map[column.id] = tasks
       .filter((task) => task.columnId === column.id)
-      .sort((a, b) => a.position - b.position);
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   });
   return map;
 };

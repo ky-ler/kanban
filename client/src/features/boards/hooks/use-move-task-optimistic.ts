@@ -60,7 +60,7 @@ export const useMoveTaskOptimistic = (boardId: string) => {
           // Get the tasks in the target column, sorted by position
           const targetColumnTasks = otherTasks
             .filter((t) => t.columnId === newColumnId)
-            .sort((a, b) => a.position - b.position);
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
           // Determine the insert index
           let insertIndex: number;
@@ -96,7 +96,7 @@ export const useMoveTaskOptimistic = (boardId: string) => {
             (t) => t.columnId !== newColumnId,
           );
           const finalTasks = [...nonTargetTasks, ...updatedTargetTasks].sort(
-            (a, b) => a.position - b.position,
+            (a, b) => (a.position ?? 0) - (b.position ?? 0),
           );
 
           return {

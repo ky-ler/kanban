@@ -40,7 +40,7 @@ export const SortableTaskItem = ({ task, boardId }: SortableTaskItemProps) => {
       style={style}
       {...attributes}
       {...listeners}
-      className={cn(isDragging && "z-10 opacity-50")}
+      className={cn("touch-none", isDragging && "z-10 opacity-50")}
     >
       <TaskItem task={task} boardId={boardId} />
     </div>

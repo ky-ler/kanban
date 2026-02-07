@@ -13,14 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  GripVertical,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Trash2, X } from "lucide-react";
 import { SortableTaskItem } from "@/features/tasks/components/sortable-task-item";
 import {
   DropdownMenu,
@@ -104,44 +97,39 @@ export const KanbanColumn = ({
     <>
       <Card
         ref={setNodeRef}
-        className="flex max-h-[65vh] flex-col gap-2 py-2 transition-colors sm:min-w-3xs"
+        className="flex max-h-[65vh] w-3xs max-w-3xs flex-col gap-2 py-2 transition-colors"
       >
-        <CardHeader className="flex flex-shrink-0 flex-row items-center justify-between space-y-0">
-          <div className="flex items-center gap-1">
-            {dragHandleProps && (
-              <div
-                {...dragHandleProps}
-                className="hover:bg-muted cursor-grab touch-none rounded p-1 active:cursor-grabbing"
-              >
-                <GripVertical className="text-muted-foreground size-4" />
-              </div>
-            )}
+        {dragHandleProps && (
+          <CardHeader
+            className="flex flex-shrink-0 touch-none flex-row items-center justify-between space-y-0 rounded px-4 active:cursor-grabbing"
+            {...dragHandleProps}
+          >
             <CardTitle className="text-base">{column.name}</CardTitle>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-8">
-                <MoreHorizontal className="size-4" />
-                <span className="sr-only">Column options</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                <Pencil className="mr-2 size-4" />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setIsDeleteOpen(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 size-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardHeader>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-8">
+                  <MoreHorizontal className="size-4" />
+                  <span className="sr-only">Column options</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                  <Pencil className="mr-2 size-4" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setIsDeleteOpen(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardHeader>
+        )}
         <CardContent className="flex min-h-0 flex-1 overflow-hidden px-0">
-          <div className="mr-1.5 flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             <SortableContext
               items={taskIds}
               strategy={verticalListSortingStrategy}
