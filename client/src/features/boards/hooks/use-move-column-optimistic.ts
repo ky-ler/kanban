@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { moveColumn } from "@/api/gen/endpoints/column-controller/column-controller";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
+import { useBoardWebSocket } from "../context/board-websocket-context";
 import type { BoardDto, MoveColumnRequest } from "@/api/gen/model";
 
 interface UseMoveColumnOptimisticParams {
@@ -11,9 +12,13 @@ interface UseMoveColumnOptimisticParams {
 
 export const useMoveColumnOptimistic = (boardId: string) => {
   const queryClient = useQueryClient();
+  const ws = useBoardWebSocket();
 
   return useMutation({
-    mutationFn: async ({ columnId, newPosition }: UseMoveColumnOptimisticParams) => {
+    mutationFn: async ({
+      columnId,
+      newPosition,
+    }: UseMoveColumnOptimisticParams) => {
       const data: MoveColumnRequest = {
         newPosition,
       };
@@ -21,6 +26,8 @@ export const useMoveColumnOptimistic = (boardId: string) => {
     },
 
     onMutate: async ({ columnId, newPosition }) => {
+      // Register pending mutation to suppress self-triggered WebSocket invalidation
+      ws?.registerPendingMutation(columnId);
       // Cancel any outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({
         queryKey: getGetBoardQueryKey(boardId),
@@ -104,11 +111,15 @@ export const useMoveColumnOptimistic = (boardId: string) => {
       }
     },
 
-    onSettled: () => {
-      // Always refetch after mutation (success or error) to ensure consistency
-      queryClient.invalidateQueries({
-        queryKey: getGetBoardQueryKey(boardId),
-      });
+    onSettled: (_data, error, variables) => {
+      // Clear pending mutation tracking
+      ws?.clearPendingMutation(variables.columnId);
+      // Only refetch on error — on success the optimistic cache is already correct
+      if (error) {
+        queryClient.invalidateQueries({
+          queryKey: getGetBoardQueryKey(boardId),
+        });
+      }
     },
   });
 };
