@@ -1,9 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@import "@fontsource-variable/geist-mono";
-
-@import "@fontsource-variable/urbanist";
+@import "@fontsource-variable/manrope";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -115,9 +113,9 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: "Urbanist Variable", sans-serif;
+  --font-sans: "Manrope Variable", sans-serif;
   --font-serif: serif;
-  --font-mono: "Geist Mono Variable", monospace;
+  --font-mono: monospace;
 }
 
 @layer base {
