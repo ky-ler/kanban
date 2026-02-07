@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Component("inviteAccess")
@@ -37,6 +38,6 @@ public class BoardInviteAccess extends BaseAccess {
                                 () ->
                                         new ResourceNotFoundException(
                                                 "Invite not found: " + inviteId));
-        return boardAccess.isAdmin(invite.getBoard().getId());
+        return boardAccess.isAdmin(Objects.requireNonNull(invite.getBoard().getId()));
     }
 }

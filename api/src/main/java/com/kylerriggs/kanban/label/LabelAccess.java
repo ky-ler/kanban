@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Component("labelAccess")
@@ -35,6 +36,6 @@ public class LabelAccess extends BaseAccess {
                         .findByIdWithBoard(labelId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Label not found: " + labelId));
-        return boardAccess.isCollaborator(label.getBoard().getId());
+        return boardAccess.isCollaborator(Objects.requireNonNull(label.getBoard().getId()));
     }
 }

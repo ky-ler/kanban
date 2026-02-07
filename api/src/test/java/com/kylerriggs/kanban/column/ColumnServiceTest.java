@@ -87,8 +87,7 @@ class ColumnServiceTest {
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
             when(columnRepository.findMaxPositionByBoardId(BOARD_ID)).thenReturn(2);
-            when(columnRepository.save(Objects.requireNonNull(any(Column.class))))
-                    .thenReturn(newColumn);
+            when(columnRepository.save(any(Column.class))).thenReturn(newColumn);
             when(columnMapper.toDto(newColumn)).thenReturn(newColumnDto);
 
             // When
@@ -117,8 +116,7 @@ class ColumnServiceTest {
 
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(columnRepository.save(Objects.requireNonNull(any(Column.class))))
-                    .thenReturn(newColumn);
+            when(columnRepository.save(any(Column.class))).thenReturn(newColumn);
             when(columnMapper.toDto(newColumn)).thenReturn(newColumnDto);
 
             // When
@@ -206,7 +204,7 @@ class ColumnServiceTest {
 
             // When & Then
             assertThrows(BadRequestException.class, () -> columnService.deleteColumn(COLUMN_ID));
-            verify(columnRepository, never()).delete(Objects.requireNonNull(any(Column.class)));
+            verify(columnRepository, never()).delete(any(Column.class));
         }
 
         @Test
@@ -239,7 +237,7 @@ class ColumnServiceTest {
             // Then
             verify(columnRepository, never()).decrementPositionsInRange(any(), anyInt(), anyInt());
             verify(columnRepository, never()).incrementPositionsInRange(any(), anyInt(), anyInt());
-            verify(boardRepository, never()).save(Objects.requireNonNull(any()));
+            verify(boardRepository, never()).save(any());
         }
 
         @Test

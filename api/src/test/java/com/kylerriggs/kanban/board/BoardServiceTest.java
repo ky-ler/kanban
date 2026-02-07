@@ -128,7 +128,7 @@ class BoardServiceTest {
             when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
             when(boardProperties.getDefaultColumns())
                     .thenReturn(List.of("Backlog", "To Do", "In Progress", "Done"));
-            when(boardRepository.save(Objects.requireNonNull(any(Board.class))))
+            when(boardRepository.save(any(Board.class)))
                     .thenAnswer(
                             inv -> {
                                 Board savedBoard = inv.getArgument(0, Board.class);
@@ -144,11 +144,11 @@ class BoardServiceTest {
 
             // Then
             assertNotNull(result);
-            verify(boardRepository).save(Objects.requireNonNull(any(Board.class)));
+            verify(boardRepository).save(any(Board.class));
 
             // Verify default columns are created
             ArgumentCaptor<Board> boardCaptor = ArgumentCaptor.forClass(Board.class);
-            verify(boardRepository).save(Objects.requireNonNull(boardCaptor.capture()));
+            verify(boardRepository).save(boardCaptor.capture());
             Board savedBoard = boardCaptor.getValue();
             assertEquals(4, savedBoard.getColumns().size());
             assertEquals(1, savedBoard.getCollaborators().size());
@@ -165,7 +165,7 @@ class BoardServiceTest {
             assertThrows(
                     BoardLimitExceededException.class,
                     () -> boardService.createBoard(boardRequest));
-            verify(boardRepository, never()).save(Objects.requireNonNull(any()));
+            verify(boardRepository, never()).save(any());
         }
 
         @Test
@@ -458,7 +458,7 @@ class BoardServiceTest {
                             .board(board)
                             .createdBy(user)
                             .assignedTo(otherUser)
-                            .position(0)
+                            .position(0L)
                             .build();
             board.getTasks().add(task);
 
@@ -598,8 +598,7 @@ class BoardServiceTest {
             when(boardUserRepository.findByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), USER_ID))
                     .thenReturn(Optional.of(boardUser));
-            when(boardUserRepository.save(Objects.requireNonNull(any(BoardUser.class))))
-                    .thenReturn(boardUser);
+            when(boardUserRepository.save(any(BoardUser.class))).thenReturn(boardUser);
 
             // When
             boolean result = boardService.toggleFavorite(Objects.requireNonNull(BOARD_ID));
@@ -624,8 +623,7 @@ class BoardServiceTest {
             when(boardUserRepository.findByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), USER_ID))
                     .thenReturn(Optional.of(boardUser));
-            when(boardUserRepository.save(Objects.requireNonNull(any(BoardUser.class))))
-                    .thenReturn(boardUser);
+            when(boardUserRepository.save(any(BoardUser.class))).thenReturn(boardUser);
 
             // When
             boolean result = boardService.toggleFavorite(Objects.requireNonNull(BOARD_ID));

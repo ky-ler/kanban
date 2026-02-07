@@ -45,7 +45,7 @@ public class BoardInviteController {
      */
     @GetMapping("/boards/{boardId}/invites")
     @PreAuthorize("@boardAccess.isAdmin(#boardId)")
-    public ResponseEntity<List<BoardInviteDto>> getInvites(@PathVariable UUID boardId) {
+    public ResponseEntity<List<BoardInviteDto>> getInvites(@NonNull @PathVariable UUID boardId) {
         return ResponseEntity.ok(inviteService.getInvitesForBoard(boardId));
     }
 
