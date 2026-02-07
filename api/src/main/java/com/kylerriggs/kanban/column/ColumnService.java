@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -55,7 +56,7 @@ public class ColumnService {
         Column column =
                 Column.builder().name(request.name()).position(position).board(board).build();
 
-        column = columnRepository.save(column);
+        column = columnRepository.save(Objects.requireNonNull(column));
 
         board.setDateModified(Instant.now());
         boardRepository.save(board);
@@ -91,7 +92,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_UPDATED", board.getId(), columnId);
+        eventPublisher.publish("COLUMN_UPDATED", Objects.requireNonNull(board.getId()), columnId);
 
         return columnMapper.toDto(column);
     }
@@ -131,7 +132,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_DELETED", boardId, columnId);
+        eventPublisher.publish("COLUMN_DELETED", Objects.requireNonNull(boardId), columnId);
     }
 
     /**
@@ -185,6 +186,6 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_MOVED", boardId, columnId);
+        eventPublisher.publish("COLUMN_MOVED", Objects.requireNonNull(boardId), columnId);
     }
 }

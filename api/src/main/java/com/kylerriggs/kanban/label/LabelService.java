@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -58,7 +59,10 @@ public class LabelService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        eventPublisher.publish("LABEL_CREATED", board.getId(), savedLabel.getId());
+        eventPublisher.publish(
+                "LABEL_CREATED",
+                Objects.requireNonNull(board.getId(), "Board id is required"),
+                Objects.requireNonNull(savedLabel.getId(), "Label id is required"));
 
         return labelMapper.toDto(savedLabel);
     }
@@ -88,7 +92,10 @@ public class LabelService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        eventPublisher.publish("LABEL_UPDATED", board.getId(), labelId);
+        eventPublisher.publish(
+                "LABEL_UPDATED",
+                Objects.requireNonNull(board.getId(), "Board id is required"),
+                labelId);
 
         return labelMapper.toDto(updatedLabel);
     }
@@ -120,7 +127,8 @@ public class LabelService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        eventPublisher.publish("LABEL_DELETED", boardId, labelId);
+        eventPublisher.publish(
+                "LABEL_DELETED", Objects.requireNonNull(boardId, "Board id is required"), labelId);
     }
 
     /**
@@ -184,7 +192,10 @@ public class LabelService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        eventPublisher.publish("TASK_UPDATED", board.getId(), taskId);
+        eventPublisher.publish(
+                "TASK_UPDATED",
+                Objects.requireNonNull(board.getId(), "Board id is required"),
+                taskId);
     }
 
     /**
@@ -215,6 +226,9 @@ public class LabelService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
-        eventPublisher.publish("TASK_UPDATED", board.getId(), taskId);
+        eventPublisher.publish(
+                "TASK_UPDATED",
+                Objects.requireNonNull(board.getId(), "Board id is required"),
+                taskId);
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -75,9 +76,10 @@ public class CommentService {
         Comment comment =
                 Comment.builder().content(request.content()).task(task).author(author).build();
 
-        Comment saved = commentRepository.save(comment);
+        Comment saved = commentRepository.save(Objects.requireNonNull(comment));
 
-        eventPublisher.publish("COMMENT_ADDED", task.getBoard().getId(), saved.getId());
+        eventPublisher.publish(
+                "COMMENT_ADDED", Objects.requireNonNull(task.getBoard().getId()), saved.getId());
 
         return commentMapper.toDto(saved);
     }
@@ -105,7 +107,9 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
 
         eventPublisher.publish(
-                "COMMENT_UPDATED", comment.getTask().getBoard().getId(), saved.getId());
+                "COMMENT_UPDATED",
+                Objects.requireNonNull(comment.getTask().getBoard().getId()),
+                saved.getId());
 
         return commentMapper.toDto(saved);
     }
@@ -129,6 +133,6 @@ public class CommentService {
 
         commentRepository.delete(comment);
 
-        eventPublisher.publish("COMMENT_DELETED", boardId, commentId);
+        eventPublisher.publish("COMMENT_DELETED", Objects.requireNonNull(boardId), commentId);
     }
 }

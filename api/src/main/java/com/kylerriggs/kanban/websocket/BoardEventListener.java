@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.Objects;
+
 /**
  * Listens for board events and broadcasts them via WebSocket after the transaction commits. This
  * ensures clients don't refetch stale data due to race conditions.
@@ -27,6 +29,8 @@ public class BoardEventListener {
                 "Received event from publisher, broadcasting: type={}, boardId={}",
                 wrapper.event().type(),
                 wrapper.event().boardId());
-        webSocketEventService.broadcast(wrapper.event().boardId(), wrapper.event());
+        webSocketEventService.broadcast(
+                Objects.requireNonNull(wrapper.event().boardId()),
+                Objects.requireNonNull(wrapper.event()));
     }
 }

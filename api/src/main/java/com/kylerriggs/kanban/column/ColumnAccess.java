@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Component("columnAccess")
@@ -36,7 +37,7 @@ public class ColumnAccess extends BaseAccess {
                                 () ->
                                         new ResourceNotFoundException(
                                                 "Column not found: " + columnId));
-        return boardAccess.isCollaborator(column.getBoard().getId());
+        return boardAccess.isCollaborator(Objects.requireNonNull(column.getBoard().getId()));
     }
 
     /**
@@ -54,6 +55,6 @@ public class ColumnAccess extends BaseAccess {
                                 () ->
                                         new ResourceNotFoundException(
                                                 "Column not found: " + columnId));
-        return boardAccess.isAdmin(column.getBoard().getId());
+        return boardAccess.isAdmin(Objects.requireNonNull(column.getBoard().getId()));
     }
 }
