@@ -17,7 +17,7 @@ public record TaskDto(
         @NotBlank String title,
         String description,
         @NotNull UUID columnId,
-        @NotNull @Min(0) Integer position,
+        @NotNull @Min(0) Long position,
         @NotNull boolean isCompleted,
         @NotNull boolean isArchived,
         String priority,

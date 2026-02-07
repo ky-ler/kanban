@@ -68,6 +68,17 @@ public class TaskMapper {
      * @return the task as a summary DTO
      */
     public TaskSummaryDto toSummaryDto(Task task) {
+        return toSummaryDto(task, 0L);
+    }
+
+    /**
+     * Converts a Task entity to a summary DTO with precomputed comment count.
+     *
+     * @param task the task entity to convert
+     * @param commentCount total comments for the task
+     * @return the task as a summary DTO
+     */
+    public TaskSummaryDto toSummaryDto(Task task, long commentCount) {
         UserSummaryDto assignee = null;
         if (task.getAssignedTo() != null) {
             assignee = userMapper.toSummaryDto(task.getAssignedTo());
@@ -75,6 +86,8 @@ public class TaskMapper {
 
         List<LabelSummaryDto> labels =
                 task.getLabels().stream().map(labelMapper::toSummaryDto).toList();
+
+        boolean hasDescription = task.getDescription() != null && !task.getDescription().isBlank();
 
         return new TaskSummaryDto(
                 task.getId(),
@@ -86,7 +99,9 @@ public class TaskMapper {
                 task.isArchived(),
                 task.getPriority() != null ? task.getPriority().name() : null,
                 task.getDueDate() != null ? task.getDueDate().toString() : null,
-                labels);
+                labels,
+                commentCount,
+                hasDescription);
     }
 
     /**

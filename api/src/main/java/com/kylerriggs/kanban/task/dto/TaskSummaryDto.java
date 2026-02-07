@@ -15,9 +15,11 @@ public record TaskSummaryDto(
         @NotBlank String title,
         @NotNull UUID columnId,
         UserSummaryDto assignedTo,
-        @NotNull @Min(0) Integer position,
+        @Min(0) long position,
         @NotNull boolean isCompleted,
         @NotNull boolean isArchived,
         String priority,
         String dueDate,
-        List<LabelSummaryDto> labels) {}
+        List<LabelSummaryDto> labels,
+        @NotNull @Min(0) long commentCount,
+        @NotNull boolean hasDescription) {}

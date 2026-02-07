@@ -1,32 +1,39 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { moveTask } from "@/api/gen/endpoints/task-controller/task-controller";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
+import { useBoardWebSocket } from "../context/board-websocket-context";
 import type { BoardDto, MoveTaskRequest } from "@/api/gen/model";
 
 interface UseMoveTaskOptimisticParams {
   boardId: string;
   taskId: string;
   newColumnId: string;
-  newPosition: number;
+  afterTaskId?: string;
+  beforeTaskId?: string;
 }
 
 export const useMoveTaskOptimistic = (boardId: string) => {
   const queryClient = useQueryClient();
+  const ws = useBoardWebSocket();
 
   return useMutation({
     mutationFn: async ({
       taskId,
       newColumnId,
-      newPosition,
+      afterTaskId,
+      beforeTaskId,
     }: UseMoveTaskOptimisticParams) => {
       const data: MoveTaskRequest = {
-        newPosition,
+        afterTaskId,
+        beforeTaskId,
         newColumnId,
       };
       return moveTask(taskId, data);
     },
 
-    onMutate: async ({ taskId, newColumnId, newPosition }) => {
+    onMutate: async ({ taskId, newColumnId, afterTaskId, beforeTaskId }) => {
+      // Register pending mutation to suppress self-triggered WebSocket invalidation
+      ws?.registerPendingMutation(taskId);
       // Cancel any outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({
         queryKey: getGetBoardQueryKey(boardId),
@@ -44,69 +51,51 @@ export const useMoveTaskOptimistic = (boardId: string) => {
           if (!old) return old;
 
           const tasks = old.data.tasks || [];
-          const taskIndex = tasks.findIndex((t) => t.id === taskId);
+          const task = tasks.find((t) => t.id === taskId);
+          if (!task) return old;
 
-          if (taskIndex === -1) return old;
-
-          const task = tasks[taskIndex];
-          const oldColumnId = task.columnId;
-
-          // If moving to same column and same position, no update needed
-          if (oldColumnId === newColumnId && task.position === newPosition) {
-            return old;
-          }
-
-          // Create new task with updated position/column
-          const updatedTask = {
-            ...task,
-            columnId: newColumnId,
-            position: newPosition,
-          };
-
-          // Filter out the task being moved
+          // Remove the task from its current position
           const otherTasks = tasks.filter((t) => t.id !== taskId);
 
-          // Recalculate positions for affected tasks
-          let updatedTasks = otherTasks;
+          // Get the tasks in the target column, sorted by position
+          const targetColumnTasks = otherTasks
+            .filter((t) => t.columnId === newColumnId)
+            .sort((a, b) => a.position - b.position);
 
-          // If cross-column move, adjust source column positions
-          if (oldColumnId !== newColumnId) {
-            updatedTasks = updatedTasks.map((t) => {
-              if (t.columnId === oldColumnId && t.position > task.position) {
-                return { ...t, position: t.position - 1 };
-              }
-              return t;
-            });
+          // Determine the insert index
+          let insertIndex: number;
+          if (afterTaskId) {
+            const afterIndex = targetColumnTasks.findIndex(
+              (t) => t.id === afterTaskId,
+            );
+            insertIndex =
+              afterIndex === -1 ? targetColumnTasks.length : afterIndex + 1;
+          } else if (beforeTaskId) {
+            const beforeIndex = targetColumnTasks.findIndex(
+              (t) => t.id === beforeTaskId,
+            );
+            insertIndex = beforeIndex === -1 ? 0 : beforeIndex;
+          } else {
+            insertIndex = targetColumnTasks.length;
           }
 
-          // Adjust destination column positions
-          updatedTasks = updatedTasks.map((t) => {
-            if (t.columnId === newColumnId) {
-              if (oldColumnId === newColumnId) {
-                // Same column reorder
-                if (newPosition < task.position) {
-                  // Moving up
-                  if (t.position >= newPosition && t.position < task.position) {
-                    return { ...t, position: t.position + 1 };
-                  }
-                } else {
-                  // Moving down
-                  if (t.position <= newPosition && t.position > task.position) {
-                    return { ...t, position: t.position - 1 };
-                  }
-                }
-              } else {
-                // Cross-column move
-                if (t.position >= newPosition) {
-                  return { ...t, position: t.position + 1 };
-                }
-              }
-            }
-            return t;
+          // Insert the task and reassign display positions per column
+          targetColumnTasks.splice(insertIndex, 0, {
+            ...task,
+            columnId: newColumnId,
           });
 
-          // Add the moved task and sort by position
-          const finalTasks = [...updatedTasks, updatedTask].sort(
+          // Reassign positions for the target column (sequential for display)
+          const updatedTargetTasks = targetColumnTasks.map((t, i) => ({
+            ...t,
+            position: i,
+          }));
+
+          // Rebuild the full task list
+          const nonTargetTasks = otherTasks.filter(
+            (t) => t.columnId !== newColumnId,
+          );
+          const finalTasks = [...nonTargetTasks, ...updatedTargetTasks].sort(
             (a, b) => a.position - b.position,
           );
 
@@ -134,11 +123,15 @@ export const useMoveTaskOptimistic = (boardId: string) => {
       }
     },
 
-    onSettled: () => {
-      // Always refetch after mutation (success or error) to ensure consistency
-      queryClient.invalidateQueries({
-        queryKey: getGetBoardQueryKey(boardId),
-      });
+    onSettled: (_data, error, variables) => {
+      // Clear pending mutation tracking
+      ws?.clearPendingMutation(variables.taskId);
+      // Only refetch on error — on success the optimistic cache is already correct
+      if (error) {
+        queryClient.invalidateQueries({
+          queryKey: getGetBoardQueryKey(boardId),
+        });
+      }
     },
   });
 };

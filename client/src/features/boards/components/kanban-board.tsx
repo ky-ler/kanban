@@ -11,6 +11,7 @@ import {
   type DragStartEvent,
   type DragOverEvent,
   type UniqueIdentifier,
+  TouchSensor,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -73,12 +74,17 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 100,
-        tolerance: 5,
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
     }),
   );
 
@@ -285,12 +291,21 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
             return [...otherTasks, ...newColumnTasks];
           });
 
+          // Compute neighbor IDs from the reordered list
+          const afterTaskId =
+            overIndex > 0 ? newColumnTasks[overIndex - 1].id : undefined;
+          const beforeTaskId =
+            overIndex < newColumnTasks.length - 1
+              ? newColumnTasks[overIndex + 1].id
+              : undefined;
+
           // Call mutation
           await moveTaskMutation.mutateAsync({
             boardId,
             taskId: active.id as string,
             newColumnId: originalColumnId,
-            newPosition: overIndex,
+            afterTaskId,
+            beforeTaskId,
           });
         }
       } else if (originalColumnId !== overColumnId) {
@@ -299,14 +314,23 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
         const taskIndexInDest = destColumnTasks.findIndex(
           (t) => t.id === active.id,
         );
-        const newPosition =
+        const dropIndex =
           taskIndexInDest === -1 ? destColumnTasks.length : taskIndexInDest;
+
+        // Compute neighbor IDs (excluding the moved task itself)
+        const otherDestTasks = destColumnTasks.filter(
+          (t) => t.id !== active.id,
+        );
+        const afterTaskId =
+          dropIndex > 0 ? otherDestTasks[dropIndex - 1]?.id : undefined;
+        const beforeTaskId = otherDestTasks[dropIndex]?.id;
 
         await moveTaskMutation.mutateAsync({
           boardId,
           taskId: active.id as string,
           newColumnId: overColumnId,
-          newPosition,
+          afterTaskId,
+          beforeTaskId,
         });
       }
 
@@ -345,7 +369,9 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
                 />
               ))}
             </SortableContext>
-            <AddColumnButton boardId={boardId} />
+            <div className="pr-4">
+              <AddColumnButton boardId={boardId} />
+            </div>
           </div>
         </div>
       </div>

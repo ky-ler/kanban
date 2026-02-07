@@ -70,7 +70,7 @@ class TaskMapperTest {
         task.setColumn(column);
         task.setCreatedBy(creator);
         task.setAssignedTo(assignee);
-        task.setPosition(0);
+        task.setPosition(0L);
         task.setCompleted(false);
         task.setArchived(false);
         task.setDateCreated(Instant.now());
@@ -174,6 +174,8 @@ class TaskMapperTest {
             assertEquals(0, result.position());
             assertFalse(result.isCompleted());
             assertFalse(result.isArchived());
+            assertEquals(0L, result.commentCount());
+            assertTrue(result.hasDescription());
         }
 
         @Test
@@ -181,12 +183,15 @@ class TaskMapperTest {
             // Given
             User creator = createUser(CREATOR_ID, "creator");
             Task task = createTask(creator, null);
+            task.setDescription(" ");
 
             // When
             TaskSummaryDto result = taskMapper.toSummaryDto(task);
 
             // Then
             assertNull(result.assignedTo());
+            assertEquals(0L, result.commentCount());
+            assertFalse(result.hasDescription());
             verify(userMapper, never()).toSummaryDto(any());
         }
     }
