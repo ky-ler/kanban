@@ -19,7 +19,9 @@ export function LabelBadge({ label, size = "sm", className }: LabelBadgeProps) {
         colorClasses.bg,
         colorClasses.text,
         colorClasses.border,
-        size === "sm" ? "text-[10px] px-1.5 py-0" : "text-xs px-2 py-0.5",
+        size === "sm"
+          ? "h-5 px-2 leading-none"
+          : "h-6 px-2.5 text-sm leading-none",
         className,
       )}
     >

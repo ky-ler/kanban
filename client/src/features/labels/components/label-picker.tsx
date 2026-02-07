@@ -5,8 +5,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Check, Plus, Tag, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   LABEL_COLORS,
@@ -27,14 +28,22 @@ interface LabelPickerProps {
   boardId: string;
   selectedLabelIds: string[];
   onChange: (labelIds: string[]) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onPopoverOpenChange?: (open: boolean) => void;
+  selectedBadgeSize?: "sm" | "md";
 }
 
 export function LabelPicker({
   boardId,
   selectedLabelIds,
   onChange,
+  open: openProp,
+  onOpenChange,
+  onPopoverOpenChange,
+  selectedBadgeSize = "sm",
 }: LabelPickerProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
   const [newLabelColor, setNewLabelColor] = useState<LabelColor>(
@@ -43,7 +52,9 @@ export function LabelPicker({
 
   const queryClient = useQueryClient();
   const { data: labelsResponse } = useGetLabelsByBoard(boardId);
-  const labels = labelsResponse?.data ?? [];
+  const labels = [...(labelsResponse?.data ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
 
   const createLabelMutation = useCreateLabel({
     mutation: {
@@ -106,24 +117,37 @@ export function LabelPicker({
     selectedLabelIds.includes(label.id),
   );
 
+  const isOpen = openProp ?? internalOpen;
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (openProp === undefined) {
+      setInternalOpen(nextOpen);
+    }
+    onOpenChange?.(nextOpen);
+    onPopoverOpenChange?.(nextOpen);
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           role="combobox"
-          aria-expanded={open}
-          className="h-auto min-h-9 w-full justify-start"
+          aria-expanded={isOpen}
+          className="bg-muted/30 hover:bg-muted/50 hover:border-border aria-expanded:bg-muted/50 aria-expanded:border-border h-auto min-h-[44px] w-full justify-start rounded-lg border border-transparent px-3 py-3 font-normal shadow-none transition-colors"
         >
-          <Tag className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           {selectedLabels.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap items-center gap-1.5">
               {selectedLabels.map((label) => (
-                <LabelBadge key={label.id} label={label} size="sm" />
+                <LabelBadge
+                  key={label.id}
+                  label={label}
+                  size={selectedBadgeSize}
+                />
               ))}
             </div>
           ) : (
-            <span className="text-muted-foreground">Select labels...</span>
+            <span className="text-muted-foreground">Click to add labels</span>
           )}
         </Button>
       </PopoverTrigger>
@@ -196,25 +220,25 @@ export function LabelPicker({
                         isSelected && "bg-accent/50",
                       )}
                     >
-                      <button
-                        type="button"
-                        className="flex flex-1 items-center gap-2 px-2 py-1.5 text-sm"
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="focus-visible:ring-ring flex flex-1 cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm outline-none focus-visible:ring-2"
                         onClick={() => toggleLabel(label.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            toggleLabel(label.id);
+                          }
+                        }}
                       >
-                        <div
-                          className={cn(
-                            "flex h-4 w-4 items-center justify-center rounded border",
-                            isSelected
-                              ? "bg-primary border-primary"
-                              : "border-input",
-                          )}
-                        >
-                          {isSelected && (
-                            <Check className="text-primary-foreground h-3 w-3" />
-                          )}
-                        </div>
+                        <Checkbox
+                          checked={isSelected}
+                          disabled
+                          className="pointer-events-none disabled:opacity-100"
+                        />
                         <LabelBadge label={label} size="sm" />
-                      </button>
+                      </div>
                       <button
                         type="button"
                         className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded p-1.5 transition-colors"
