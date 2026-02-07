@@ -3,6 +3,7 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { InlineSaveActions } from "@/components/inline-save-actions";
 import {
   createFileRoute,
   Link,
@@ -10,12 +11,14 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { Check, Pencil, Users, X } from "lucide-react";
+import { FavoriteButton } from "@/features/boards/components/favorite-button";
 import { Alert } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetBoardQueryKey,
   getGetBoardQueryOptions,
+  getGetBoardsForUserQueryKey,
   useGetBoardSuspense,
   useUpdateBoard,
 } from "@/api/gen/endpoints/board-controller/board-controller";
@@ -32,8 +35,8 @@ import {
 } from "@/features/boards/utils/filter-tasks";
 import { cn } from "@/lib/utils";
 import { BoardWebSocketProvider } from "@/features/boards/context/board-websocket-context";
+import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 
-// Wrapper to provide WebSocket context for the board route
 function BoardRoute() {
   const { boardId } = Route.useParams();
   return (
@@ -112,6 +115,9 @@ function BoardComponent() {
         queryClient.invalidateQueries({
           queryKey: getGetBoardQueryKey(boardId),
         });
+        queryClient.invalidateQueries({
+          queryKey: getGetBoardsForUserQueryKey(),
+        });
         setEditingField(null);
       },
       onError: () => {
@@ -155,7 +161,7 @@ function BoardComponent() {
   return (
     <>
       {/* Board Info Header */}
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex items-center justify-between gap-2 px-4 pt-3 sm:items-start sm:pt-4">
         <div className="min-w-0 flex-1">
           <EditableBoardName
             value={board.data.name}
@@ -170,22 +176,29 @@ function BoardComponent() {
             editValue={editValue}
             setEditValue={setEditValue}
           />
-          <EditableBoardDescription
-            value={board.data.description ?? ""}
-            isEditing={editingField === "description"}
-            canEdit={isAdmin}
-            onEdit={() => {
-              setEditValue(board.data.description ?? "");
-              setEditingField("description");
-            }}
-            onSave={(value) => saveField("description", value)}
-            onCancel={() => setEditingField(null)}
-            editValue={editValue}
-            setEditValue={setEditValue}
-          />
+          <div className="hidden sm:block">
+            <EditableBoardDescription
+              value={board.data.description ?? ""}
+              isEditing={editingField === "description"}
+              canEdit={isAdmin}
+              onEdit={() => {
+                setEditValue(board.data.description ?? "");
+                setEditingField("description");
+              }}
+              onSave={(value) => saveField("description", value)}
+              onCancel={() => setEditingField(null)}
+              editValue={editValue}
+              setEditValue={setEditValue}
+            />
+          </div>
         </div>
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-          <Button asChild>
+        <div className="flex shrink-0 gap-1 sm:gap-2">
+          <FavoriteButton
+            boardId={boardId}
+            isFavorite={board.data.isFavorite}
+            variant="outline"
+          />
+          <Button asChild variant="outline" size="icon">
             <Link
               to={"/boards/$boardId/collaborators"}
               params={{ boardId }}
@@ -197,8 +210,8 @@ function BoardComponent() {
                 due: undefined,
               }}
             >
-              <Users className="mr-2 h-4 w-4" />
-              Collaborators
+              <Users className="h-4 w-4" />
+              <span className="sr-only">Collaborators</span>
             </Link>
           </Button>
         </div>
@@ -226,7 +239,6 @@ function BoardComponent() {
   );
 }
 
-// Editable Board Name Component
 function EditableBoardName({
   value,
   isEditing,
@@ -269,7 +281,7 @@ function EditableBoardName({
               onCancel();
             }
           }}
-          className="h-auto py-1 text-3xl font-bold tracking-tight"
+          className="h-auto py-1 text-xl font-bold tracking-tight sm:text-3xl"
         />
         <Button size="icon" variant="ghost" onClick={() => onSave(editValue)}>
           <Check className="h-4 w-4" />
@@ -284,7 +296,7 @@ function EditableBoardName({
   return (
     <h1
       className={cn(
-        "text-3xl font-bold tracking-tight",
+        "text-xl font-bold tracking-tight sm:text-3xl",
         canEdit && "hover:text-primary group cursor-pointer transition-colors",
       )}
       onClick={canEdit ? onEdit : undefined}
@@ -297,7 +309,6 @@ function EditableBoardName({
   );
 }
 
-// Editable Board Description Component
 function EditableBoardDescription({
   value,
   isEditing,
@@ -333,6 +344,12 @@ function EditableBoardDescription({
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={(e) => {
+            if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
+              e.preventDefault();
+              onSave(editValue);
+              return;
+            }
+
             if (e.key === "Escape") {
               onCancel();
             }
@@ -341,16 +358,10 @@ function EditableBoardDescription({
           placeholder="Add a description..."
           className="resize-none"
         />
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={onCancel}>
-            <X className="mr-1 h-3 w-3" />
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => onSave(editValue)}>
-            <Check className="mr-1 h-3 w-3" />
-            Save
-          </Button>
-        </div>
+        <InlineSaveActions
+          onCancel={onCancel}
+          onSave={() => onSave(editValue)}
+        />
       </div>
     );
   }
@@ -365,7 +376,7 @@ function EditableBoardDescription({
       onClick={canEdit ? onEdit : undefined}
     >
       {value ||
-        (canEdit ? "Click to add a description..." : "No description provided")}
+        (canEdit ? "Click to add a description..." : "No description yet")}
       {canEdit && value && (
         <Pencil className="ml-1 inline h-3 w-3 opacity-0 transition-opacity group-hover:opacity-50" />
       )}

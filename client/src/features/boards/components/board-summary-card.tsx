@@ -19,12 +19,12 @@ import {
   FolderKanban,
   MoreVertical,
   Settings,
-  Star,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import type { BoardSummary } from "@/api/gen/model";
+import { FavoriteButton } from "./favorite-button";
 
 export const BoardSummaryCard = ({ board }: { board: BoardSummary }) => {
   const progress =
@@ -39,38 +39,35 @@ export const BoardSummaryCard = ({ board }: { board: BoardSummary }) => {
           <div className="space-y-1">
             <CardTitle className="line-clamp-1">{board.name}</CardTitle>
             <CardDescription className="line-clamp-2">
-              {board.description || "No description provided"}
+              {board.description || "No description yet"}
             </CardDescription>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {board.isDefault ? (
+          <div className="flex items-center gap-1">
+            <FavoriteButton
+              boardId={board.id}
+              isFavorite={board.isFavorite}
+              size="sm"
+              className="h-8 w-8 p-0"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem>
-                  <Star className="text-primary fill-primary mr-2 h-4 w-4" />
-                  Default Board
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem>
-                  <Star className="mr-2 h-4 w-4" />
-                  Set as Default
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive">
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archive
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                <Archive className="mr-2 h-4 w-4" />
-                Archive
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pb-3">

@@ -156,12 +156,6 @@ public class BoardInviteService {
                 BoardUser.builder().board(board).user(user).role(BoardRole.MEMBER).build();
         board.getCollaborators().add(membership);
 
-        // Set as default board if user has none
-        if (user.getDefaultBoard() == null) {
-            user.setDefaultBoard(board);
-            userRepository.save(user);
-        }
-
         // Increment use count
         invite.setUseCount(invite.getUseCount() + 1);
         inviteRepository.save(invite);

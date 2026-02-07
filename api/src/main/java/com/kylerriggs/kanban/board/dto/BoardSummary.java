@@ -14,4 +14,4 @@ public record BoardSummary(
         @Min(0) @NotNull int completedTasks,
         @NotNull @Min(0) int totalTasks,
         @NotNull boolean isArchived,
-        @NotNull boolean isDefault) {}
+        @NotNull boolean isFavorite) {}

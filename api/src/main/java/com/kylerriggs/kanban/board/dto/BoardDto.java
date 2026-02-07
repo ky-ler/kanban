@@ -20,4 +20,4 @@ public record BoardDto(
         @NotNull boolean isArchived,
         @NotBlank String dateCreated,
         @NotBlank String dateModified,
-        @NotNull boolean isDefault) {}
+        @NotNull boolean isFavorite) {}
