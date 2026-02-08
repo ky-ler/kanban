@@ -32,6 +32,7 @@ class UserServiceTest {
 
     private void setupAuthentication(String userId) {
         when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(userId);
     }
 
@@ -50,8 +51,16 @@ class UserServiceTest {
     @Test
     void getCurrentUserId_WhenNotAuthenticated_ThrowsUnauthorizedException() {
         // Given
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn(null);
+        when(securityContext.getAuthentication()).thenReturn(null);
+
+        // When & Then
+        assertThrows(UnauthorizedException.class, () -> userService.getCurrentUserId());
+    }
+
+    @Test
+    void getCurrentUserId_WhenAnonymousUser_ThrowsUnauthorizedException() {
+        // Given
+        setupAuthentication("anonymousUser");
 
         // When & Then
         assertThrows(UnauthorizedException.class, () -> userService.getCurrentUserId());

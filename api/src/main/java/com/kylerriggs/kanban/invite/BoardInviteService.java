@@ -9,6 +9,7 @@ import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.invite.dto.AcceptInviteResponse;
 import com.kylerriggs.kanban.invite.dto.BoardInviteDto;
 import com.kylerriggs.kanban.invite.dto.CreateInviteRequest;
@@ -49,7 +50,7 @@ public class BoardInviteService {
         String userId = userService.getCurrentUserId();
 
         if (userId == null) {
-            throw new BadRequestException("Invalid user");
+            throw new UnauthorizedException("User not authenticated");
         }
 
         User creator =
@@ -109,12 +110,12 @@ public class BoardInviteService {
         String userId = userService.getCurrentUserId();
 
         if (userId == null) {
-            throw new BadRequestException("Invalid user");
+            throw new UnauthorizedException("User not authenticated");
         }
 
         BoardInvite invite =
                 inviteRepository
-                        .findByCodeWithBoard(code)
+                        .findByCodeWithBoardForUpdate(code)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Invite not found: " + code));
 

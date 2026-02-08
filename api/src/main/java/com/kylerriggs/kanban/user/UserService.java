@@ -4,6 +4,7 @@ import com.kylerriggs.kanban.exception.UnauthorizedException;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +19,14 @@ public class UserService {
      * @return the user ID from the authentication token
      */
     public String getCurrentUserId() {
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
 
-        if (userId == null) {
+        String userId = authentication.getName();
+
+        if (userId == null || userId.isBlank() || "anonymousUser".equals(userId)) {
             throw new UnauthorizedException("User not authenticated");
         }
 

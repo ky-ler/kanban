@@ -1,6 +1,9 @@
 package com.kylerriggs.kanban.invite;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,6 +19,10 @@ public interface BoardInviteRepository extends JpaRepository<BoardInvite, UUID> 
 
     @Query("SELECT i FROM BoardInvite i " + "LEFT JOIN FETCH i.board " + "WHERE i.code = :code")
     Optional<BoardInvite> findByCodeWithBoard(@Param("code") String code);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM BoardInvite i " + "LEFT JOIN FETCH i.board " + "WHERE i.code = :code")
+    Optional<BoardInvite> findByCodeWithBoardForUpdate(@Param("code") String code);
 
     @Query(
             "SELECT i FROM BoardInvite i "
