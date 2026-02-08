@@ -21,7 +21,7 @@ export function ActivityList({ boardId, taskId }: ActivityListProps) {
 
   if (error) {
     return (
-      <div className="text-sm text-muted-foreground py-4 text-center">
+      <div className="text-muted-foreground py-4 text-center text-sm">
         Failed to load activity
       </div>
     );
@@ -31,15 +31,15 @@ export function ActivityList({ boardId, taskId }: ActivityListProps) {
 
   if (activities.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-        <History className="h-8 w-8 mb-2" />
+      <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
+        <History className="mb-2 h-8 w-8" />
         <p className="text-sm">No activity yet</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-1 divide-y divide-border">
+    <div className="divide-border space-y-1 divide-y">
       {activities.map((activity) => (
         <ActivityItem key={activity.id} activity={activity} />
       ))}

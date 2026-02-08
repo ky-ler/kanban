@@ -146,12 +146,13 @@ export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center text-sm">
           <span className="truncate font-medium">{activity.user.username}</span>
+          &nbsp;
           <span className="text-muted-foreground">{config.label}</span>
         </div>
         {formattedDetails && (
-          <p className="text-muted-foreground mt-0.5 text-xs">
+          <p className="text-muted-foreground mt-0.5 text-xs wrap-anywhere whitespace-normal">
             {formattedDetails}
           </p>
         )}

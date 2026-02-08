@@ -183,7 +183,7 @@ export function ActivityFeed({
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground h-auto px-2 py-1 text-xs hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground h-auto px-2 py-1 text-xs"
             onClick={() => setShowDetails(!showDetails)}
           >
             {showDetails ? (
@@ -220,7 +220,7 @@ export function ActivityFeed({
           )}
         </div>
       ) : (
-        <div className="space-y-1 divide-y divide-border">
+        <div className="divide-border space-y-1 divide-y">
           {visibleItems.map((item) => {
             if (item.type === "comment") {
               return (
