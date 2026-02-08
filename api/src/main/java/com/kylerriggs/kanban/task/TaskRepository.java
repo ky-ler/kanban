@@ -13,6 +13,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
+    Optional<Task> findByIdAndBoardId(UUID taskId, UUID boardId);
+
+    boolean existsByIdAndBoardId(UUID taskId, UUID boardId);
+
     /**
      * Finds a task by ID with a pessimistic write lock to prevent concurrent modifications.
      *

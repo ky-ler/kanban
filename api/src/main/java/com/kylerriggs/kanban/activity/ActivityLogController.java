@@ -32,7 +32,7 @@ public class ActivityLogController {
     @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
     public ResponseEntity<List<ActivityLogDto>> getTaskActivity(
             @NonNull @PathVariable UUID boardId, @NonNull @PathVariable UUID taskId) {
-        List<ActivityLogDto> activity = activityLogService.getActivityForTask(taskId);
+        List<ActivityLogDto> activity = activityLogService.getActivityForTask(boardId, taskId);
         return ResponseEntity.ok(activity);
     }
 }

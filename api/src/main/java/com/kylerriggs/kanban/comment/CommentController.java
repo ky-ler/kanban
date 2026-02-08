@@ -37,7 +37,7 @@ public class CommentController {
     @PreAuthorize("@boardAccess.isCollaborator(#boardId)")
     public ResponseEntity<List<CommentDto>> getTaskComments(
             @NonNull @PathVariable UUID boardId, @NonNull @PathVariable UUID taskId) {
-        List<CommentDto> comments = commentService.getCommentsForTask(taskId);
+        List<CommentDto> comments = commentService.getCommentsForTask(boardId, taskId);
         return ResponseEntity.ok(comments);
     }
 
@@ -55,7 +55,8 @@ public class CommentController {
             @NonNull @PathVariable UUID boardId,
             @NonNull @PathVariable UUID taskId,
             @Valid @RequestBody CommentRequest request) {
-        CommentDto comment = commentService.createComment(taskId, Objects.requireNonNull(request));
+        CommentDto comment =
+                commentService.createComment(boardId, taskId, Objects.requireNonNull(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
@@ -76,7 +77,8 @@ public class CommentController {
             @NonNull @PathVariable UUID commentId,
             @Valid @RequestBody CommentRequest request) {
         CommentDto comment =
-                commentService.updateComment(commentId, Objects.requireNonNull(request));
+                commentService.updateComment(
+                        boardId, taskId, commentId, Objects.requireNonNull(request));
         return ResponseEntity.ok(comment);
     }
 
@@ -94,7 +96,7 @@ public class CommentController {
             @NonNull @PathVariable UUID boardId,
             @NonNull @PathVariable UUID taskId,
             @NonNull @PathVariable UUID commentId) {
-        commentService.deleteComment(commentId);
+        commentService.deleteComment(boardId, taskId, commentId);
         return ResponseEntity.noContent().build();
     }
 }

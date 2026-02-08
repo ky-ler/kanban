@@ -38,7 +38,8 @@ public class CommentService {
      * @param taskId the ID of the task
      * @return list of comment DTOs
      */
-    public List<CommentDto> getCommentsForTask(@NonNull UUID taskId) {
+    public List<CommentDto> getCommentsForTask(@NonNull UUID boardId, @NonNull UUID taskId) {
+        requireTaskInBoard(boardId, taskId);
         return commentRepository.findByTaskIdOrderByDateCreatedAsc(taskId).stream()
                 .map(commentMapper::toDto)
                 .toList();
@@ -52,18 +53,15 @@ public class CommentService {
      * @return the created comment DTO
      */
     @Transactional
-    public CommentDto createComment(@NonNull UUID taskId, @NonNull CommentRequest request) {
+    public CommentDto createComment(
+            @NonNull UUID boardId, @NonNull UUID taskId, @NonNull CommentRequest request) {
         String currentUserId = userService.getCurrentUserId();
 
         if (currentUserId == null) {
             throw new UnauthorizedException("User not authenticated");
         }
 
-        Task task =
-                taskRepository
-                        .findById(taskId)
-                        .orElseThrow(
-                                () -> new ResourceNotFoundException("Task not found: " + taskId));
+        Task task = requireTaskInBoard(boardId, taskId);
 
         User author =
                 userRepository
@@ -92,7 +90,11 @@ public class CommentService {
      * @return the updated comment DTO
      */
     @Transactional
-    public CommentDto updateComment(@NonNull UUID commentId, @NonNull CommentRequest request) {
+    public CommentDto updateComment(
+            @NonNull UUID boardId,
+            @NonNull UUID taskId,
+            @NonNull UUID commentId,
+            @NonNull CommentRequest request) {
         Comment comment =
                 commentRepository
                         .findById(commentId)
@@ -100,6 +102,8 @@ public class CommentService {
                                 () ->
                                         new ResourceNotFoundException(
                                                 "Comment not found: " + commentId));
+
+        validateCommentContext(comment, boardId, taskId, commentId);
 
         comment.setContent(request.content());
         comment.setDateModified(Instant.now());
@@ -120,7 +124,8 @@ public class CommentService {
      * @param commentId the ID of the comment to delete
      */
     @Transactional
-    public void deleteComment(@NonNull UUID commentId) {
+    public void deleteComment(
+            @NonNull UUID boardId, @NonNull UUID taskId, @NonNull UUID commentId) {
         Comment comment =
                 commentRepository
                         .findById(commentId)
@@ -129,10 +134,30 @@ public class CommentService {
                                         new ResourceNotFoundException(
                                                 "Comment not found: " + commentId));
 
-        UUID boardId = comment.getTask().getBoard().getId();
+        validateCommentContext(comment, boardId, taskId, commentId);
+
+        UUID commentBoardId = comment.getTask().getBoard().getId();
 
         commentRepository.delete(comment);
 
-        eventPublisher.publish("COMMENT_DELETED", Objects.requireNonNull(boardId), commentId);
+        eventPublisher.publish(
+                "COMMENT_DELETED", Objects.requireNonNull(commentBoardId), commentId);
+    }
+
+    private Task requireTaskInBoard(UUID boardId, UUID taskId) {
+        return taskRepository
+                .findByIdAndBoardId(taskId, boardId)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Task not found in board: " + taskId));
+    }
+
+    private void validateCommentContext(
+            Comment comment, UUID boardId, UUID taskId, UUID commentId) {
+        UUID commentTaskId = comment.getTask().getId();
+        UUID commentBoardId = comment.getTask().getBoard().getId();
+        if (!commentTaskId.equals(taskId) || !commentBoardId.equals(boardId)) {
+            throw new ResourceNotFoundException(
+                    "Comment not found in task/board context: " + commentId);
+        }
     }
 }

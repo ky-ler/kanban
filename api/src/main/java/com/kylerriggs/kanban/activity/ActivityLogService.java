@@ -37,7 +37,11 @@ public class ActivityLogService {
      * @param taskId the ID of the task
      * @return list of activity log DTOs
      */
-    public List<ActivityLogDto> getActivityForTask(@NonNull UUID taskId) {
+    public List<ActivityLogDto> getActivityForTask(@NonNull UUID boardId, @NonNull UUID taskId) {
+        if (!taskRepository.existsByIdAndBoardId(taskId, boardId)) {
+            throw new ResourceNotFoundException("Task not found in board: " + taskId);
+        }
+
         return activityLogRepository.findByTaskIdOrderByDateCreatedDesc(taskId).stream()
                 .map(activityLogMapper::toDto)
                 .toList();
