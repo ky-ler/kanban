@@ -17,7 +17,7 @@ import { MarkdownView } from "@/components/rich-text/markdown-view";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { formatDistanceToNow } from "date-fns";
 import { User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface CommentItemProps {
   comment: CommentDto;
@@ -74,6 +74,16 @@ export function CommentItem({
     setCommentError(null);
     setIsEditing(false);
   };
+
+  useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
+    setEditContent(comment.content);
+    setEditPlainText(comment.content);
+    setCommentError(null);
+  }, [comment.content, isEditing]);
 
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -162,7 +172,18 @@ export function CommentItem({
           <>
             <div
               className="bg-muted/50 mt-1 rounded-lg px-3 py-2"
-              onClick={() => isAuthor && setIsEditing(true)}
+              onClick={(event) => {
+                if (!isAuthor) {
+                  return;
+                }
+
+                const target = event.target as HTMLElement;
+                if (target.closest("a")) {
+                  return;
+                }
+
+                setIsEditing(true);
+              }}
               style={{ cursor: isAuthor ? "pointer" : "default" }}
             >
               <div className="text-sm">

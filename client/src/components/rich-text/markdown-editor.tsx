@@ -622,28 +622,6 @@ function ToolbarPlugin({
     setActiveTextStyle(style);
   };
 
-  const captureSelectionSnapshot = useCallback((): SelectionSnapshot | null => {
-    let snapshot: SelectionSnapshot | null = null;
-
-    editor.read(() => {
-      const selection = $getSelection();
-      if (!$isRangeSelection(selection)) {
-        return;
-      }
-
-      snapshot = {
-        anchorKey: selection.anchor.key,
-        anchorOffset: selection.anchor.offset,
-        anchorType: selection.anchor.type,
-        focusKey: selection.focus.key,
-        focusOffset: selection.focus.offset,
-        focusType: selection.focus.type,
-      };
-    });
-
-    return snapshot;
-  }, [editor]);
-
   const getLinkContextFromSelection =
     useCallback((): LinkEditContext | null => {
       let context: LinkEditContext | null = null;
@@ -703,21 +681,14 @@ function ToolbarPlugin({
   };
 
   const openLinkEditor = useCallback(
-    (options?: {
-      position?: PopoverPosition;
-      initialUrl?: string;
-      initialText?: string;
-      context?: LinkEditContext;
-    }) => {
+    (options?: { position?: PopoverPosition; context?: LinkEditContext }) => {
       const context = options?.context ?? getLinkContextFromSelection();
       if (context) {
         setLinkContext(context);
       }
 
-      const baseUrl =
-        options?.initialUrl ?? context?.url ?? linkContext?.url ?? "https://";
-      const baseText =
-        options?.initialText ?? context?.text ?? linkContext?.text ?? "";
+      const baseUrl = context?.url ?? "https://";
+      const baseText = context?.text ?? "";
 
       setLinkValue(baseUrl);
       setLinkDisplayText(baseText);
@@ -738,7 +709,7 @@ function ToolbarPlugin({
       setIsLinkPopoverOpen(false);
       scheduleOpen(() => setIsLinkPopoverOpen(true));
     },
-    [editor, getLinkContextFromSelection, linkContext],
+    [editor, getLinkContextFromSelection],
   );
 
   const openLinkActions = (params: {
@@ -868,7 +839,7 @@ function ToolbarPlugin({
   };
 
   const openLinkInNewTab = () => {
-    const normalized = normalizeLinkUrl(linkContext?.url ?? linkValue);
+    const normalized = normalizeLinkUrl(linkContext?.url ?? "");
     if (!normalized) {
       return;
     }
@@ -880,23 +851,12 @@ function ToolbarPlugin({
     return editor.registerCommand(
       OPEN_LINK_EDITOR_COMMAND,
       () => {
-        openLinkEditor({
-          context: getLinkContextFromSelection() ?? {
-            selectionSnapshot: captureSelectionSnapshot() ?? undefined,
-            text: "",
-            url: "https://",
-          },
-        });
+        openLinkEditor();
         return true;
       },
       COMMAND_PRIORITY_HIGH,
     );
-  }, [
-    editor,
-    openLinkEditor,
-    getLinkContextFromSelection,
-    captureSelectionSnapshot,
-  ]);
+  }, [editor, openLinkEditor]);
 
   useEffect(() => {
     return editor.registerCommand(
