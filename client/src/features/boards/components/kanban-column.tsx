@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import { ColumnEditDialog } from "./column-edit-dialog";
 import { ColumnDeleteDialog } from "./column-delete-dialog";
 import { useCreateTask } from "@/api/gen/endpoints/task-controller/task-controller";
+import { createTaskBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -57,6 +58,9 @@ export const KanbanColumn = ({
         });
         setTitle("");
         inputRef.current?.focus();
+        requestAnimationFrame(() => {
+          inputRef.current?.focus();
+        });
       },
     },
   });
@@ -71,9 +75,16 @@ export const KanbanColumn = ({
     const trimmed = title.trim();
     if (!trimmed) return;
 
+    const payload = { boardId, title: trimmed, columnId: column.id };
+    const result = createTaskBody.safeParse(payload);
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message ?? "Invalid task title");
+      return;
+    }
+
     toast.promise(
       createTaskMutation.mutateAsync({
-        data: { boardId, title: trimmed, columnId: column.id },
+        data: payload,
       }),
       {
         loading: "Creating task...",
@@ -128,24 +139,26 @@ export const KanbanColumn = ({
             </DropdownMenu>
           </CardHeader>
         )}
-        <CardContent className="flex min-h-0 flex-1 overflow-hidden px-0">
-          <div className="flex-1 overflow-y-auto">
-            <SortableContext
-              items={taskIds}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="flex flex-col gap-2 px-2">
-                {tasks.map((task) => (
-                  <SortableTaskItem
-                    key={task.id}
-                    task={task}
-                    boardId={boardId}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </div>
-        </CardContent>
+        {tasks.length > 0 && (
+          <CardContent className="flex min-h-0 flex-1 overflow-hidden px-0">
+            <div className="flex-1 overflow-y-auto">
+              <SortableContext
+                items={taskIds}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col gap-2 px-2">
+                  {tasks.map((task) => (
+                    <SortableTaskItem
+                      key={task.id}
+                      task={task}
+                      boardId={boardId}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </div>
+          </CardContent>
+        )}
         <CardFooter className="flex-shrink-0 flex-col items-stretch gap-2 px-2">
           {isAdding ? (
             <>

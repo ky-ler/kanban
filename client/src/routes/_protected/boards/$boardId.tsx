@@ -22,6 +22,7 @@ import {
   useGetBoardSuspense,
   useUpdateBoard,
 } from "@/api/gen/endpoints/board-controller/board-controller";
+import { updateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 import { CollaboratorDtoRole } from "@/api/gen/model";
 import { KanbanBoard } from "@/features/boards/components/kanban-board";
 import { useBoardSubscription } from "@/features/boards/hooks/use-board-subscription";
@@ -129,18 +130,23 @@ function BoardComponent() {
   const saveField = (field: "name" | "description", value: string) => {
     if (!board) return;
 
-    if (field === "name" && !value.trim()) {
-      setEditingField(null);
+    const payload = {
+      name: field === "name" ? value.trim() : board.data.name,
+      description: field === "description" ? value : board.data.description,
+      isArchived: board.data.isArchived,
+    };
+
+    const validationResult = updateBoardBody.safeParse(payload);
+    if (!validationResult.success) {
+      toast.error(
+        validationResult.error.issues[0]?.message ?? "Invalid board update",
+      );
       return;
     }
 
     updateBoardMutation.mutate({
       boardId,
-      data: {
-        name: field === "name" ? value.trim() : board.data.name,
-        description: field === "description" ? value : board.data.description,
-        isArchived: board.data.isArchived,
-      },
+      data: payload,
     });
   };
 
@@ -192,7 +198,17 @@ function BoardComponent() {
             />
           </div>
         </div>
-        <div className="flex shrink-0 gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="hidden md:block">
+            <TaskFilterBar
+              boardId={boardId}
+              collaborators={board.data.collaborators ?? []}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              searchValue={searchInput}
+              onSearchChange={setSearchInput}
+            />
+          </div>
           <FavoriteButton
             boardId={boardId}
             isFavorite={board.data.isFavorite}
@@ -218,7 +234,7 @@ function BoardComponent() {
       </div>
 
       {/* Filter Bar */}
-      <div className="px-4">
+      <div className="px-4 md:hidden">
         <TaskFilterBar
           boardId={boardId}
           collaborators={board.data.collaborators ?? []}

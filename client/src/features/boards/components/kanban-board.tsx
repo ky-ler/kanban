@@ -132,6 +132,50 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     [tasks],
   );
 
+  const resolveOverColumnId = useCallback(
+    (
+      over: DragOverEvent["over"] | DragEndEvent["over"],
+    ): string | undefined => {
+      if (!over) {
+        return undefined;
+      }
+
+      const overType = getItemType(over.id);
+      if (overType === "column") {
+        return over.id as string;
+      }
+
+      if (overType === "task") {
+        return (
+          findColumnByTaskId(over.id) ?? findOriginalColumnByTaskId(over.id)
+        );
+      }
+
+      const sortableContainerId = (
+        over.data.current as { sortable?: { containerId?: UniqueIdentifier } }
+      )?.sortable?.containerId;
+
+      if (!sortableContainerId) {
+        return undefined;
+      }
+
+      if (sortedColumns.some((column) => column.id === sortableContainerId)) {
+        return sortableContainerId as string;
+      }
+
+      return (
+        findColumnByTaskId(sortableContainerId) ??
+        findOriginalColumnByTaskId(sortableContainerId)
+      );
+    },
+    [
+      findColumnByTaskId,
+      findOriginalColumnByTaskId,
+      getItemType,
+      sortedColumns,
+    ],
+  );
+
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const type = getItemType(active.id);
@@ -159,15 +203,7 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     if (activeItem.type !== "task") return;
 
     const activeColumnId = findColumnByTaskId(active.id);
-    const overType = getItemType(over.id);
-
-    // Determine the target column
-    let overColumnId: string | undefined;
-    if (overType === "column") {
-      overColumnId = over.id as string;
-    } else if (overType === "task") {
-      overColumnId = findColumnByTaskId(over.id);
-    }
+    const overColumnId = resolveOverColumnId(over);
 
     if (!activeColumnId || !overColumnId) return;
 
@@ -226,8 +262,10 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
 
     // Handle column reorder
     if (currentActiveItem.type === "column") {
+      const overColumnId = resolveOverColumnId(over);
+
       const activeIndex = sortedColumns.findIndex((c) => c.id === active.id);
-      const overIndex = sortedColumns.findIndex((c) => c.id === over.id);
+      const overIndex = sortedColumns.findIndex((c) => c.id === overColumnId);
 
       if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
         // Update temp state for final position
@@ -251,14 +289,7 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     // Handle task reorder
     if (currentActiveItem.type === "task") {
       const originalColumnId = findOriginalColumnByTaskId(active.id);
-      const overType = getItemType(over.id);
-      let overColumnId: string | undefined;
-
-      if (overType === "column") {
-        overColumnId = over.id as string;
-      } else if (overType === "task") {
-        overColumnId = findColumnByTaskId(over.id);
-      }
+      const overColumnId = resolveOverColumnId(over);
 
       if (!originalColumnId || !overColumnId) {
         setTempTasks(null);

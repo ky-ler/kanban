@@ -21,6 +21,10 @@ import {
   useDeleteLabel,
   useGetLabelsByBoard,
 } from "@/api/gen/endpoints/label-controller/label-controller";
+import {
+  createLabelBody,
+  createLabelBodyNameMax,
+} from "@/api/gen/endpoints/label-controller/label-controller.zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 
@@ -49,6 +53,7 @@ export function LabelPicker({
   const [newLabelColor, setNewLabelColor] = useState<LabelColor>(
     LABEL_COLORS[0].name,
   );
+  const [createLabelError, setCreateLabelError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { data: labelsResponse } = useGetLabelsByBoard(boardId);
@@ -70,6 +75,7 @@ export function LabelPicker({
         setIsCreating(false);
         setNewLabelName("");
         setNewLabelColor(LABEL_COLORS[0].name);
+        setCreateLabelError(null);
       },
     },
   });
@@ -103,13 +109,21 @@ export function LabelPicker({
   };
 
   const handleCreateLabel = () => {
-    if (!newLabelName.trim()) return;
+    const payload = {
+      boardId,
+      name: newLabelName.trim(),
+      color: newLabelColor,
+    };
+
+    const result = createLabelBody.safeParse(payload);
+    if (!result.success) {
+      setCreateLabelError(result.error.issues[0]?.message ?? "Invalid label");
+      return;
+    }
+
+    setCreateLabelError(null);
     createLabelMutation.mutate({
-      data: {
-        boardId,
-        name: newLabelName.trim(),
-        color: newLabelColor,
-      },
+      data: payload,
     });
   };
 
@@ -168,14 +182,29 @@ export function LabelPicker({
             <Input
               placeholder="Label name"
               value={newLabelName}
-              onChange={(e) => setNewLabelName(e.target.value)}
+              onChange={(e) => {
+                setNewLabelName(e.target.value);
+                if (createLabelError) {
+                  setCreateLabelError(null);
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   handleCreateLabel();
                 }
               }}
+              maxLength={createLabelBodyNameMax}
+              aria-invalid={Boolean(createLabelError)}
             />
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-destructive text-xs">
+                {createLabelError ?? "\u00A0"}
+              </p>
+              <span className="text-muted-foreground text-xs">
+                {newLabelName.trim().length}/{createLabelBodyNameMax}
+              </span>
+            </div>
             <div className="flex flex-wrap gap-1">
               {LABEL_COLORS.map((color) => {
                 const classes = getLabelColorClasses(color.name);
