@@ -53,6 +53,11 @@ import {
   useUpdateTask,
 } from "@/api/gen/endpoints/task-controller/task-controller";
 import {
+  updateTaskBody,
+  updateTaskBodyTitleMax,
+  updateTaskBodyTitleMin,
+} from "@/api/gen/endpoints/task-controller/task-controller.zod";
+import {
   getGetTaskActivityQueryKey,
   getGetTaskActivityQueryOptions,
 } from "@/api/gen/endpoints/activity-log-controller/activity-log-controller";
@@ -72,6 +77,7 @@ import { useBoardSubscription } from "@/features/boards/hooks/use-board-subscrip
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { cn } from "@/lib/utils";
+import { z } from "zod";
 
 export const Route = createFileRoute(
   "/_protected/boards/$boardId/tasks/$taskId",
@@ -104,6 +110,25 @@ type EditingField =
 type SaveFieldOptions = {
   closeEditor?: boolean;
 };
+
+const EDITABLE_SURFACE_BASE =
+  "rounded-lg border border-transparent transition-colors";
+const EDITABLE_SURFACE_IDLE = "bg-muted/30";
+const EDITABLE_SURFACE_INTERACTIVE =
+  "hover:bg-muted/50 hover:border-border cursor-pointer";
+const EDITABLE_SURFACE_EDITING = "bg-muted/50 border-border";
+
+const taskTitleSchema = z
+  .string()
+  .trim()
+  .min(
+    updateTaskBodyTitleMin,
+    `Task title must be between ${updateTaskBodyTitleMin} and ${updateTaskBodyTitleMax} characters`,
+  )
+  .max(
+    updateTaskBodyTitleMax,
+    `Task title must be between ${updateTaskBodyTitleMin} and ${updateTaskBodyTitleMax} characters`,
+  );
 
 function TaskComponent() {
   const [editingField, setEditingField] = useState<EditingField>(null);
@@ -219,6 +244,14 @@ function TaskComponent() {
         break;
     }
 
+    const validationResult = updateTaskBody.safeParse(data);
+    if (!validationResult.success) {
+      toast.error(
+        validationResult.error.issues[0]?.message ?? "Invalid task update",
+      );
+      return;
+    }
+
     updateTaskMutation.mutate({ taskId, data });
     if (closeEditor) {
       setEditingField(null);
@@ -266,7 +299,7 @@ function TaskComponent() {
         </DialogDescription>
         {/* Header */}
         <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4 text-left">
-          <div className="pr-8">
+          <div className="mr-6 flex flex-col truncate text-ellipsis">
             <EditableTitle
               value={task.data.title}
               isEditing={editingField === "title"}
@@ -503,31 +536,90 @@ function EditableTitle({
   setEditValue: (value: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const shouldSkipBlurSaveRef = useRef(false);
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const titleLength = editValue.trim().length;
+  const isTitleLengthInvalid =
+    titleLength < updateTaskBodyTitleMin ||
+    titleLength > updateTaskBodyTitleMax;
+
+  const validateTitle = (rawTitle: string): string | null => {
+    const result = taskTitleSchema.safeParse(rawTitle);
+    if (result.success) {
+      return null;
+    }
+
+    return (
+      result.error.issues[0]?.message ??
+      `Task title must be between ${updateTaskBodyTitleMin} and ${updateTaskBodyTitleMax} characters`
+    );
+  };
+
+  const handleSave = () => {
+    const validationError = validateTitle(editValue);
+    if (validationError) {
+      setTitleError(validationError);
+      return;
+    }
+
+    setTitleError(null);
+    onSave(editValue.trim());
+  };
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
+      setTitleError(null);
     }
   }, [isEditing]);
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="space-y-1">
         <Input
           ref={inputRef}
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={(e) => {
+            setEditValue(e.target.value);
+            if (titleError) {
+              setTitleError(null);
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              onSave(editValue);
+              e.preventDefault();
+              handleSave();
             } else if (e.key === "Escape") {
+              shouldSkipBlurSaveRef.current = true;
+              setTitleError(null);
               onCancel();
             }
           }}
-          onBlur={() => onSave(editValue)}
+          onBlur={() => {
+            if (shouldSkipBlurSaveRef.current) {
+              shouldSkipBlurSaveRef.current = false;
+              return;
+            }
+
+            handleSave();
+          }}
           className="text-xl font-semibold"
+          aria-invalid={Boolean(titleError)}
         />
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-destructive text-xs">{titleError ?? "\u00A0"}</p>
+          <span
+            className={cn(
+              "text-xs",
+              isTitleLengthInvalid
+                ? "text-destructive"
+                : "text-muted-foreground",
+            )}
+          >
+            {titleLength}/{updateTaskBodyTitleMax}
+          </span>
+        </div>
       </div>
     );
   }
@@ -568,8 +660,10 @@ function EditableSelectField({
   return (
     <div
       className={cn(
-        "bg-muted/50 flex items-center gap-3 rounded-lg p-3 transition-colors",
-        !isEditing && "hover:bg-muted cursor-pointer",
+        "flex items-center gap-3 p-3",
+        EDITABLE_SURFACE_BASE,
+        isEditing ? EDITABLE_SURFACE_EDITING : EDITABLE_SURFACE_IDLE,
+        !isEditing && EDITABLE_SURFACE_INTERACTIVE,
       )}
       onClick={() => !isEditing && onEdit()}
     >
@@ -639,8 +733,10 @@ function EditableDateField({
   return (
     <div
       className={cn(
-        "bg-muted/50 flex items-center gap-3 rounded-lg p-3 transition-colors",
-        !isEditing && "hover:bg-muted cursor-pointer",
+        "flex items-center gap-3 p-3",
+        EDITABLE_SURFACE_BASE,
+        isEditing ? EDITABLE_SURFACE_EDITING : EDITABLE_SURFACE_IDLE,
+        !isEditing && EDITABLE_SURFACE_INTERACTIVE,
       )}
       onClick={() => !isEditing && onEdit()}
     >
@@ -760,7 +856,12 @@ function EditableLabels({
         </div>
       ) : (
         <div
-          className="bg-muted/30 hover:bg-muted/50 hover:border-border min-h-[44px] cursor-pointer rounded-lg border border-transparent px-3 py-3 transition-colors"
+          className={cn(
+            "min-h-[44px] px-3 py-3",
+            EDITABLE_SURFACE_BASE,
+            EDITABLE_SURFACE_IDLE,
+            EDITABLE_SURFACE_INTERACTIVE,
+          )}
           onClick={onEdit}
         >
           {labels.length > 0 ? (
@@ -800,6 +901,12 @@ function EditableDescription({
   editValue: string;
   setEditValue: (value: string) => void;
 }) {
+  const normalizeMarkdown = (rawValue: string): string =>
+    rawValue.replace(/\r\n/g, "\n").trimEnd();
+
+  const hasDescriptionChanges =
+    normalizeMarkdown(editValue) !== normalizeMarkdown(value);
+
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (!target.closest('[contenteditable="true"]')) {
@@ -808,7 +915,9 @@ function EditableDescription({
 
     if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
       e.preventDefault();
-      onSave(editValue);
+      if (hasDescriptionChanges) {
+        onSave(editValue);
+      }
       return;
     }
 
@@ -836,12 +945,25 @@ function EditableDescription({
           <InlineSaveActions
             onCancel={onCancel}
             onSave={() => onSave(editValue)}
+            saveDisabled={!hasDescriptionChanges}
           />
         </div>
       ) : (
         <div
-          className="bg-muted/30 hover:bg-muted/50 min-h-[100px] cursor-pointer rounded-lg p-4 transition-colors"
-          onClick={onEdit}
+          className={cn(
+            "min-h-[100px] p-4",
+            EDITABLE_SURFACE_BASE,
+            EDITABLE_SURFACE_IDLE,
+            EDITABLE_SURFACE_INTERACTIVE,
+          )}
+          onClick={(event) => {
+            const target = event.target as HTMLElement;
+            if (target.closest("a")) {
+              return;
+            }
+
+            onEdit();
+          }}
         >
           <TaskDescriptionView value={value} />
         </div>

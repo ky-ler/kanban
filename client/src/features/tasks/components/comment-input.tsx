@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Check, X } from "lucide-react";
+import { InlineSaveActions } from "@/components/inline-save-actions";
+import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
+import { createCommentBody } from "@/api/gen/endpoints/comment-controller/comment-controller.zod";
+import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface CommentInputProps {
   onSubmit: (content: string) => void;
@@ -17,31 +18,58 @@ export function CommentInput({
 }: CommentInputProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [content, setContent] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [plainText, setPlainText] = useState("");
+  const [commentError, setCommentError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isExpanded && textareaRef.current) {
-      textareaRef.current.focus();
+  const isCommentEmpty = plainText.trim().length === 0;
+
+  const validateComment = (markdown: string): string | null => {
+    const result = createCommentBody.safeParse({ content: markdown });
+    if (result.success) {
+      return null;
     }
-  }, [isExpanded]);
+
+    return result.error.issues[0]?.message ?? "Comment cannot be blank";
+  };
 
   const handleSubmit = () => {
-    if (!content.trim() || isPending) return;
-    onSubmit(content.trim());
+    if (isPending) return;
+
+    const markdown = content.trim();
+    const validationError = validateComment(markdown);
+    if (validationError || isCommentEmpty) {
+      setCommentError(validationError ?? "Comment cannot be blank");
+      return;
+    }
+
+    setCommentError(null);
+    onSubmit(markdown);
     setContent("");
+    setPlainText("");
     setIsExpanded(false);
   };
 
   const handleCancel = () => {
     setContent("");
+    setPlainText("");
+    setCommentError(null);
     setIsExpanded(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('[contenteditable="true"]')) {
+      return;
+    }
+
+    if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
       e.preventDefault();
       handleSubmit();
-    } else if (e.key === "Escape") {
+      return;
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
       handleCancel();
     }
   };
@@ -51,7 +79,7 @@ export function CommentInput({
       <div
         className={cn(
           "bg-muted/50 cursor-text rounded-lg border border-transparent px-3 py-2 text-sm",
-          "text-muted-foreground transition-colors hover:bg-muted hover:border-border",
+          "text-muted-foreground hover:bg-muted hover:border-border transition-colors",
         )}
         onClick={() => setIsExpanded(true)}
       >
@@ -61,39 +89,31 @@ export function CommentInput({
   }
 
   return (
-    <div className="space-y-2">
-      <Textarea
-        ref={textareaRef}
+    <div className="space-y-2" onKeyDownCapture={handleEditorKeyDown}>
+      <MarkdownEditor
         value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
+        onChange={(markdown) => {
+          setContent(markdown);
+          if (commentError) {
+            setCommentError(null);
+          }
+        }}
+        onContentMetaChange={({ plainText: nextPlainText }) => {
+          setPlainText(nextPlainText);
+        }}
         placeholder={placeholder}
-        rows={3}
-        className="resize-none"
-        disabled={isPending}
+        toolbarVariant="compact"
+        minHeightClassName="min-h-[96px]"
+        autoFocus={true}
       />
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={!content.trim() || isPending}
-        >
-          <Check className="mr-1 h-3 w-3" />
-          {isPending ? "Saving..." : "Save"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleCancel}
-          disabled={isPending}
-        >
-          <X className="mr-1 h-3 w-3" />
-          Cancel
-        </Button>
-        <span className="text-muted-foreground ml-auto text-xs">
-          Ctrl+Enter to save
-        </span>
-      </div>
+      <p className="text-destructive text-xs">{commentError ?? "\u00A0"}</p>
+      <InlineSaveActions
+        onCancel={handleCancel}
+        onSave={handleSubmit}
+        isSaving={isPending}
+        cancelDisabled={isPending}
+        saveDisabled={isCommentEmpty || isPending}
+      />
     </div>
   );
 }
