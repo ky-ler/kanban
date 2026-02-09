@@ -20,7 +20,6 @@ class UserServiceTest {
 
     private static final String USER_ID = "auth0|user123";
 
-    @Mock private UserRepository userRepository;
     @Mock private SecurityContext securityContext;
     @Mock private Authentication authentication;
     @InjectMocks private UserService userService;

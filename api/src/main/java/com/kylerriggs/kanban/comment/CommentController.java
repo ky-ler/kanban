@@ -15,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -55,8 +54,7 @@ public class CommentController {
             @NonNull @PathVariable UUID boardId,
             @NonNull @PathVariable UUID taskId,
             @Valid @RequestBody CommentRequest request) {
-        CommentDto comment =
-                commentService.createComment(boardId, taskId, Objects.requireNonNull(request));
+        CommentDto comment = commentService.createComment(boardId, taskId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
@@ -76,9 +74,7 @@ public class CommentController {
             @NonNull @PathVariable UUID taskId,
             @NonNull @PathVariable UUID commentId,
             @Valid @RequestBody CommentRequest request) {
-        CommentDto comment =
-                commentService.updateComment(
-                        boardId, taskId, commentId, Objects.requireNonNull(request));
+        CommentDto comment = commentService.updateComment(boardId, taskId, commentId, request);
         return ResponseEntity.ok(comment);
     }
 

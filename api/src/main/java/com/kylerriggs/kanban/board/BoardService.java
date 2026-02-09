@@ -10,7 +10,6 @@ import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
-import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
@@ -56,10 +55,6 @@ public class BoardService {
     @Transactional
     public BoardDto createBoard(BoardRequest boardRequest) {
         String requestUserId = userService.getCurrentUserId();
-
-        if (requestUserId == null) {
-            throw new UnauthorizedException("User not authenticated");
-        }
 
         // Check if user has reached the board limit
         long userBoardCount = boardRepository.countByCollaboratorsUserId(requestUserId);

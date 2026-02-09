@@ -3,7 +3,6 @@ package com.kylerriggs.kanban.comment;
 import com.kylerriggs.kanban.comment.dto.CommentDto;
 import com.kylerriggs.kanban.comment.dto.CommentRequest;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
-import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -57,10 +55,6 @@ public class CommentService {
             @NonNull UUID boardId, @NonNull UUID taskId, @NonNull CommentRequest request) {
         String currentUserId = userService.getCurrentUserId();
 
-        if (currentUserId == null) {
-            throw new UnauthorizedException("User not authenticated");
-        }
-
         Task task = requireTaskInBoard(boardId, taskId);
 
         User author =
@@ -74,10 +68,9 @@ public class CommentService {
         Comment comment =
                 Comment.builder().content(request.content()).task(task).author(author).build();
 
-        Comment saved = commentRepository.save(Objects.requireNonNull(comment));
+        Comment saved = commentRepository.save(comment);
 
-        eventPublisher.publish(
-                "COMMENT_ADDED", Objects.requireNonNull(task.getBoard().getId()), saved.getId());
+        eventPublisher.publish("COMMENT_ADDED", task.getBoard().getId(), saved.getId());
 
         return commentMapper.toDto(saved);
     }
@@ -111,9 +104,7 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
 
         eventPublisher.publish(
-                "COMMENT_UPDATED",
-                Objects.requireNonNull(comment.getTask().getBoard().getId()),
-                saved.getId());
+                "COMMENT_UPDATED", comment.getTask().getBoard().getId(), saved.getId());
 
         return commentMapper.toDto(saved);
     }
@@ -140,8 +131,7 @@ public class CommentService {
 
         commentRepository.delete(comment);
 
-        eventPublisher.publish(
-                "COMMENT_DELETED", Objects.requireNonNull(commentBoardId), commentId);
+        eventPublisher.publish("COMMENT_DELETED", commentBoardId, commentId);
     }
 
     private Task requireTaskInBoard(UUID boardId, UUID taskId) {

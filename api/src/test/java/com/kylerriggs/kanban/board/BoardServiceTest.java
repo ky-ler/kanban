@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.board;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -137,7 +138,7 @@ class BoardServiceTest {
                                 savedBoard.setDateModified(Instant.now());
                                 return savedBoard;
                             });
-            when(boardMapper.toDto(any(Board.class), eq(USER_ID))).thenReturn(boardDto);
+            when(boardMapper.toDto(any(Board.class), eq(USER_ID), anyMap())).thenReturn(boardDto);
 
             // When
             BoardDto result = boardService.createBoard(boardRequest);
@@ -184,7 +185,8 @@ class BoardServiceTest {
         @Test
         void createBoard_WhenUserNotAuthenticated_ThrowsUnauthorizedException() {
             // Given
-            when(userService.getCurrentUserId()).thenReturn(null);
+            when(userService.getCurrentUserId())
+                    .thenThrow(new UnauthorizedException("User not authenticated"));
 
             // When & Then
             assertThrows(UnauthorizedException.class, () -> boardService.createBoard(boardRequest));
@@ -198,14 +200,14 @@ class BoardServiceTest {
             // Given
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(boardMapper.toDto(board, USER_ID)).thenReturn(boardDto);
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
 
             // When
             BoardDto result = boardService.getBoard(Objects.requireNonNull(BOARD_ID));
 
             // Then
             assertNotNull(result);
-            verify(boardMapper).toDto(board, USER_ID);
+            verify(boardMapper).toDto(eq(board), eq(USER_ID), anyMap());
         }
 
         @Test
@@ -265,7 +267,7 @@ class BoardServiceTest {
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(boardMapper.toDto(board, USER_ID)).thenReturn(boardDto);
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
 
             // When
             boardService.updateBoard(Objects.requireNonNull(BOARD_ID), updateRequest);

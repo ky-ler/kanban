@@ -2,7 +2,6 @@ package com.kylerriggs.kanban.activity;
 
 import com.kylerriggs.kanban.activity.dto.ActivityLogDto;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
-import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -60,10 +58,6 @@ public class ActivityLogService {
             @NonNull Task task, @NonNull ActivityType type, @Nullable String details) {
         String currentUserId = userService.getCurrentUserId();
 
-        if (currentUserId == null) {
-            throw new UnauthorizedException("User not authenticated");
-        }
-
         User user =
                 userRepository
                         .findById(currentUserId)
@@ -75,11 +69,10 @@ public class ActivityLogService {
         ActivityLog activityLog =
                 ActivityLog.builder().task(task).user(user).type(type).details(details).build();
 
-        activityLogRepository.save(Objects.requireNonNull(activityLog));
+        activityLogRepository.save(activityLog);
 
         // Broadcast activity event after transaction commits
-        eventPublisher.publish(
-                "ACTIVITY_LOGGED", Objects.requireNonNull(task.getBoard().getId()), task.getId());
+        eventPublisher.publish("ACTIVITY_LOGGED", task.getBoard().getId(), task.getId());
     }
 
     /**
@@ -98,6 +91,6 @@ public class ActivityLogService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
-        logActivity(Objects.requireNonNull(task), type, details);
+        logActivity(task, type, details);
     }
 }

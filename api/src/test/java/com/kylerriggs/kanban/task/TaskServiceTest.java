@@ -231,7 +231,8 @@ class TaskServiceTest {
         @Test
         void createTask_WhenNotAuthenticated_ThrowsUnauthorizedException() {
             // Given
-            when(userService.getCurrentUserId()).thenReturn(null);
+            when(userService.getCurrentUserId())
+                    .thenThrow(new UnauthorizedException("User not authenticated"));
 
             // When & Then
             assertThrows(

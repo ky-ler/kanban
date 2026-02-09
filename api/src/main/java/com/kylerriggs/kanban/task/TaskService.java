@@ -11,7 +11,6 @@ import com.kylerriggs.kanban.column.ColumnRepository;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
-import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.label.Label;
 import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
@@ -87,10 +86,6 @@ public class TaskService {
     @Transactional
     public TaskDto createTask(@NonNull TaskRequest createTaskRequest) {
         String requestUserId = userService.getCurrentUserId();
-
-        if (requestUserId == null) {
-            throw new UnauthorizedException("User not authenticated");
-        }
 
         User createdBy =
                 userRepository

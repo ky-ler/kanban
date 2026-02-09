@@ -30,12 +30,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Override
-    @SuppressWarnings("null")
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
         String[] origins = securityProperties.getCorsAllowedOrigins().toArray(String[]::new);
 
         // Register native WebSocket endpoint (for modern browsers)
-        // Use setAllowedOriginPatterns for more flexibility with wildcards
         registry.addEndpoint("/ws").setAllowedOriginPatterns(origins);
 
         // Register SockJS fallback endpoint (for older browsers)
