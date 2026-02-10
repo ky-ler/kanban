@@ -13,8 +13,22 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
+    /**
+     * Finds a task by ID and board ID for authorization or scoped lookups.
+     *
+     * @param taskId the task ID to match
+     * @param boardId the board ID to match
+     * @return the task if it belongs to the board
+     */
     Optional<Task> findByIdAndBoardId(UUID taskId, UUID boardId);
 
+    /**
+     * Checks whether a task exists within the specified board.
+     *
+     * @param taskId the task ID to check
+     * @param boardId the board ID to match
+     * @return true if the task exists on the board
+     */
     boolean existsByIdAndBoardId(UUID taskId, UUID boardId);
 
     /**
@@ -84,9 +98,15 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      */
     @Query(
             "SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Task t WHERE t.id ="
-                    + " :taskId AND (t.board.createdBy.id = :userId OR EXISTS (SELECT 1 FROM BoardUser"
-                    + " bu WHERE bu.board.id = t.board.id AND bu.user.id = :userId))")
+                + " :taskId AND (t.board.createdBy.id = :userId OR EXISTS (SELECT 1 FROM BoardUser"
+                + " bu WHERE bu.board.id = t.board.id AND bu.user.id = :userId))")
     boolean isUserAuthorizedForTask(@Param("taskId") UUID taskId, @Param("userId") String userId);
 
+    /**
+     * Finds all tasks for a board.
+     *
+     * @param boardId the board ID to match
+     * @return list of tasks for the board
+     */
     List<Task> findByBoardId(UUID boardId);
 }
