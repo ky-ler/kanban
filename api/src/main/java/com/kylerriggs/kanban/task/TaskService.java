@@ -561,7 +561,7 @@ public class TaskService {
         }
 
         // Case: placing between two tasks
-        if (afterPos != null) {
+        if (beforePos != null && afterPos != null) {
             long mid = afterPos + (beforePos - afterPos) / 2;
             if (mid <= afterPos || mid >= beforePos) {
                 rebalanceColumn(columnId, movingTaskId);
