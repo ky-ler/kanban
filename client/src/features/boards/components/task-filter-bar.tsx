@@ -97,7 +97,7 @@ export function TaskFilterBar({
           placeholder="Search tasks..."
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="h-8 w-36 pl-8 sm:w-48"
+          className="w-36 pl-8 sm:w-48"
         />
       </div>
 
