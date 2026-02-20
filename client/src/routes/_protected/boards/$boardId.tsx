@@ -1,16 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { InlineSaveActions } from "@/components/inline-save-actions";
+import { EditableTitleText } from "@/components/editable-title-text";
 import {
   createFileRoute,
   Link,
   Outlet,
   useNavigate,
 } from "@tanstack/react-router";
-import { Check, Pencil, Users, X } from "lucide-react";
+import { Users } from "lucide-react";
 import { FavoriteButton } from "@/features/boards/components/favorite-button";
 import { Alert } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -34,9 +32,7 @@ import {
   filtersToSearchParams,
   type TaskFilters,
 } from "@/features/boards/utils/filter-tasks";
-import { cn } from "@/lib/utils";
 import { BoardWebSocketProvider } from "@/features/boards/context/board-websocket-context";
-import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 
 function BoardRoute() {
   const { boardId } = Route.useParams();
@@ -60,7 +56,7 @@ export const Route = createFileRoute("/_protected/boards/$boardId")({
   component: BoardRoute,
 });
 
-type EditingField = "name" | "description" | null;
+type EditingField = "name" | null;
 
 function BoardComponent() {
   const { boardId } = Route.useParams();
@@ -109,6 +105,8 @@ function BoardComponent() {
     (collaborator) => collaborator.user?.id.toString() === currentUserId,
   )?.role;
   const isAdmin = currentUserRole === CollaboratorDtoRole.ADMIN;
+  const isBoardOwner = board?.data.createdBy.id === currentUserId;
+  const canEditBoardMeta = isAdmin || isBoardOwner;
 
   const updateBoardMutation = useUpdateBoard({
     mutation: {
@@ -127,12 +125,12 @@ function BoardComponent() {
     },
   });
 
-  const saveField = (field: "name" | "description", value: string) => {
+  const saveName = (value: string) => {
     if (!board) return;
 
     const payload = {
-      name: field === "name" ? value.trim() : board.data.name,
-      description: field === "description" ? value : board.data.description,
+      name: value.trim(),
+      description: board.data.description,
       isArchived: board.data.isArchived,
     };
 
@@ -169,36 +167,23 @@ function BoardComponent() {
       {/* Board Info Header */}
       <div className="flex items-center justify-between gap-2 px-4 pt-3 sm:items-start sm:pt-4">
         <div className="min-w-0 flex-1">
-          <EditableBoardName
+          <EditableTitleText
+            variant="board"
             value={board.data.name}
             isEditing={editingField === "name"}
-            canEdit={isAdmin}
+            canEdit={canEditBoardMeta}
             onEdit={() => {
               setEditValue(board.data.name);
               setEditingField("name");
             }}
-            onSave={(value) => saveField("name", value)}
+            onSave={saveName}
             onCancel={() => setEditingField(null)}
             editValue={editValue}
             setEditValue={setEditValue}
+            ViewComponent="h1"
           />
-          <div className="hidden sm:block">
-            <EditableBoardDescription
-              value={board.data.description ?? ""}
-              isEditing={editingField === "description"}
-              canEdit={isAdmin}
-              onEdit={() => {
-                setEditValue(board.data.description ?? "");
-                setEditingField("description");
-              }}
-              onSave={(value) => saveField("description", value)}
-              onCancel={() => setEditingField(null)}
-              editValue={editValue}
-              setEditValue={setEditValue}
-            />
-          </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex h-full shrink-0 items-center gap-2">
           <div className="hidden md:block">
             <TaskFilterBar
               boardId={boardId}
@@ -252,150 +237,5 @@ function BoardComponent() {
       />
       <Outlet />
     </>
-  );
-}
-
-function EditableBoardName({
-  value,
-  isEditing,
-  canEdit,
-  onEdit,
-  onSave,
-  onCancel,
-  editValue,
-  setEditValue,
-}: {
-  value: string;
-  isEditing: boolean;
-  canEdit: boolean;
-  onEdit: () => void;
-  onSave: (value: string) => void;
-  onCancel: () => void;
-  editValue: string;
-  setEditValue: (value: string) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-2">
-        <Input
-          ref={inputRef}
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              onSave(editValue);
-            } else if (e.key === "Escape") {
-              onCancel();
-            }
-          }}
-          className="h-auto py-1 text-xl font-bold tracking-tight sm:text-3xl"
-        />
-        <Button size="icon" variant="ghost" onClick={() => onSave(editValue)}>
-          <Check className="h-4 w-4" />
-        </Button>
-        <Button size="icon" variant="ghost" onClick={onCancel}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <h1
-      className={cn(
-        "text-xl font-bold tracking-tight sm:text-3xl",
-        canEdit && "hover:text-primary group cursor-pointer transition-colors",
-      )}
-      onClick={canEdit ? onEdit : undefined}
-    >
-      {value}
-      {canEdit && (
-        <Pencil className="ml-2 inline h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
-      )}
-    </h1>
-  );
-}
-
-function EditableBoardDescription({
-  value,
-  isEditing,
-  canEdit,
-  onEdit,
-  onSave,
-  onCancel,
-  editValue,
-  setEditValue,
-}: {
-  value: string;
-  isEditing: boolean;
-  canEdit: boolean;
-  onEdit: () => void;
-  onSave: (value: string) => void;
-  onCancel: () => void;
-  editValue: string;
-  setEditValue: (value: string) => void;
-}) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [isEditing]);
-
-  if (isEditing) {
-    return (
-      <div className="mt-2 space-y-2">
-        <Textarea
-          ref={textareaRef}
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
-              e.preventDefault();
-              onSave(editValue);
-              return;
-            }
-
-            if (e.key === "Escape") {
-              onCancel();
-            }
-          }}
-          rows={3}
-          placeholder="Add a description..."
-          className="resize-none"
-        />
-        <InlineSaveActions
-          onCancel={onCancel}
-          onSave={() => onSave(editValue)}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <p
-      className={cn(
-        "text-muted-foreground",
-        canEdit &&
-          "hover:text-foreground group cursor-pointer transition-colors",
-      )}
-      onClick={canEdit ? onEdit : undefined}
-    >
-      {value ||
-        (canEdit ? "Click to add a description..." : "No description yet")}
-      {canEdit && value && (
-        <Pencil className="ml-1 inline h-3 w-3 opacity-0 transition-opacity group-hover:opacity-50" />
-      )}
-    </p>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { router } from "@/lib/router";
@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { EditableTitleText } from "@/components/editable-title-text";
 import {
   Select,
   SelectContent,
@@ -23,18 +23,20 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   AlignLeft,
+  Archive,
+  ArchiveRestore,
   Calendar as CalendarIcon,
   ChevronDown,
   ChevronUp,
-  MessageSquare,
-  Pencil,
-  User,
-  Flag,
-  Columns,
-  Tag,
   Clock,
+  Columns,
+  MessageSquare,
+  Flag,
+  Tag,
+  User,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,
   PopoverContent,
@@ -51,9 +53,11 @@ import {
   getGetTaskQueryOptions,
   useGetTaskSuspense,
   useUpdateTask,
+  useUpdateTaskStatus,
 } from "@/api/gen/endpoints/task-controller/task-controller";
 import {
   updateTaskBody,
+  updateTaskStatusBody,
   updateTaskBodyTitleMax,
   updateTaskBodyTitleMin,
 } from "@/api/gen/endpoints/task-controller/task-controller.zod";
@@ -192,6 +196,24 @@ function TaskComponent() {
       },
     },
   });
+  const updateTaskStatusMutation = useUpdateTaskStatus({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getGetBoardQueryKey(boardId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getGetTaskQueryKey(taskId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getGetTaskActivityQueryKey(boardId, taskId),
+        });
+      },
+      onError: () => {
+        toast.error("Failed to update task status");
+      },
+    },
+  });
 
   const saveField = (
     field: string,
@@ -206,6 +228,8 @@ function TaskComponent() {
       boardId,
       title: task.data.title,
       columnId: task.data.columnId,
+      isCompleted: task.data.isCompleted,
+      isArchived: task.data.isArchived,
       description: task.data.description ?? undefined,
       assigneeId: task.data.assignedTo?.id ?? undefined,
       priority: task.data.priority ?? undefined,
@@ -258,6 +282,21 @@ function TaskComponent() {
     }
   };
 
+  const updateStatus = (statusPatch: {
+    isCompleted?: boolean;
+    isArchived?: boolean;
+  }) => {
+    const validationResult = updateTaskStatusBody.safeParse(statusPatch);
+    if (!validationResult.success) {
+      toast.error(
+        validationResult.error.issues[0]?.message ?? "Invalid task status",
+      );
+      return;
+    }
+
+    updateTaskStatusMutation.mutate({ taskId, data: statusPatch });
+  };
+
   const returnToBoard = (open: boolean) => {
     if (!open) {
       router.navigate({
@@ -299,22 +338,47 @@ function TaskComponent() {
         </DialogDescription>
         {/* Header */}
         <DialogHeader className="shrink-0 border-b px-6 pt-6 pb-4 text-left">
-          <div className="mr-6 flex flex-col truncate text-ellipsis">
-            <EditableTitle
-              value={task.data.title}
-              isEditing={editingField === "title"}
-              onEdit={() => {
-                setEditValue(task.data.title);
-                setEditingField("title");
-              }}
-              onSave={(value) => saveField("title", value)}
-              onCancel={() => setEditingField(null)}
-              editValue={editValue}
-              setEditValue={setEditValue}
-            />
-            <p className="text-muted-foreground mt-1 text-sm">
-              in column <span className="font-medium">{columnName}</span>
-            </p>
+          <div className="mr-6 flex items-start gap-2">
+            <div className="flex h-full shrink-0 items-center justify-center">
+              <Checkbox
+                aria-label={
+                  task.data.isCompleted ? "Mark incomplete" : "Mark complete"
+                }
+                checked={task.data.isCompleted}
+                disabled={updateTaskStatusMutation.isPending}
+                onCheckedChange={(checked) =>
+                  updateStatus({ isCompleted: checked === true })
+                }
+                className="disabled:cursor-pointer"
+              />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col truncate text-ellipsis">
+              <EditableTitleText
+                variant="task"
+                value={task.data.title}
+                isEditing={editingField === "title"}
+                onEdit={() => {
+                  setEditValue(task.data.title);
+                  setEditingField("title");
+                }}
+                onSave={(value) => saveField("title", value)}
+                onCancel={() => setEditingField(null)}
+                editValue={editValue}
+                setEditValue={setEditValue}
+                validate={(rawTitle) => {
+                  const result = taskTitleSchema.safeParse(rawTitle);
+                  if (result.success) {
+                    return null;
+                  }
+
+                  return (
+                    result.error.issues[0]?.message ??
+                    `Task title must be between ${updateTaskBodyTitleMin} and ${updateTaskBodyTitleMax} characters`
+                  );
+                }}
+                ViewComponent={DialogTitle}
+              />
+            </div>
           </div>
         </DialogHeader>
 
@@ -354,6 +418,44 @@ function TaskComponent() {
                     ]}
                   />
 
+                  {/* Column */}
+                  <EditableSelectField
+                    icon={
+                      <Columns className="text-muted-foreground h-4 w-4 shrink-0" />
+                    }
+                    label="Column"
+                    value={task.data.columnId}
+                    displayValue={columnName ?? ""}
+                    isEditing={editingField === "column"}
+                    onEdit={() => setEditingField("column")}
+                    onSave={(value) => saveField("column", value)}
+                    onCancel={() => setEditingField(null)}
+                    options={
+                      board?.data?.columns?.map((col) => ({
+                        value: col.id,
+                        label: col.name,
+                      })) ?? []
+                    }
+                  />
+
+                  {/* Due Date */}
+                  <EditableDateField
+                    icon={
+                      <CalendarIcon className="text-muted-foreground h-4 w-4 shrink-0" />
+                    }
+                    label="Due Date"
+                    value={task.data.dueDate ?? ""}
+                    displayValue={
+                      task.data.dueDate
+                        ? formatDate(task.data.dueDate)
+                        : "Not set"
+                    }
+                    isEditing={editingField === "dueDate"}
+                    onEdit={() => setEditingField("dueDate")}
+                    onSave={(value) => saveField("dueDate", value)}
+                    onCancel={() => setEditingField(null)}
+                  />
+
                   {/* Priority */}
                   <EditableSelectField
                     icon={
@@ -379,45 +481,15 @@ function TaskComponent() {
                       { value: "URGENT", label: "Urgent" },
                     ]}
                   />
-
-                  {/* Due Date */}
-                  <EditableDateField
-                    icon={
-                      <CalendarIcon className="text-muted-foreground h-4 w-4 shrink-0" />
-                    }
-                    label="Due Date"
-                    value={task.data.dueDate ?? ""}
-                    displayValue={
-                      task.data.dueDate
-                        ? formatDate(task.data.dueDate)
-                        : "Not set"
-                    }
-                    isEditing={editingField === "dueDate"}
-                    onEdit={() => setEditingField("dueDate")}
-                    onSave={(value) => saveField("dueDate", value)}
-                    onCancel={() => setEditingField(null)}
-                  />
-
-                  {/* Column */}
-                  <EditableSelectField
-                    icon={
-                      <Columns className="text-muted-foreground h-4 w-4 shrink-0" />
-                    }
-                    label="Column"
-                    value={task.data.columnId}
-                    displayValue={columnName ?? ""}
-                    isEditing={editingField === "column"}
-                    onEdit={() => setEditingField("column")}
-                    onSave={(value) => saveField("column", value)}
-                    onCancel={() => setEditingField(null)}
-                    options={
-                      board?.data?.columns?.map((col) => ({
-                        value: col.id,
-                        label: col.name,
-                      })) ?? []
-                    }
-                  />
                 </div>
+
+                <TaskStatusActions
+                  isArchived={task.data.isArchived}
+                  isPending={updateTaskStatusMutation.isPending}
+                  onToggleArchived={() =>
+                    updateStatus({ isArchived: !task.data.isArchived })
+                  }
+                />
 
                 {/* Labels */}
                 <EditableLabels
@@ -517,121 +589,51 @@ function TaskComponent() {
   );
 }
 
-// Editable Title Component
-function EditableTitle({
-  value,
-  isEditing,
-  onEdit,
-  onSave,
-  onCancel,
-  editValue,
-  setEditValue,
+function TaskStatusActions({
+  isArchived,
+  isPending,
+  onToggleArchived,
 }: {
-  value: string;
-  isEditing: boolean;
-  onEdit: () => void;
-  onSave: (value: string) => void;
-  onCancel: () => void;
-  editValue: string;
-  setEditValue: (value: string) => void;
+  isArchived: boolean;
+  isPending: boolean;
+  onToggleArchived: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const shouldSkipBlurSaveRef = useRef(false);
-  const [titleError, setTitleError] = useState<string | null>(null);
-  const titleLength = editValue.trim().length;
-  const isTitleLengthInvalid =
-    titleLength < updateTaskBodyTitleMin ||
-    titleLength > updateTaskBodyTitleMax;
-
-  const validateTitle = (rawTitle: string): string | null => {
-    const result = taskTitleSchema.safeParse(rawTitle);
-    if (result.success) {
-      return null;
-    }
-
-    return (
-      result.error.issues[0]?.message ??
-      `Task title must be between ${updateTaskBodyTitleMin} and ${updateTaskBodyTitleMax} characters`
-    );
-  };
-
-  const handleSave = () => {
-    const validationError = validateTitle(editValue);
-    if (validationError) {
-      setTitleError(validationError);
-      return;
-    }
-
-    setTitleError(null);
-    onSave(editValue.trim());
-  };
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-      setTitleError(null);
-    }
-  }, [isEditing]);
-
-  if (isEditing) {
-    return (
-      <div className="space-y-1">
-        <Input
-          ref={inputRef}
-          value={editValue}
-          onChange={(e) => {
-            setEditValue(e.target.value);
-            if (titleError) {
-              setTitleError(null);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSave();
-            } else if (e.key === "Escape") {
-              shouldSkipBlurSaveRef.current = true;
-              setTitleError(null);
-              onCancel();
-            }
-          }}
-          onBlur={() => {
-            if (shouldSkipBlurSaveRef.current) {
-              shouldSkipBlurSaveRef.current = false;
-              return;
-            }
-
-            handleSave();
-          }}
-          className="text-xl font-semibold"
-          aria-invalid={Boolean(titleError)}
-        />
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-destructive text-xs">{titleError ?? "\u00A0"}</p>
-          <span
-            className={cn(
-              "text-xs",
-              isTitleLengthInvalid
-                ? "text-destructive"
-                : "text-muted-foreground",
-            )}
-          >
-            {titleLength}/{updateTaskBodyTitleMax}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <DialogTitle
-      className="hover:text-primary group w-fit max-w-full cursor-pointer text-left text-xl transition-colors"
-      onClick={onEdit}
-    >
-      {value}
-      <Pencil className="ml-2 inline h-4 w-4 opacity-70 transition-opacity md:opacity-0 md:group-hover:opacity-100" />
-    </DialogTitle>
+    <div className="grid grid-cols-1 gap-3">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-3 p-3",
+          EDITABLE_SURFACE_BASE,
+          EDITABLE_SURFACE_IDLE,
+        )}
+      >
+        <div className="min-w-0">
+          <p className="text-muted-foreground text-xs">Archive</p>
+          <p className="text-sm font-medium">
+            {isArchived ? "Archived" : "Active"}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={onToggleArchived}
+        >
+          {isArchived ? (
+            <>
+              <ArchiveRestore className="mr-2 h-4 w-4" />
+              Unarchive
+            </>
+          ) : (
+            <>
+              <Archive className="mr-2 h-4 w-4" />
+              Archive
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }
 
