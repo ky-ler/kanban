@@ -108,16 +108,6 @@ export const deleteTaskParams = zod.object({
   taskId: zod.string().uuid(),
 });
 
-export const moveTaskParams = zod.object({
-  taskId: zod.string().uuid(),
-});
-
-export const moveTaskBody = zod.object({
-  afterTaskId: zod.string().uuid().optional(),
-  beforeTaskId: zod.string().uuid().optional(),
-  newColumnId: zod.string().uuid().optional(),
-});
-
 export const createTaskBodyTitleMin = 3;
 export const createTaskBodyTitleMax = 255;
 
@@ -169,4 +159,60 @@ export const createTaskResponse = zod.object({
     .optional(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().min(1),
+});
+
+export const updateTaskStatusParams = zod.object({
+  taskId: zod.string().uuid(),
+});
+
+export const updateTaskStatusBody = zod.object({
+  isCompleted: zod.boolean().optional(),
+  isArchived: zod.boolean().optional(),
+});
+
+export const updateTaskStatusResponsePositionMin = 0;
+
+export const updateTaskStatusResponse = zod.object({
+  id: zod.string().uuid(),
+  createdBy: zod.object({
+    id: zod.string().min(1),
+    username: zod.string().min(1),
+    profileImageUrl: zod.string().min(1),
+  }),
+  assignedTo: zod
+    .object({
+      id: zod.string().min(1),
+      username: zod.string().min(1),
+      profileImageUrl: zod.string().min(1),
+    })
+    .optional(),
+  title: zod.string().min(1),
+  description: zod.string().optional(),
+  columnId: zod.string().uuid(),
+  position: zod.number().min(updateTaskStatusResponsePositionMin),
+  isCompleted: zod.boolean(),
+  isArchived: zod.boolean(),
+  priority: zod.string().optional(),
+  dueDate: zod.string().optional(),
+  labels: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        name: zod.string().min(1),
+        color: zod.string().min(1),
+      }),
+    )
+    .optional(),
+  dateCreated: zod.string().min(1),
+  dateModified: zod.string().min(1),
+});
+
+export const moveTaskParams = zod.object({
+  taskId: zod.string().uuid(),
+});
+
+export const moveTaskBody = zod.object({
+  afterTaskId: zod.string().uuid().optional(),
+  beforeTaskId: zod.string().uuid().optional(),
+  newColumnId: zod.string().uuid().optional(),
 });

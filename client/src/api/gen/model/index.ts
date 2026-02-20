@@ -7,6 +7,7 @@
 
 export * from "./acceptInviteResponse";
 export * from "./activityLogDto";
+export * from "./boardArchiveRequest";
 export * from "./boardDto";
 export * from "./boardInviteDto";
 export * from "./boardRequest";
@@ -15,6 +16,7 @@ export * from "./collaboratorDto";
 export * from "./collaboratorDtoRole";
 export * from "./collaboratorRequest";
 export * from "./collaboratorRequestRole";
+export * from "./columnArchiveRequest";
 export * from "./columnDto";
 export * from "./commentDto";
 export * from "./commentRequest";
@@ -32,6 +34,7 @@ export * from "./roleUpdateRequest";
 export * from "./roleUpdateRequestNewRole";
 export * from "./taskDto";
 export * from "./taskRequest";
+export * from "./taskStatusRequest";
 export * from "./taskSummaryDto";
 export * from "./updateColumnRequest";
 export * from "./userSummaryDto";

@@ -31,7 +31,12 @@ import type {
   UseSuspenseQueryResult,
 } from "@tanstack/react-query";
 
-import type { MoveTaskRequest, TaskDto, TaskRequest } from "../../model";
+import type {
+  MoveTaskRequest,
+  TaskDto,
+  TaskRequest,
+  TaskStatusRequest,
+} from "../../model";
 
 import { apiClient } from "../../../../lib/api-client";
 
@@ -649,98 +654,6 @@ export const useDeleteTask = <TError = unknown, TContext = unknown>(
 
   return useMutation(mutationOptions, queryClient);
 };
-export type moveTaskResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type moveTaskResponseSuccess = moveTaskResponse200 & {
-  headers: Headers;
-};
-export type moveTaskResponse = moveTaskResponseSuccess;
-
-export const getMoveTaskUrl = (taskId: string) => {
-  return `/tasks/${taskId}`;
-};
-
-export const moveTask = async (
-  taskId: string,
-  moveTaskRequest: MoveTaskRequest,
-  options?: RequestInit,
-): Promise<moveTaskResponse> => {
-  return apiClient<moveTaskResponse>(getMoveTaskUrl(taskId), {
-    ...options,
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(moveTaskRequest),
-  });
-};
-
-export const getMoveTaskMutationOptions = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof moveTask>>,
-    TError,
-    { taskId: string; data: MoveTaskRequest },
-    TContext
-  >;
-  request?: SecondParameter<typeof apiClient>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof moveTask>>,
-  TError,
-  { taskId: string; data: MoveTaskRequest },
-  TContext
-> => {
-  const mutationKey = ["moveTask"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof moveTask>>,
-    { taskId: string; data: MoveTaskRequest }
-  > = (props) => {
-    const { taskId, data } = props ?? {};
-
-    return moveTask(taskId, data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type MoveTaskMutationResult = NonNullable<
-  Awaited<ReturnType<typeof moveTask>>
->;
-export type MoveTaskMutationBody = MoveTaskRequest;
-export type MoveTaskMutationError = unknown;
-
-export const useMoveTask = <TError = unknown, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof moveTask>>,
-      TError,
-      { taskId: string; data: MoveTaskRequest },
-      TContext
-    >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof moveTask>>,
-  TError,
-  { taskId: string; data: MoveTaskRequest },
-  TContext
-> => {
-  const mutationOptions = getMoveTaskMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
 export type createTaskResponse200 = {
   data: TaskDto;
   status: 200;
@@ -829,6 +742,190 @@ export const useCreateTask = <TError = unknown, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getCreateTaskMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type updateTaskStatusResponse200 = {
+  data: TaskDto;
+  status: 200;
+};
+
+export type updateTaskStatusResponseSuccess = updateTaskStatusResponse200 & {
+  headers: Headers;
+};
+export type updateTaskStatusResponse = updateTaskStatusResponseSuccess;
+
+export const getUpdateTaskStatusUrl = (taskId: string) => {
+  return `/tasks/${taskId}/status`;
+};
+
+export const updateTaskStatus = async (
+  taskId: string,
+  taskStatusRequest: TaskStatusRequest,
+  options?: RequestInit,
+): Promise<updateTaskStatusResponse> => {
+  return apiClient<updateTaskStatusResponse>(getUpdateTaskStatusUrl(taskId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(taskStatusRequest),
+  });
+};
+
+export const getUpdateTaskStatusMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTaskStatus>>,
+    TError,
+    { taskId: string; data: TaskStatusRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTaskStatus>>,
+  TError,
+  { taskId: string; data: TaskStatusRequest },
+  TContext
+> => {
+  const mutationKey = ["updateTaskStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTaskStatus>>,
+    { taskId: string; data: TaskStatusRequest }
+  > = (props) => {
+    const { taskId, data } = props ?? {};
+
+    return updateTaskStatus(taskId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTaskStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTaskStatus>>
+>;
+export type UpdateTaskStatusMutationBody = TaskStatusRequest;
+export type UpdateTaskStatusMutationError = unknown;
+
+export const useUpdateTaskStatus = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateTaskStatus>>,
+      TError,
+      { taskId: string; data: TaskStatusRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateTaskStatus>>,
+  TError,
+  { taskId: string; data: TaskStatusRequest },
+  TContext
+> => {
+  const mutationOptions = getUpdateTaskStatusMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type moveTaskResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type moveTaskResponseSuccess = moveTaskResponse200 & {
+  headers: Headers;
+};
+export type moveTaskResponse = moveTaskResponseSuccess;
+
+export const getMoveTaskUrl = (taskId: string) => {
+  return `/tasks/${taskId}/position`;
+};
+
+export const moveTask = async (
+  taskId: string,
+  moveTaskRequest: MoveTaskRequest,
+  options?: RequestInit,
+): Promise<moveTaskResponse> => {
+  return apiClient<moveTaskResponse>(getMoveTaskUrl(taskId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(moveTaskRequest),
+  });
+};
+
+export const getMoveTaskMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof moveTask>>,
+    TError,
+    { taskId: string; data: MoveTaskRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof moveTask>>,
+  TError,
+  { taskId: string; data: MoveTaskRequest },
+  TContext
+> => {
+  const mutationKey = ["moveTask"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof moveTask>>,
+    { taskId: string; data: MoveTaskRequest }
+  > = (props) => {
+    const { taskId, data } = props ?? {};
+
+    return moveTask(taskId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MoveTaskMutationResult = NonNullable<
+  Awaited<ReturnType<typeof moveTask>>
+>;
+export type MoveTaskMutationBody = MoveTaskRequest;
+export type MoveTaskMutationError = unknown;
+
+export const useMoveTask = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof moveTask>>,
+      TError,
+      { taskId: string; data: MoveTaskRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof moveTask>>,
+  TError,
+  { taskId: string; data: MoveTaskRequest },
+  TContext
+> => {
+  const mutationOptions = getMoveTaskMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

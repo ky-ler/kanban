@@ -23,6 +23,7 @@ export const updateColumnResponse = zod.object({
   id: zod.string().uuid(),
   name: zod.string().min(1),
   position: zod.number().min(updateColumnResponsePositionMin),
+  isArchived: zod.boolean(),
 });
 
 export const deleteColumnParams = zod.object({
@@ -49,6 +50,7 @@ export const createColumnResponse = zod.object({
   id: zod.string().uuid(),
   name: zod.string().min(1),
   position: zod.number().min(createColumnResponsePositionMin),
+  isArchived: zod.boolean(),
 });
 
 export const moveColumnParams = zod.object({
@@ -60,4 +62,23 @@ export const moveColumnBodyNewPositionMin = 0;
 
 export const moveColumnBody = zod.object({
   newPosition: zod.number().min(moveColumnBodyNewPositionMin),
+});
+
+export const updateColumnArchiveParams = zod.object({
+  boardId: zod.string().uuid(),
+  columnId: zod.string().uuid(),
+});
+
+export const updateColumnArchiveBody = zod.object({
+  isArchived: zod.boolean(),
+  confirmArchiveTasks: zod.boolean().optional(),
+});
+
+export const updateColumnArchiveResponsePositionMin = 0;
+
+export const updateColumnArchiveResponse = zod.object({
+  id: zod.string().uuid(),
+  name: zod.string().min(1),
+  position: zod.number().min(updateColumnArchiveResponsePositionMin),
+  isArchived: zod.boolean(),
 });

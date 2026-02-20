@@ -13,6 +13,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ColumnArchiveRequest,
   ColumnDto,
   CreateColumnRequest,
   MoveColumnRequest,
@@ -315,7 +316,7 @@ export type moveColumnResponseSuccess = moveColumnResponse200 & {
 export type moveColumnResponse = moveColumnResponseSuccess;
 
 export const getMoveColumnUrl = (boardId: string, columnId: string) => {
-  return `/boards/${boardId}/columns/${columnId}/move`;
+  return `/boards/${boardId}/columns/${columnId}/position`;
 };
 
 export const moveColumn = async (
@@ -394,6 +395,106 @@ export const useMoveColumn = <TError = unknown, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getMoveColumnMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type updateColumnArchiveResponse200 = {
+  data: ColumnDto;
+  status: 200;
+};
+
+export type updateColumnArchiveResponseSuccess =
+  updateColumnArchiveResponse200 & {
+    headers: Headers;
+  };
+export type updateColumnArchiveResponse = updateColumnArchiveResponseSuccess;
+
+export const getUpdateColumnArchiveUrl = (
+  boardId: string,
+  columnId: string,
+) => {
+  return `/boards/${boardId}/columns/${columnId}/archive`;
+};
+
+export const updateColumnArchive = async (
+  boardId: string,
+  columnId: string,
+  columnArchiveRequest: ColumnArchiveRequest,
+  options?: RequestInit,
+): Promise<updateColumnArchiveResponse> => {
+  return apiClient<updateColumnArchiveResponse>(
+    getUpdateColumnArchiveUrl(boardId, columnId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(columnArchiveRequest),
+    },
+  );
+};
+
+export const getUpdateColumnArchiveMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateColumnArchive>>,
+    TError,
+    { boardId: string; columnId: string; data: ColumnArchiveRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateColumnArchive>>,
+  TError,
+  { boardId: string; columnId: string; data: ColumnArchiveRequest },
+  TContext
+> => {
+  const mutationKey = ["updateColumnArchive"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateColumnArchive>>,
+    { boardId: string; columnId: string; data: ColumnArchiveRequest }
+  > = (props) => {
+    const { boardId, columnId, data } = props ?? {};
+
+    return updateColumnArchive(boardId, columnId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateColumnArchiveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateColumnArchive>>
+>;
+export type UpdateColumnArchiveMutationBody = ColumnArchiveRequest;
+export type UpdateColumnArchiveMutationError = unknown;
+
+export const useUpdateColumnArchive = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateColumnArchive>>,
+      TError,
+      { boardId: string; columnId: string; data: ColumnArchiveRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateColumnArchive>>,
+  TError,
+  { boardId: string; columnId: string; data: ColumnArchiveRequest },
+  TContext
+> => {
+  const mutationOptions = getUpdateColumnArchiveMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

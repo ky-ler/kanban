@@ -5,11 +5,7 @@
  * OpenAPI spec version: v0
  */
 
-export interface ColumnDto {
-  id: string;
-  /** @minLength 1 */
-  name: string;
-  /** @minimum 0 */
-  position: number;
+export interface ColumnArchiveRequest {
   isArchived: boolean;
+  confirmArchiveTasks?: boolean;
 }

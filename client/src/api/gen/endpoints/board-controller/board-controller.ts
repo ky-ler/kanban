@@ -32,6 +32,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  BoardArchiveRequest,
   BoardDto,
   BoardRequest,
   BoardSummary,
@@ -1450,6 +1451,102 @@ export const useAddCollaborator = <TError = unknown, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getAddCollaboratorMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export type updateBoardArchiveResponse200 = {
+  data: BoardDto;
+  status: 200;
+};
+
+export type updateBoardArchiveResponseSuccess =
+  updateBoardArchiveResponse200 & {
+    headers: Headers;
+  };
+export type updateBoardArchiveResponse = updateBoardArchiveResponseSuccess;
+
+export const getUpdateBoardArchiveUrl = (boardId: string) => {
+  return `/boards/${boardId}/archive`;
+};
+
+export const updateBoardArchive = async (
+  boardId: string,
+  boardArchiveRequest: BoardArchiveRequest,
+  options?: RequestInit,
+): Promise<updateBoardArchiveResponse> => {
+  return apiClient<updateBoardArchiveResponse>(
+    getUpdateBoardArchiveUrl(boardId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(boardArchiveRequest),
+    },
+  );
+};
+
+export const getUpdateBoardArchiveMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBoardArchive>>,
+    TError,
+    { boardId: string; data: BoardArchiveRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBoardArchive>>,
+  TError,
+  { boardId: string; data: BoardArchiveRequest },
+  TContext
+> => {
+  const mutationKey = ["updateBoardArchive"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBoardArchive>>,
+    { boardId: string; data: BoardArchiveRequest }
+  > = (props) => {
+    const { boardId, data } = props ?? {};
+
+    return updateBoardArchive(boardId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBoardArchiveMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBoardArchive>>
+>;
+export type UpdateBoardArchiveMutationBody = BoardArchiveRequest;
+export type UpdateBoardArchiveMutationError = unknown;
+
+export const useUpdateBoardArchive = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateBoardArchive>>,
+      TError,
+      { boardId: string; data: BoardArchiveRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateBoardArchive>>,
+  TError,
+  { boardId: string; data: BoardArchiveRequest },
+  TContext
+> => {
+  const mutationOptions = getUpdateBoardArchiveMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

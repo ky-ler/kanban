@@ -80,6 +80,7 @@ export const getBoardResponse = zod.object({
         id: zod.string().uuid(),
         name: zod.string().min(1),
         position: zod.number().min(getBoardResponseColumnsItemPositionMin),
+        isArchived: zod.boolean(),
       }),
     )
     .optional(),
@@ -172,6 +173,7 @@ export const updateBoardResponse = zod.object({
         id: zod.string().uuid(),
         name: zod.string().min(1),
         position: zod.number().min(updateBoardResponseColumnsItemPositionMin),
+        isArchived: zod.boolean(),
       }),
     )
     .optional(),
@@ -290,6 +292,7 @@ export const createBoardResponse = zod.object({
         id: zod.string().uuid(),
         name: zod.string().min(1),
         position: zod.number().min(createBoardResponseColumnsItemPositionMin),
+        isArchived: zod.boolean(),
       }),
     )
     .optional(),
@@ -312,6 +315,97 @@ export const addCollaboratorParams = zod.object({
 export const addCollaboratorBody = zod.object({
   userId: zod.string().min(1),
   role: zod.enum(["ADMIN", "MEMBER", "GUEST"]),
+});
+
+export const updateBoardArchiveParams = zod.object({
+  boardId: zod.string().uuid(),
+});
+
+export const updateBoardArchiveBody = zod.object({
+  isArchived: zod.boolean(),
+  confirmArchiveTasks: zod.boolean().optional(),
+});
+
+export const updateBoardArchiveResponseTasksItemPositionMin = 0;
+
+export const updateBoardArchiveResponseTasksItemCommentCountMin = 0;
+
+export const updateBoardArchiveResponseColumnsItemPositionMin = 0;
+
+export const updateBoardArchiveResponse = zod.object({
+  id: zod.string().uuid(),
+  name: zod.string().min(1),
+  description: zod.string().optional(),
+  createdBy: zod.object({
+    id: zod.string().min(1),
+    username: zod.string().min(1),
+    profileImageUrl: zod.string().min(1),
+  }),
+  collaborators: zod.array(
+    zod.object({
+      user: zod
+        .object({
+          id: zod.string().min(1),
+          username: zod.string().min(1),
+          profileImageUrl: zod.string().min(1),
+        })
+        .optional(),
+      role: zod.enum(["ADMIN", "MEMBER", "GUEST"]).optional(),
+    }),
+  ),
+  tasks: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        title: zod.string().min(1),
+        columnId: zod.string().uuid(),
+        assignedTo: zod
+          .object({
+            id: zod.string().min(1),
+            username: zod.string().min(1),
+            profileImageUrl: zod.string().min(1),
+          })
+          .optional(),
+        position: zod
+          .number()
+          .min(updateBoardArchiveResponseTasksItemPositionMin)
+          .optional(),
+        isCompleted: zod.boolean(),
+        isArchived: zod.boolean(),
+        priority: zod.string().optional(),
+        dueDate: zod.string().optional(),
+        labels: zod
+          .array(
+            zod.object({
+              id: zod.string().uuid(),
+              name: zod.string().min(1),
+              color: zod.string().min(1),
+            }),
+          )
+          .optional(),
+        commentCount: zod
+          .number()
+          .min(updateBoardArchiveResponseTasksItemCommentCountMin),
+        hasDescription: zod.boolean(),
+      }),
+    )
+    .optional(),
+  columns: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        name: zod.string().min(1),
+        position: zod
+          .number()
+          .min(updateBoardArchiveResponseColumnsItemPositionMin),
+        isArchived: zod.boolean(),
+      }),
+    )
+    .optional(),
+  isArchived: zod.boolean(),
+  dateCreated: zod.string().min(1),
+  dateModified: zod.string().min(1),
+  isFavorite: zod.boolean(),
 });
 
 export const getTasksForBoardParams = zod.object({
