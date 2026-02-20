@@ -1,5 +1,6 @@
 package com.kylerriggs.kanban.board;
 
+import com.kylerriggs.kanban.board.dto.BoardArchiveRequest;
 import com.kylerriggs.kanban.board.dto.BoardDto;
 import com.kylerriggs.kanban.board.dto.BoardRequest;
 import com.kylerriggs.kanban.board.dto.BoardSummary;
@@ -25,6 +26,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -77,6 +79,7 @@ public class BoardService {
                 Board.builder()
                         .name(boardRequest.name())
                         .description(boardRequest.description())
+                        .isArchived(boardRequest.isArchived())
                         .createdBy(owner)
                         .build();
 
@@ -178,6 +181,7 @@ public class BoardService {
 
         boardToUpdate.setName(boardRequest.name());
         boardToUpdate.setDescription(boardRequest.description());
+        boardToUpdate.setArchived(boardRequest.isArchived());
 
         boardRepository.save(boardToUpdate);
 
@@ -188,6 +192,60 @@ public class BoardService {
         Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
 
         return boardMapper.toDto(boardToUpdate, requestUserId, commentCountByTaskId);
+    }
+
+    @Transactional
+    public BoardDto updateBoardArchive(@NonNull UUID boardId, BoardArchiveRequest request) {
+        String requestUserId = userService.getCurrentUserId();
+
+        Board boardToUpdate =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
+
+        boolean shouldArchive = request.isArchived();
+        if (boardToUpdate.isArchived() == shouldArchive) {
+            Board currentBoard =
+                    boardRepository
+                            .findByIdWithDetails(boardId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "Board not found: " + boardId));
+            List<UUID> taskIds = currentBoard.getTasks().stream().map(Task::getId).toList();
+            Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+            return boardMapper.toDto(currentBoard, requestUserId, commentCountByTaskId);
+        }
+
+        if (shouldArchive && !boardToUpdate.isArchived()) {
+            long unarchivedTaskCount = taskRepository.countByBoardIdAndIsArchivedFalse(boardId);
+            if (unarchivedTaskCount > 0 && !request.confirmArchiveTasks()) {
+                throw new BadRequestException(
+                        "Board has unarchived tasks. Set confirmArchiveTasks=true to archive all"
+                                + " tasks in this board.");
+            }
+
+            if (unarchivedTaskCount > 0) {
+                taskRepository.archiveByBoardId(boardId, Instant.now());
+            }
+        }
+
+        boardToUpdate.setArchived(shouldArchive);
+        boardRepository.save(boardToUpdate);
+
+        eventPublisher.publish("BOARD_UPDATED", boardId, boardId);
+
+        Board refreshedBoard =
+                boardRepository
+                        .findByIdWithDetails(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
+
+        List<UUID> taskIds = refreshedBoard.getTasks().stream().map(Task::getId).toList();
+        Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+
+        return boardMapper.toDto(refreshedBoard, requestUserId, commentCountByTaskId);
     }
 
     private Map<UUID, Long> getCommentCountByTaskIds(List<UUID> taskIds) {

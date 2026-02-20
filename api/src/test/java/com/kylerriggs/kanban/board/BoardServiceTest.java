@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.kylerriggs.kanban.board.dto.BoardArchiveRequest;
 import com.kylerriggs.kanban.board.dto.BoardDto;
 import com.kylerriggs.kanban.board.dto.BoardRequest;
 import com.kylerriggs.kanban.board.dto.BoardSummary;
@@ -291,6 +292,53 @@ class BoardServiceTest {
                     () ->
                             boardService.updateBoard(
                                     Objects.requireNonNull(BOARD_ID), updateRequest));
+        }
+    }
+
+    @Nested
+    class UpdateBoardArchiveTests {
+        @Test
+        void updateBoardArchive_WhenUnarchivedTasksExistAndNotConfirmed_ThrowsBadRequest() {
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(2L);
+
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            boardService.updateBoardArchive(
+                                    BOARD_ID, new BoardArchiveRequest(true, false)));
+        }
+
+        @Test
+        void updateBoardArchive_WhenConfirmed_ArchivesBoardAndTasks() {
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(3L);
+            when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
+
+            BoardDto result =
+                    boardService.updateBoardArchive(BOARD_ID, new BoardArchiveRequest(true, true));
+
+            assertNotNull(result);
+            assertTrue(board.isArchived());
+            verify(taskRepository).archiveByBoardId(eq(BOARD_ID), any());
+            verify(eventPublisher).publish("BOARD_UPDATED", BOARD_ID, BOARD_ID);
+        }
+
+        @Test
+        void updateBoardArchive_WhenUnarchiving_DoesNotUnarchiveTasks() {
+            board.setArchived(true);
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
+
+            boardService.updateBoardArchive(BOARD_ID, new BoardArchiveRequest(false, false));
+
+            assertFalse(board.isArchived());
+            verify(taskRepository, never()).archiveByBoardId(any(), any());
         }
     }
 

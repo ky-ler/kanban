@@ -6,4 +6,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-public record ColumnDto(@NotNull UUID id, @NotBlank String name, @NotNull @Min(0) int position) {}
+public record ColumnDto(
+        @NotNull UUID id,
+        @NotBlank String name,
+        @NotNull @Min(0) int position,
+        @NotNull boolean isArchived) {}

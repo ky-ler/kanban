@@ -3,6 +3,7 @@ package com.kylerriggs.kanban.task;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
+import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 
 import jakarta.validation.Valid;
 
@@ -80,6 +81,22 @@ public class TaskController {
     }
 
     /**
+     * Updates task status fields (completed and/or archived).
+     *
+     * @param taskId the ID of the task
+     * @param statusRequest partial status update request
+     * @return updated task DTO
+     */
+    @PatchMapping("/{taskId}/status")
+    @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
+    public ResponseEntity<TaskDto> updateTaskStatus(
+            @NonNull @PathVariable UUID taskId,
+            @NonNull @Valid @RequestBody TaskStatusRequest statusRequest) {
+        TaskDto updatedTask = taskService.updateTaskStatus(taskId, statusRequest);
+        return ResponseEntity.ok(updatedTask);
+    }
+
+    /**
      * Moves a task to a new position and optionally to a different column. The backend
      * automatically recalculates positions of affected tasks. Requires the user to be a
      * collaborator on the board.
@@ -88,7 +105,7 @@ public class TaskController {
      * @param moveTaskRequest the move request containing new position and optional column ID
      * @return no content
      */
-    @PatchMapping("/{taskId}")
+    @PatchMapping("/{taskId}/position")
     @PreAuthorize("@taskAccess.isCollaborator(#taskId)")
     public ResponseEntity<Void> moveTask(
             @NonNull @PathVariable UUID taskId,

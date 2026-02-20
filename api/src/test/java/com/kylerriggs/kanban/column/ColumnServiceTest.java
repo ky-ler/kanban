@@ -8,12 +8,14 @@ import static org.mockito.Mockito.*;
 
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
+import com.kylerriggs.kanban.column.dto.ColumnArchiveRequest;
 import com.kylerriggs.kanban.column.dto.ColumnDto;
 import com.kylerriggs.kanban.column.dto.CreateColumnRequest;
 import com.kylerriggs.kanban.column.dto.MoveColumnRequest;
 import com.kylerriggs.kanban.column.dto.UpdateColumnRequest;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
@@ -40,6 +42,7 @@ class ColumnServiceTest {
     @Mock private ColumnRepository columnRepository;
     @Mock private ColumnMapper columnMapper;
     @Mock private BoardRepository boardRepository;
+    @Mock private TaskRepository taskRepository;
     @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private ColumnService columnService;
 
@@ -66,7 +69,7 @@ class ColumnServiceTest {
 
         column = Column.builder().id(COLUMN_ID).name("To Do").position(0).board(board).build();
 
-        columnDto = new ColumnDto(COLUMN_ID, "To Do", 0);
+        columnDto = new ColumnDto(COLUMN_ID, "To Do", 0, false);
     }
 
     @Nested
@@ -82,7 +85,7 @@ class ColumnServiceTest {
                             .position(3)
                             .board(board)
                             .build();
-            ColumnDto newColumnDto = new ColumnDto(newColumn.getId(), "New Column", 3);
+            ColumnDto newColumnDto = new ColumnDto(newColumn.getId(), "New Column", 3, false);
 
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
@@ -112,7 +115,7 @@ class ColumnServiceTest {
                             .position(1)
                             .board(board)
                             .build();
-            ColumnDto newColumnDto = new ColumnDto(newColumn.getId(), "New Column", 1);
+            ColumnDto newColumnDto = new ColumnDto(newColumn.getId(), "New Column", 1, false);
 
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
@@ -148,7 +151,7 @@ class ColumnServiceTest {
         void updateColumn_Success() {
             // Given
             UpdateColumnRequest request = new UpdateColumnRequest("Renamed Column");
-            ColumnDto updatedDto = new ColumnDto(COLUMN_ID, "Renamed Column", 0);
+            ColumnDto updatedDto = new ColumnDto(COLUMN_ID, "Renamed Column", 0, false);
 
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.of(column));
@@ -175,6 +178,53 @@ class ColumnServiceTest {
             assertThrows(
                     ResourceNotFoundException.class,
                     () -> columnService.updateColumn(COLUMN_ID, request));
+        }
+    }
+
+    @Nested
+    class UpdateColumnArchiveTests {
+        @Test
+        void updateColumnArchive_WhenColumnHasUnarchivedTasksWithoutConfirm_ThrowsBadRequest() {
+            when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
+            when(taskRepository.countByColumnIdAndIsArchivedFalse(COLUMN_ID)).thenReturn(3L);
+
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            columnService.updateColumnArchive(
+                                    BOARD_ID, COLUMN_ID, new ColumnArchiveRequest(true, false)));
+        }
+
+        @Test
+        void updateColumnArchive_WhenConfirmed_ArchivesColumnAndTasks() {
+            when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
+            when(taskRepository.countByColumnIdAndIsArchivedFalse(COLUMN_ID)).thenReturn(2L);
+            when(columnRepository.save(column)).thenReturn(column);
+            when(columnMapper.toDto(column)).thenReturn(columnDto);
+
+            ColumnDto result =
+                    columnService.updateColumnArchive(
+                            BOARD_ID, COLUMN_ID, new ColumnArchiveRequest(true, true));
+
+            assertTrue(column.isArchived());
+            assertEquals(COLUMN_ID, result.id());
+            verify(taskRepository).archiveByColumnId(eq(COLUMN_ID), any());
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any());
+            verify(eventPublisher).publish("COLUMN_UPDATED", BOARD_ID, COLUMN_ID);
+        }
+
+        @Test
+        void updateColumnArchive_WhenUnarchiving_DoesNotUnarchiveTasks() {
+            column.setArchived(true);
+            when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
+            when(columnRepository.save(column)).thenReturn(column);
+            when(columnMapper.toDto(column)).thenReturn(columnDto);
+
+            columnService.updateColumnArchive(
+                    BOARD_ID, COLUMN_ID, new ColumnArchiveRequest(false, false));
+
+            assertFalse(column.isArchived());
+            verify(taskRepository, never()).archiveByColumnId(any(), any());
         }
     }
 

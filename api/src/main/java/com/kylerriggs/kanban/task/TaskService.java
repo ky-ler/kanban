@@ -16,6 +16,7 @@ import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
+import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
@@ -148,6 +149,8 @@ public class TaskService {
 
         Task newTask = taskMapper.toEntity(createTaskRequest, board, createdBy, assignedTo, column);
         newTask.setPosition(newPosition);
+        newTask.setCompleted(createTaskRequest.isCompleted());
+        newTask.setArchived(createTaskRequest.isArchived());
 
         // Handle labels
         if (createTaskRequest.labelIds() != null && !createTaskRequest.labelIds().isEmpty()) {
@@ -218,6 +221,8 @@ public class TaskService {
                 taskToUpdate.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
         String oldDueDate =
                 taskToUpdate.getDueDate() != null ? taskToUpdate.getDueDate().toString() : null;
+        boolean oldCompleted = taskToUpdate.isCompleted();
+        boolean oldArchived = taskToUpdate.isArchived();
 
         taskToUpdate.setTitle(updateTaskRequest.title());
         taskToUpdate.setDescription(updateTaskRequest.description());
@@ -231,6 +236,9 @@ public class TaskService {
 
         // Update due date
         taskToUpdate.setDueDate(updateTaskRequest.dueDate());
+
+        taskToUpdate.setCompleted(updateTaskRequest.isCompleted());
+        taskToUpdate.setArchived(updateTaskRequest.isArchived());
 
         if (!taskToUpdate.getColumn().getId().equals(updateTaskRequest.columnId())) {
             Column newColumn =
@@ -313,6 +321,8 @@ public class TaskService {
                 oldAssigneeId,
                 oldLabelIds,
                 oldDueDate,
+                oldCompleted,
+                oldArchived,
                 requestLabelIds);
 
         return taskMapper.toDto(taskToUpdate);
@@ -326,6 +336,8 @@ public class TaskService {
             String oldAssigneeId,
             Set<UUID> oldLabelIds,
             String oldDueDate,
+            boolean oldCompleted,
+            boolean oldArchived,
             List<UUID> requestLabelIds) {
 
         // Check for title/description changes (general update)
@@ -375,6 +387,18 @@ public class TaskService {
             activityLogService.logActivity(task, ActivityType.DUE_DATE_CHANGED, toJson(details));
         }
 
+        if (oldCompleted != task.isCompleted()) {
+            ActivityType completionEvent =
+                    task.isCompleted() ? ActivityType.TASK_COMPLETED : ActivityType.TASK_REOPENED;
+            activityLogService.logActivity(task, completionEvent, null);
+        }
+
+        if (oldArchived != task.isArchived()) {
+            ActivityType archiveEvent =
+                    task.isArchived() ? ActivityType.TASK_ARCHIVED : ActivityType.TASK_UNARCHIVED;
+            activityLogService.logActivity(task, archiveEvent, null);
+        }
+
         // Check for labels change
         if (requestLabelIds != null) {
             Set<UUID> newLabelIds =
@@ -386,6 +410,57 @@ public class TaskService {
                 activityLogService.logActivity(task, ActivityType.LABELS_CHANGED, toJson(details));
             }
         }
+    }
+
+    @Transactional
+    public TaskDto updateTaskStatus(
+            @NonNull UUID taskId, @NonNull TaskStatusRequest statusRequest) {
+        if (statusRequest.isCompleted() == null && statusRequest.isArchived() == null) {
+            throw new BadRequestException("At least one status field must be provided");
+        }
+
+        Task taskToUpdate =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        boolean oldCompleted = taskToUpdate.isCompleted();
+        boolean oldArchived = taskToUpdate.isArchived();
+
+        if (statusRequest.isCompleted() != null) {
+            taskToUpdate.setCompleted(statusRequest.isCompleted());
+        }
+        if (statusRequest.isArchived() != null) {
+            taskToUpdate.setArchived(statusRequest.isArchived());
+        }
+
+        if (oldCompleted == taskToUpdate.isCompleted()
+                && oldArchived == taskToUpdate.isArchived()) {
+            return taskMapper.toDto(taskToUpdate);
+        }
+
+        UUID boardId = taskToUpdate.getBoard().getId();
+        boardRepository.touchDateModified(boardId, Instant.now());
+        eventPublisher.publish("TASK_UPDATED", boardId, taskId);
+
+        if (oldCompleted != taskToUpdate.isCompleted()) {
+            ActivityType completionEvent =
+                    taskToUpdate.isCompleted()
+                            ? ActivityType.TASK_COMPLETED
+                            : ActivityType.TASK_REOPENED;
+            activityLogService.logActivity(taskToUpdate, completionEvent, null);
+        }
+
+        if (oldArchived != taskToUpdate.isArchived()) {
+            ActivityType archiveEvent =
+                    taskToUpdate.isArchived()
+                            ? ActivityType.TASK_ARCHIVED
+                            : ActivityType.TASK_UNARCHIVED;
+            activityLogService.logActivity(taskToUpdate, archiveEvent, null);
+        }
+
+        return taskMapper.toDto(taskToUpdate);
     }
 
     private String toJson(Map<String, Object> map) {

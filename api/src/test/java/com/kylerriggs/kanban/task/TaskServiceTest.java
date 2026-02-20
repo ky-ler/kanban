@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylerriggs.kanban.activity.ActivityLogService;
+import com.kylerriggs.kanban.activity.ActivityType;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.board.BoardRole;
@@ -22,6 +23,7 @@ import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
+import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserRepository;
 import com.kylerriggs.kanban.user.UserService;
@@ -809,6 +811,51 @@ class TaskServiceTest {
             assertThrows(
                     ResourceNotFoundException.class,
                     () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
+        }
+    }
+
+    @Nested
+    class UpdateTaskStatusTests {
+        @Test
+        void updateTaskStatus_WhenNoFieldsProvided_ThrowsBadRequestException() {
+            assertThrows(
+                    BadRequestException.class,
+                    () -> taskService.updateTaskStatus(TASK_ID, new TaskStatusRequest(null, null)));
+        }
+
+        @Test
+        void updateTaskStatus_WhenTaskNotFound_ThrowsResourceNotFoundException() {
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.empty());
+
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> taskService.updateTaskStatus(TASK_ID, new TaskStatusRequest(true, null)));
+        }
+
+        @Test
+        void updateTaskStatus_WhenCompletedChanged_UpdatesTaskAndLogsActivity() {
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskMapper.toDto(task)).thenReturn(taskDto);
+
+            TaskDto result =
+                    taskService.updateTaskStatus(TASK_ID, new TaskStatusRequest(true, null));
+
+            assertNotNull(result);
+            assertTrue(task.isCompleted());
+            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
+            verify(eventPublisher).publish("TASK_UPDATED", BOARD_ID, TASK_ID);
+            verify(activityLogService).logActivity(task, ActivityType.TASK_COMPLETED, null);
+        }
+
+        @Test
+        void updateTaskStatus_WhenArchivedChanged_UpdatesTaskAndLogsActivity() {
+            when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskMapper.toDto(task)).thenReturn(taskDto);
+
+            taskService.updateTaskStatus(TASK_ID, new TaskStatusRequest(null, true));
+
+            assertTrue(task.isArchived());
+            verify(activityLogService).logActivity(task, ActivityType.TASK_ARCHIVED, null);
         }
     }
 }

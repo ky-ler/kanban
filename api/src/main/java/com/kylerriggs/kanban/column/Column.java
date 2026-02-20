@@ -28,6 +28,10 @@ public class Column {
     @jakarta.persistence.Column(nullable = false)
     private Integer position;
 
+    @Builder.Default
+    @jakarta.persistence.Column(nullable = false)
+    private boolean isArchived = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", nullable = false)
     private Board board;

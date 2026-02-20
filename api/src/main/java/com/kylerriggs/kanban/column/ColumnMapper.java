@@ -16,6 +16,7 @@ public class ColumnMapper {
      * @return the column as a DTO
      */
     public ColumnDto toDto(Column column) {
-        return new ColumnDto(column.getId(), column.getName(), column.getPosition());
+        return new ColumnDto(
+                column.getId(), column.getName(), column.getPosition(), column.isArchived());
     }
 }

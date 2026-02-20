@@ -249,6 +249,7 @@ class BoardMapperTest {
             assertEquals(column.getId(), result.columns()[0].id());
             assertEquals("To Do", result.columns()[0].name());
             assertEquals(0, result.columns()[0].position());
+            assertFalse(result.columns()[0].isArchived());
         }
     }
 

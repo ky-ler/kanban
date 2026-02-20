@@ -34,6 +34,7 @@ class ColumnMapperTest {
         assertEquals(columnId, result.id());
         assertEquals("To Do", result.name());
         assertEquals(0, result.position());
+        assertFalse(result.isArchived());
     }
 
     @Test

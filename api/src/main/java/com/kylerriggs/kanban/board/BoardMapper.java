@@ -70,7 +70,8 @@ public class BoardMapper {
                                         new ColumnDto(
                                                 column.getId(),
                                                 column.getName(),
-                                                column.getPosition()))
+                                                column.getPosition(),
+                                                column.isArchived()))
                         .toArray(ColumnDto[]::new);
 
         boolean isFavorite =

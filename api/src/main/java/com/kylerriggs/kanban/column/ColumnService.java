@@ -2,12 +2,14 @@ package com.kylerriggs.kanban.column;
 
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
+import com.kylerriggs.kanban.column.dto.ColumnArchiveRequest;
 import com.kylerriggs.kanban.column.dto.ColumnDto;
 import com.kylerriggs.kanban.column.dto.CreateColumnRequest;
 import com.kylerriggs.kanban.column.dto.MoveColumnRequest;
 import com.kylerriggs.kanban.column.dto.UpdateColumnRequest;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.AllArgsConstructor;
@@ -17,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -26,6 +27,7 @@ public class ColumnService {
     private final ColumnRepository columnRepository;
     private final ColumnMapper columnMapper;
     private final BoardRepository boardRepository;
+    private final TaskRepository taskRepository;
     private final BoardEventPublisher eventPublisher;
 
     /**
@@ -56,7 +58,7 @@ public class ColumnService {
         Column column =
                 Column.builder().name(request.name()).position(position).board(board).build();
 
-        column = columnRepository.save(Objects.requireNonNull(column));
+        column = columnRepository.save(column);
 
         board.setDateModified(Instant.now());
         boardRepository.save(board);
@@ -92,7 +94,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_UPDATED", Objects.requireNonNull(board.getId()), columnId);
+        eventPublisher.publish("COLUMN_UPDATED", board.getId(), columnId);
 
         return columnMapper.toDto(column);
     }
@@ -132,7 +134,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_DELETED", Objects.requireNonNull(boardId), columnId);
+        eventPublisher.publish("COLUMN_DELETED", boardId, columnId);
     }
 
     /**
@@ -186,6 +188,49 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_MOVED", Objects.requireNonNull(boardId), columnId);
+        eventPublisher.publish("COLUMN_MOVED", boardId, columnId);
+    }
+
+    @Transactional
+    public ColumnDto updateColumnArchive(
+            @NonNull UUID boardId, @NonNull UUID columnId, @NonNull ColumnArchiveRequest request) {
+        Column column =
+                columnRepository
+                        .findByIdWithLock(columnId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Column not found: " + columnId));
+
+        UUID columnBoardId = column.getBoard().getId();
+        if (!columnBoardId.equals(boardId)) {
+            throw new ResourceNotFoundException("Column not found in board: " + columnId);
+        }
+
+        boolean shouldArchive = request.isArchived();
+        if (column.isArchived() == shouldArchive) {
+            return columnMapper.toDto(column);
+        }
+
+        if (shouldArchive && !column.isArchived()) {
+            long unarchivedTaskCount = taskRepository.countByColumnIdAndIsArchivedFalse(columnId);
+            if (unarchivedTaskCount > 0 && !request.confirmArchiveTasks()) {
+                throw new BadRequestException(
+                        "Column has unarchived tasks. Set confirmArchiveTasks=true to archive all"
+                                + " tasks in this column.");
+            }
+
+            if (unarchivedTaskCount > 0) {
+                taskRepository.archiveByColumnId(columnId, Instant.now());
+            }
+        }
+
+        column.setArchived(shouldArchive);
+        columnRepository.save(column);
+
+        boardRepository.touchDateModified(boardId, Instant.now());
+        eventPublisher.publish("COLUMN_UPDATED", boardId, columnId);
+
+        return columnMapper.toDto(column);
     }
 }

@@ -128,6 +128,8 @@ public class TaskMapper {
                         .title(req.title())
                         .description(req.description())
                         .column(column)
+                        .isCompleted(req.isCompleted())
+                        .isArchived(req.isArchived())
                         .priority(priority)
                         .dueDate(req.dueDate())
                         .build();

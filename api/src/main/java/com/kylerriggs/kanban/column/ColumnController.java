@@ -1,5 +1,6 @@
 package com.kylerriggs.kanban.column;
 
+import com.kylerriggs.kanban.column.dto.ColumnArchiveRequest;
 import com.kylerriggs.kanban.column.dto.ColumnDto;
 import com.kylerriggs.kanban.column.dto.CreateColumnRequest;
 import com.kylerriggs.kanban.column.dto.MoveColumnRequest;
@@ -68,6 +69,25 @@ public class ColumnController {
     }
 
     /**
+     * Updates a column's archive status. Archiving may require confirmation when unarchived tasks
+     * are present in the column.
+     *
+     * @param boardId the ID of the board
+     * @param columnId the ID of the column
+     * @param request archive request
+     * @return the updated column DTO
+     */
+    @PatchMapping("/{columnId}/archive")
+    @PreAuthorize("@columnAccess.isCollaborator(#columnId)")
+    public ResponseEntity<ColumnDto> updateColumnArchive(
+            @NonNull @PathVariable UUID boardId,
+            @NonNull @PathVariable UUID columnId,
+            @NonNull @Valid @RequestBody ColumnArchiveRequest request) {
+        ColumnDto updatedColumn = columnService.updateColumnArchive(boardId, columnId, request);
+        return ResponseEntity.ok(updatedColumn);
+    }
+
+    /**
      * Deletes a column from the board. Requires collaborator access. Fails if the column contains
      * any tasks.
      *
@@ -92,7 +112,7 @@ public class ColumnController {
      * @param request the move request containing the new position
      * @return no content
      */
-    @PatchMapping("/{columnId}/move")
+    @PatchMapping("/{columnId}/position")
     @PreAuthorize("@columnAccess.isCollaborator(#columnId)")
     public ResponseEntity<Void> moveColumn(
             @NonNull @PathVariable UUID boardId,

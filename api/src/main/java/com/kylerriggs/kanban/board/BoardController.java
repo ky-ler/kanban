@@ -103,6 +103,23 @@ public class BoardController {
         return ResponseEntity.ok(updatedBoard);
     }
 
+    /**
+     * Updates board archive status. Archiving may require confirmation when unarchived tasks are
+     * present.
+     *
+     * @param boardId the ID of the board
+     * @param request archive request
+     * @return the updated board DTO
+     */
+    @PatchMapping("/{boardId}/archive")
+    @PreAuthorize("@boardAccess.isAdmin(#boardId)")
+    public ResponseEntity<BoardDto> updateBoardArchive(
+            @NonNull @PathVariable UUID boardId,
+            @NonNull @Valid @RequestBody BoardArchiveRequest request) {
+        BoardDto updatedBoard = boardService.updateBoardArchive(boardId, request);
+        return ResponseEntity.ok(updatedBoard);
+    }
+
     // /**
     // * Deletes a board and all its associated data.
     // * Requires admin privileges on the board.
