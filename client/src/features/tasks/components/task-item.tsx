@@ -1,11 +1,22 @@
 import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
 import { Badge } from "@/components/ui/badge";
+import { useQueryClient } from "@tanstack/react-query";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { User, Calendar, AlignLeft, MessageSquare } from "lucide-react";
+import {
+  User,
+  Calendar,
+  AlignLeft,
+  MessageSquare,
+  Archive,
+} from "lucide-react";
+import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
+import { useUpdateTaskStatus } from "@/api/gen/endpoints/task-controller/task-controller";
+import { updateTaskStatusBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
 import { Link } from "@tanstack/react-router";
 import {
   addDays,
@@ -75,20 +86,48 @@ export const TaskItem = ({
   task: TaskSummaryDto;
   boardId: string;
 }>) => {
+  const queryClient = useQueryClient();
+  const updateTaskStatusMutation = useUpdateTaskStatus({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getGetBoardQueryKey(boardId),
+        });
+      },
+    },
+  });
   const priority = task.priority ? priorityConfig[task.priority] : null;
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
   const commentCount = task.commentCount ?? 0;
   const hasDescription = task.hasDescription;
   const hasComments = commentCount > 0;
   const hasTopMeta = Boolean(
-    priority || (task.labels && task.labels.length > 0),
+    task.isArchived || priority || (task.labels && task.labels.length > 0),
   );
   const hasBottomMeta = Boolean(
     task.dueDate || task.assignedTo || hasDescription || hasComments,
   );
 
+  const handleToggleCompleted = () => {
+    const payload = { isCompleted: !task.isCompleted };
+    const validationResult = updateTaskStatusBody.safeParse(payload);
+    if (!validationResult.success) {
+      return;
+    }
+
+    updateTaskStatusMutation.mutate({ taskId: task.id, data: payload });
+  };
+
   return (
-    <Item asChild size="sm" variant="outline">
+    <Item size="sm" variant="outline" className="items-start gap-2.5">
+      <Checkbox
+        aria-label={task.isCompleted ? "Mark incomplete" : "Mark complete"}
+        checked={task.isCompleted}
+        disabled={updateTaskStatusMutation.isPending}
+        onCheckedChange={handleToggleCompleted}
+        onPointerDown={(event) => event.stopPropagation()}
+        className="disabled:cursor-pointer"
+      />
       <Link
         to={"/boards/$boardId/tasks/$taskId"}
         params={{ boardId, taskId: task.id }}
@@ -99,17 +138,30 @@ export const TaskItem = ({
           labels: undefined,
           due: undefined,
         }}
+        className="min-w-0 flex-1 rounded-sm"
         aria-label={`Open task ${task.title}`}
       >
-        <ItemContent className="gap-1.5">
+        <ItemContent className={cn("gap-1.5", task.isArchived && "opacity-70")}>
           <ItemTitle
             title={task.title}
-            className="w-full text-base leading-snug wrap-anywhere whitespace-normal"
+            className={cn(
+              "w-full text-base leading-snug wrap-anywhere whitespace-normal",
+              task.isCompleted && "text-muted-foreground line-through",
+            )}
           >
             {task.title}
           </ItemTitle>
           {hasTopMeta && (
             <div className="flex flex-wrap items-center gap-1.5">
+              {task.isArchived && (
+                <Badge
+                  variant="outline"
+                  className="h-6 px-2.5 text-sm leading-none"
+                >
+                  <Archive className="mr-1 h-3.5 w-3.5" />
+                  Archived
+                </Badge>
+              )}
               {priority && (
                 <Badge
                   variant="outline"
