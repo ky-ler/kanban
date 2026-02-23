@@ -7,7 +7,6 @@ import com.kylerriggs.kanban.activity.ActivityType;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.column.Column;
-import com.kylerriggs.kanban.column.ColumnRepository;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.label.Label;
@@ -43,7 +42,6 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final BoardRepository boardRepository;
-    private final ColumnRepository columnRepository;
     private final TaskMapper taskMapper;
     private final UserLookupService userLookupService;
     private final TaskValidationService taskValidationService;
@@ -92,21 +90,13 @@ public class TaskService {
                                                 "Board not found: " + createTaskRequest.boardId()));
 
         Column column =
-                columnRepository
-                        .findById(createTaskRequest.columnId())
-                        .orElseThrow(
-                                () ->
-                                        new ResourceNotFoundException(
-                                                "Column not found: "
-                                                        + createTaskRequest.columnId()));
-
-        taskValidationService.validateColumnInBoard(column, board);
+                taskValidationService.validateColumnInBoard(
+                        createTaskRequest.columnId(), board.getId());
 
         String requestAssigneeId = createTaskRequest.assigneeId();
         User assignedTo =
                 StringUtils.hasText(requestAssigneeId)
-                        ? taskValidationService.validateAssigneeInBoard(
-                                requestAssigneeId, board, userLookupService)
+                        ? taskValidationService.validateAssigneeInBoard(requestAssigneeId, board)
                         : null;
 
         // Get the next position for this column (append to end with GAP spacing)
@@ -197,15 +187,8 @@ public class TaskService {
 
         if (!taskToUpdate.getColumn().getId().equals(updateTaskRequest.columnId())) {
             Column newColumn =
-                    columnRepository
-                            .findById(updateTaskRequest.columnId())
-                            .orElseThrow(
-                                    () ->
-                                            new ResourceNotFoundException(
-                                                    "Column not found: "
-                                                            + updateTaskRequest.columnId()));
-
-            taskValidationService.validateColumnInBoard(newColumn, board);
+                    taskValidationService.validateColumnInBoard(
+                            updateTaskRequest.columnId(), board.getId());
             taskToUpdate.setColumn(newColumn);
         }
 
@@ -214,8 +197,7 @@ public class TaskService {
         if (!Objects.equals(oldAssigneeId, requestAssigneeId)) {
             if (StringUtils.hasText(requestAssigneeId)) {
                 User newAssignee =
-                        taskValidationService.validateAssigneeInBoard(
-                                requestAssigneeId, board, userLookupService);
+                        taskValidationService.validateAssigneeInBoard(requestAssigneeId, board);
                 taskToUpdate.setAssignedTo(newAssignee);
             } else {
                 taskToUpdate.setAssignedTo(null);
@@ -465,15 +447,7 @@ public class TaskService {
         Column targetColumn = taskToMove.getColumn();
 
         if (newColumnId != null && !oldColumnId.equals(newColumnId)) {
-            targetColumn =
-                    columnRepository
-                            .findById(newColumnId)
-                            .orElseThrow(
-                                    () ->
-                                            new ResourceNotFoundException(
-                                                    "Column not found: " + newColumnId));
-
-            taskValidationService.validateColumnInBoard(targetColumn, board);
+            targetColumn = taskValidationService.validateColumnInBoard(newColumnId, board.getId());
             taskToMove.setColumn(targetColumn);
         }
 

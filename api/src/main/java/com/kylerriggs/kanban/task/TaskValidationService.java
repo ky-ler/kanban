@@ -2,8 +2,10 @@ package com.kylerriggs.kanban.task;
 
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.column.Column;
+import com.kylerriggs.kanban.column.ColumnRepository;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
+import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.label.Label;
 import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.user.User;
@@ -21,18 +23,29 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class TaskValidationService {
+    private final ColumnRepository columnRepository;
     private final LabelRepository labelRepository;
+    private final UserLookupService userLookupService;
 
-    /** Validates that a column belongs to the given board. */
-    public void validateColumnInBoard(Column column, Board board) {
-        if (!column.getBoard().getId().equals(board.getId())) {
+    /** Validates and returns a column that belongs to the given board. */
+    public Column validateColumnInBoard(UUID columnId, UUID boardId) {
+        Column column =
+                columnRepository
+                        .findById(columnId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Column not found: " + columnId));
+
+        if (!column.getBoard().getId().equals(boardId)) {
             throw new BadRequestException("Column does not belong to this board");
         }
+
+        return column;
     }
 
     /** Validates that the assignee is a collaborator on the board and returns the User. */
-    public User validateAssigneeInBoard(
-            String assigneeId, Board board, UserLookupService userLookupService) {
+    public User validateAssigneeInBoard(String assigneeId, Board board) {
         board.getCollaborators().stream()
                 .filter(c -> c.getUser().getId().equals(assigneeId))
                 .findFirst()
