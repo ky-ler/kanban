@@ -292,6 +292,34 @@ class TaskServiceTest {
         }
 
         @Test
+        void createTask_WhenPriorityIsInvalid_ThrowsBadRequestException() {
+            TaskRequest requestWithInvalidPriority =
+                    new TaskRequest(
+                            Objects.requireNonNull(BOARD_ID),
+                            null,
+                            "New Task",
+                            "Description",
+                            Objects.requireNonNull(COLUMN_ID),
+                            false,
+                            false,
+                            "not-a-priority",
+                            null,
+                            null);
+
+            when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+            when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
+                    .thenReturn(column);
+
+            assertThrows(
+                    BadRequestException.class,
+                    () -> taskService.createTask(requestWithInvalidPriority));
+
+            verify(taskRepository, never()).save(any());
+        }
+
+        @Test
         void createTask_WithAssigneeNotCollaborator_ThrowsBoardAccessException() {
             // Given
             TaskRequest requestWithAssignee =
@@ -554,6 +582,31 @@ class TaskServiceTest {
             // Then
             assertNull(task.getAssignedTo());
         }
+
+        @Test
+        void updateTask_WhenPriorityIsInvalid_ThrowsBadRequestException() {
+            TaskRequest requestWithInvalidPriority =
+                    new TaskRequest(
+                            Objects.requireNonNull(BOARD_ID),
+                            null,
+                            "Updated Task",
+                            "Updated Description",
+                            Objects.requireNonNull(COLUMN_ID),
+                            false,
+                            false,
+                            "invalid-priority",
+                            null,
+                            null);
+
+            when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            taskService.updateTask(
+                                    Objects.requireNonNull(TASK_ID), requestWithInvalidPriority));
+        }
     }
 
     @Nested
@@ -619,7 +672,7 @@ class TaskServiceTest {
             // Given — place after a task at position 2_000_000
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionById(AFTER_TASK_ID))
+            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(2_000_000L));
 
             // When
@@ -637,7 +690,7 @@ class TaskServiceTest {
             task.setPosition(3_000_000L);
             MoveTaskRequest request = new MoveTaskRequest(null, BEFORE_TASK_ID, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionById(BEFORE_TASK_ID))
+            when(taskRepository.findPositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(2_000_000L));
 
             // When
@@ -654,9 +707,9 @@ class TaskServiceTest {
             // Given — place between tasks at 1_000_000 and 3_000_000
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, BEFORE_TASK_ID, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionById(AFTER_TASK_ID))
+            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(1_000_000L));
-            when(taskRepository.findPositionById(BEFORE_TASK_ID))
+            when(taskRepository.findPositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(3_000_000L));
 
             // When
@@ -674,7 +727,7 @@ class TaskServiceTest {
                     .thenReturn(Optional.of(task));
             when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenReturn(newColumn);
-            when(taskRepository.findPositionById(AFTER_TASK_ID))
+            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, NEW_COLUMN_ID))
                     .thenReturn(Optional.of(1_000_000L));
 
             // When
@@ -757,9 +810,25 @@ class TaskServiceTest {
             // Given
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionById(AFTER_TASK_ID)).thenReturn(Optional.empty());
+            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
+                    .thenReturn(Optional.empty());
 
             // When & Then
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
+        }
+
+        @Test
+        void moveTask_WhenAfterNeighborIsOutsideTargetColumn_ThrowsResourceNotFoundException() {
+            MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, NEW_COLUMN_ID);
+            when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
+                    .thenReturn(Optional.of(task));
+            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+                    .thenReturn(newColumn);
+            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, NEW_COLUMN_ID))
+                    .thenReturn(Optional.empty());
+
             assertThrows(
                     ResourceNotFoundException.class,
                     () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));

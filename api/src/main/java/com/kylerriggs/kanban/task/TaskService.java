@@ -28,6 +28,7 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -98,6 +99,7 @@ public class TaskService {
                 StringUtils.hasText(requestAssigneeId)
                         ? taskValidationService.validateAssigneeInBoard(requestAssigneeId, board)
                         : null;
+        Priority requestPriority = parsePriority(createTaskRequest.priority());
 
         // Get the next position for this column (append to end with GAP spacing)
         Long maxPosition = taskRepository.findMaxPositionByColumnId(column.getId()).orElse(0L);
@@ -107,6 +109,7 @@ public class TaskService {
         newTask.setPosition(newPosition);
         newTask.setCompleted(createTaskRequest.isCompleted());
         newTask.setArchived(createTaskRequest.isArchived());
+        newTask.setPriority(requestPriority);
 
         // Handle labels
         if (createTaskRequest.labelIds() != null && !createTaskRequest.labelIds().isEmpty()) {
@@ -173,10 +176,7 @@ public class TaskService {
         taskToUpdate.setDescription(updateTaskRequest.description());
 
         // Update priority
-        Priority newPriority = null;
-        if (updateTaskRequest.priority() != null && !updateTaskRequest.priority().isBlank()) {
-            newPriority = Priority.valueOf(updateTaskRequest.priority().toUpperCase());
-        }
+        Priority newPriority = parsePriority(updateTaskRequest.priority());
         taskToUpdate.setPriority(newPriority);
 
         // Update due date
@@ -486,27 +486,41 @@ public class TaskService {
      */
     private long computePosition(
             UUID columnId, UUID afterTaskId, UUID beforeTaskId, UUID movingTaskId) {
+        if (afterTaskId != null && afterTaskId.equals(movingTaskId)) {
+            throw new BadRequestException("After-task cannot be the task being moved");
+        }
+
+        if (beforeTaskId != null && beforeTaskId.equals(movingTaskId)) {
+            throw new BadRequestException("Before-task cannot be the task being moved");
+        }
+
+        if (afterTaskId != null && afterTaskId.equals(beforeTaskId)) {
+            throw new BadRequestException("After-task and before-task must be different");
+        }
+
         Long afterPos = null;
         Long beforePos = null;
 
         if (afterTaskId != null) {
             afterPos =
                     taskRepository
-                            .findPositionById(afterTaskId)
+                            .findPositionByIdAndColumnId(afterTaskId, columnId)
                             .orElseThrow(
                                     () ->
                                             new ResourceNotFoundException(
-                                                    "After-task not found: " + afterTaskId));
+                                                    "After-task not found in target column: "
+                                                            + afterTaskId));
         }
 
         if (beforeTaskId != null) {
             beforePos =
                     taskRepository
-                            .findPositionById(beforeTaskId)
+                            .findPositionByIdAndColumnId(beforeTaskId, columnId)
                             .orElseThrow(
                                     () ->
                                             new ResourceNotFoundException(
-                                                    "Before-task not found: " + beforeTaskId));
+                                                    "Before-task not found in target column: "
+                                                            + beforeTaskId));
         }
 
         // Case: placing at the end of the column (no before neighbor)
@@ -522,11 +536,12 @@ public class TaskService {
                 // Recompute after rebalance
                 beforePos =
                         taskRepository
-                                .findPositionById(beforeTaskId)
+                                .findPositionByIdAndColumnId(beforeTaskId, columnId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
-                                                        "Before-task not found: " + beforeTaskId));
+                                                        "Before-task not found in target column: "
+                                                                + beforeTaskId));
                 return beforePos / 2;
             }
             return pos;
@@ -540,18 +555,20 @@ public class TaskService {
                 // Recompute positions after rebalance
                 afterPos =
                         taskRepository
-                                .findPositionById(afterTaskId)
+                                .findPositionByIdAndColumnId(afterTaskId, columnId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
-                                                        "After-task not found: " + afterTaskId));
+                                                        "After-task not found in target column: "
+                                                                + afterTaskId));
                 beforePos =
                         taskRepository
-                                .findPositionById(beforeTaskId)
+                                .findPositionByIdAndColumnId(beforeTaskId, columnId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
-                                                        "Before-task not found: " + beforeTaskId));
+                                                        "Before-task not found in target column: "
+                                                                + beforeTaskId));
                 mid = afterPos + (beforePos - afterPos) / 2;
             }
             return mid;
@@ -574,6 +591,18 @@ public class TaskService {
                 taskRepository.updatePosition(t.getId(), pos);
                 pos += GAP;
             }
+        }
+    }
+
+    private Priority parsePriority(String priorityValue) {
+        if (!StringUtils.hasText(priorityValue)) {
+            return null;
+        }
+
+        try {
+            return Priority.valueOf(priorityValue.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid priority: " + priorityValue);
         }
     }
 }

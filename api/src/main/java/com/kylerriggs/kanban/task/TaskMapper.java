@@ -116,11 +116,6 @@ public class TaskMapper {
      */
     public Task toEntity(
             TaskRequest req, Board board, User createdBy, User assignedTo, Column column) {
-        Priority priority = null;
-        if (req.priority() != null && !req.priority().isBlank()) {
-            priority = Priority.valueOf(req.priority().toUpperCase());
-        }
-
         Task task =
                 Task.builder()
                         .board(board)
@@ -130,7 +125,6 @@ public class TaskMapper {
                         .column(column)
                         .isCompleted(req.isCompleted())
                         .isArchived(req.isArchived())
-                        .priority(priority)
                         .dueDate(req.dueDate())
                         .build();
 
