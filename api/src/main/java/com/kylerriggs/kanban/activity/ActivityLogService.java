@@ -5,8 +5,7 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
-import com.kylerriggs.kanban.user.UserRepository;
-import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.RequiredArgsConstructor;
@@ -25,8 +24,7 @@ public class ActivityLogService {
     private final ActivityLogRepository activityLogRepository;
     private final ActivityLogMapper activityLogMapper;
     private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
-    private final UserService userService;
+    private final UserLookupService userLookupService;
     private final BoardEventPublisher eventPublisher;
 
     /**
@@ -56,15 +54,7 @@ public class ActivityLogService {
     @Transactional
     public void logActivity(
             @NonNull Task task, @NonNull ActivityType type, @Nullable String details) {
-        String currentUserId = userService.getCurrentUserId();
-
-        User user =
-                userRepository
-                        .findById(currentUserId)
-                        .orElseThrow(
-                                () ->
-                                        new ResourceNotFoundException(
-                                                "User not found: " + currentUserId));
+        User user = userLookupService.getRequiredCurrentUser();
 
         ActivityLog activityLog =
                 ActivityLog.builder().task(task).user(user).type(type).details(details).build();

@@ -8,12 +8,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.kylerriggs.kanban.board.Board;
+import com.kylerriggs.kanban.board.BoardLimitPolicy;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.board.BoardUserRepository;
-import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.invite.dto.AcceptInviteResponse;
-import com.kylerriggs.kanban.user.UserRepository;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.UserService;
 
 import org.junit.jupiter.api.Test;
@@ -34,10 +34,10 @@ class BoardInviteServiceTest {
     @Mock private BoardInviteRepository inviteRepository;
     @Mock private BoardRepository boardRepository;
     @Mock private BoardUserRepository boardUserRepository;
-    @Mock private UserRepository userRepository;
     @Mock private BoardInviteMapper inviteMapper;
     @Mock private UserService userService;
-    @Mock private BoardProperties boardProperties;
+    @Mock private UserLookupService userLookupService;
+    @Mock private BoardLimitPolicy boardLimitPolicy;
 
     @InjectMocks private BoardInviteService boardInviteService;
 

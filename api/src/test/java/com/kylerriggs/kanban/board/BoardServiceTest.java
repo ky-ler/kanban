@@ -24,7 +24,7 @@ import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
 import com.kylerriggs.kanban.user.User;
-import com.kylerriggs.kanban.user.UserRepository;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.UserService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
@@ -50,11 +50,12 @@ class BoardServiceTest {
 
     @Mock private BoardRepository boardRepository;
     @Mock private BoardUserRepository boardUserRepository;
-    @Mock private UserRepository userRepository;
     @Mock private TaskRepository taskRepository;
     @Mock private BoardMapper boardMapper;
     @Mock private TaskMapper taskMapper;
     @Mock private UserService userService;
+    @Mock private UserLookupService userLookupService;
+    @Mock private BoardLimitPolicy boardLimitPolicy;
     @Mock private BoardProperties boardProperties;
     @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private BoardService boardService;
@@ -125,9 +126,7 @@ class BoardServiceTest {
         void createBoard_WhenValid_ReturnsBoardDto() {
             // Given
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(boardRepository.countByCollaboratorsUserId(USER_ID)).thenReturn(0L);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
+            when(userLookupService.getRequiredUser(USER_ID)).thenReturn(user);
             when(boardProperties.getDefaultColumns())
                     .thenReturn(List.of("Backlog", "To Do", "In Progress", "Done"));
             when(boardRepository.save(any(Board.class)))
@@ -160,8 +159,9 @@ class BoardServiceTest {
         void createBoard_WhenBoardLimitExceeded_ThrowsBoardLimitExceededException() {
             // Given
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(boardRepository.countByCollaboratorsUserId(USER_ID)).thenReturn(10L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
+            doThrow(new BoardLimitExceededException("limit"))
+                    .when(boardLimitPolicy)
+                    .assertCanCreateOrCollaborate(USER_ID);
 
             // When & Then
             assertThrows(
@@ -174,9 +174,8 @@ class BoardServiceTest {
         void createBoard_WhenUserNotFound_ThrowsResourceNotFoundException() {
             // Given
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(boardRepository.countByCollaboratorsUserId(USER_ID)).thenReturn(0L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+            when(userLookupService.getRequiredUser(USER_ID))
+                    .thenThrow(new ResourceNotFoundException("User not found: " + USER_ID));
 
             // When & Then
             assertThrows(
@@ -354,14 +353,12 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenValid_AddsCollaborator() {
             // Given
-            when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
             when(boardUserRepository.existsByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.of(otherUser));
+            when(userLookupService.getRequiredUser(OTHER_USER_ID)).thenReturn(otherUser);
 
             // When
             boardService.addCollaborator(Objects.requireNonNull(BOARD_ID), collaboratorRequest);
@@ -373,8 +370,6 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenAlreadyCollaborator_ThrowsBadRequestException() {
             // Given
-            when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
             when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
                     .thenReturn(true);
 
@@ -389,8 +384,9 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenUserBoardLimitExceeded_ThrowsBoardLimitExceededException() {
             // Given
-            when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(10L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
+            doThrow(new BoardLimitExceededException("limit"))
+                    .when(boardLimitPolicy)
+                    .assertCanCreateOrCollaborate(OTHER_USER_ID);
 
             // When & Then
             assertThrows(
@@ -403,8 +399,6 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenBoardNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
             when(boardUserRepository.existsByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
@@ -422,14 +416,13 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenUserNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(boardRepository.countByCollaboratorsUserId(OTHER_USER_ID)).thenReturn(0L);
-            when(boardProperties.getMaxBoardsPerUser()).thenReturn(10);
             when(boardUserRepository.existsByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(userRepository.findById(OTHER_USER_ID)).thenReturn(Optional.empty());
+            when(userLookupService.getRequiredUser(OTHER_USER_ID))
+                    .thenThrow(new ResourceNotFoundException("User not found: " + OTHER_USER_ID));
 
             // When & Then
             assertThrows(

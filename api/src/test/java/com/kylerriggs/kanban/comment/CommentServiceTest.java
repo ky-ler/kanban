@@ -11,8 +11,7 @@ import com.kylerriggs.kanban.comment.dto.CommentRequest;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
-import com.kylerriggs.kanban.user.UserRepository;
-import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +38,7 @@ class CommentServiceTest {
     @Mock private CommentRepository commentRepository;
     @Mock private CommentMapper commentMapper;
     @Mock private TaskRepository taskRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private UserService userService;
+    @Mock private UserLookupService userLookupService;
     @Mock private BoardEventPublisher eventPublisher;
 
     @InjectMocks private CommentService commentService;
@@ -78,14 +76,12 @@ class CommentServiceTest {
 
     @Test
     void createComment_WhenTaskIsNotInBoard_ThrowsResourceNotFoundException() {
-        when(userService.getCurrentUserId()).thenReturn(USER_ID);
         when(taskRepository.findByIdAndBoardId(TASK_ID, BOARD_ID)).thenReturn(Optional.empty());
 
         assertThrows(
                 ResourceNotFoundException.class,
                 () -> commentService.createComment(BOARD_ID, TASK_ID, new CommentRequest("Hello")));
 
-        verify(userRepository, never()).findById(any());
         verify(commentRepository, never()).save(any());
     }
 

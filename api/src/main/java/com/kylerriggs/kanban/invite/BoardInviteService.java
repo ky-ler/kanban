@@ -1,20 +1,19 @@
 package com.kylerriggs.kanban.invite;
 
 import com.kylerriggs.kanban.board.Board;
+import com.kylerriggs.kanban.board.BoardLimitPolicy;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.board.BoardRole;
 import com.kylerriggs.kanban.board.BoardUser;
 import com.kylerriggs.kanban.board.BoardUserRepository;
-import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
-import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.invite.dto.AcceptInviteResponse;
 import com.kylerriggs.kanban.invite.dto.BoardInviteDto;
 import com.kylerriggs.kanban.invite.dto.CreateInviteRequest;
 import com.kylerriggs.kanban.invite.dto.InvitePreviewDto;
 import com.kylerriggs.kanban.user.User;
-import com.kylerriggs.kanban.user.UserRepository;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -34,10 +33,10 @@ public class BoardInviteService {
     private final BoardInviteRepository inviteRepository;
     private final BoardRepository boardRepository;
     private final BoardUserRepository boardUserRepository;
-    private final UserRepository userRepository;
     private final BoardInviteMapper inviteMapper;
     private final UserService userService;
-    private final BoardProperties boardProperties;
+    private final UserLookupService userLookupService;
+    private final BoardLimitPolicy boardLimitPolicy;
 
     private static final String CODE_CHARS =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -46,13 +45,7 @@ public class BoardInviteService {
 
     @Transactional
     public BoardInviteDto createInvite(CreateInviteRequest request) {
-        String userId = userService.getCurrentUserId();
-
-        User creator =
-                userRepository
-                        .findById(userId)
-                        .orElseThrow(
-                                () -> new ResourceNotFoundException("User not found: " + userId));
+        User creator = userLookupService.getRequiredCurrentUser();
 
         Board board =
                 boardRepository
@@ -128,20 +121,9 @@ public class BoardInviteService {
             return new AcceptInviteResponse(board.getId(), board.getName(), true);
         }
 
-        // Check board limit
-        long userBoardCount = boardRepository.countByCollaboratorsUserId(userId);
-        if (userBoardCount >= boardProperties.getMaxBoardsPerUser()) {
-            throw new BoardLimitExceededException(
-                    "You have reached the maximum limit of "
-                            + boardProperties.getMaxBoardsPerUser()
-                            + " boards");
-        }
+        boardLimitPolicy.assertCanAcceptInvite(userId);
 
-        User user =
-                userRepository
-                        .findById(userId)
-                        .orElseThrow(
-                                () -> new ResourceNotFoundException("User not found: " + userId));
+        User user = userLookupService.getRequiredUser(userId);
 
         // Add user as MEMBER
         BoardUser membership =

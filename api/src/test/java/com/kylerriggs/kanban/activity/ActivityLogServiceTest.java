@@ -10,8 +10,7 @@ import static org.mockito.Mockito.when;
 import com.kylerriggs.kanban.activity.dto.ActivityLogDto;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.TaskRepository;
-import com.kylerriggs.kanban.user.UserRepository;
-import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
@@ -33,8 +32,7 @@ class ActivityLogServiceTest {
     @Mock private ActivityLogRepository activityLogRepository;
     @Mock private ActivityLogMapper activityLogMapper;
     @Mock private TaskRepository taskRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private UserService userService;
+    @Mock private UserLookupService userLookupService;
     @Mock private BoardEventPublisher eventPublisher;
 
     @InjectMocks private ActivityLogService activityLogService;

@@ -19,14 +19,12 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
-import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 import com.kylerriggs.kanban.user.User;
-import com.kylerriggs.kanban.user.UserRepository;
-import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
@@ -61,11 +59,10 @@ class TaskServiceTest {
 
     @Mock private TaskRepository taskRepository;
     @Mock private BoardRepository boardRepository;
-    @Mock private UserRepository userRepository;
     @Mock private ColumnRepository columnRepository;
-    @Mock private LabelRepository labelRepository;
     @Mock private TaskMapper taskMapper;
-    @Mock private UserService userService;
+    @Mock private UserLookupService userLookupService;
+    @Mock private TaskValidationService taskValidationService;
     @Mock private BoardEventPublisher eventPublisher;
     @Mock private ActivityLogService activityLogService;
     @Mock private ObjectMapper objectMapper;
@@ -206,9 +203,7 @@ class TaskServiceTest {
         @Test
         void createTask_WhenValid_ReturnsCreatedTask() {
             // Given
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
-                    .thenReturn(Optional.of(user));
+            when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
@@ -233,7 +228,7 @@ class TaskServiceTest {
         @Test
         void createTask_WhenNotAuthenticated_ThrowsUnauthorizedException() {
             // Given
-            when(userService.getCurrentUserId())
+            when(userLookupService.getRequiredCurrentUser())
                     .thenThrow(new UnauthorizedException("User not authenticated"));
 
             // When & Then
@@ -246,8 +241,8 @@ class TaskServiceTest {
         @Test
         void createTask_WhenUserNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+            when(userLookupService.getRequiredCurrentUser())
+                    .thenThrow(new ResourceNotFoundException("User not found: " + USER_ID));
 
             // When & Then
             assertThrows(
@@ -258,9 +253,7 @@ class TaskServiceTest {
         @Test
         void createTask_WhenBoardNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
-                    .thenReturn(Optional.of(user));
+            when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.empty());
 
@@ -273,9 +266,7 @@ class TaskServiceTest {
         @Test
         void createTask_WhenColumnNotFound_ThrowsResourceNotFoundException() {
             // Given
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
-                    .thenReturn(Optional.of(user));
+            when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
@@ -299,13 +290,14 @@ class TaskServiceTest {
                             .board(otherBoard)
                             .build();
 
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
-                    .thenReturn(Optional.of(user));
+            when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.of(columnFromOtherBoard));
+            doThrow(new BadRequestException("Column does not belong to this board"))
+                    .when(taskValidationService)
+                    .validateColumnInBoard(columnFromOtherBoard, board);
 
             // When & Then
             assertThrows(
@@ -329,13 +321,16 @@ class TaskServiceTest {
                             null,
                             null);
 
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
-                    .thenReturn(Optional.of(user));
+            when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.of(column));
+            when(taskValidationService.validateAssigneeInBoard(
+                            "nonCollaboratorId", board, userLookupService))
+                    .thenThrow(
+                            new BoardAccessException(
+                                    "User is not a collaborator on the board: nonCollaboratorId"));
 
             // When & Then
             assertThrows(
@@ -345,10 +340,6 @@ class TaskServiceTest {
         @Test
         void createTask_WithValidAssignee_AssignsUser() {
             // Given
-            BoardUser assigneeBoardUser =
-                    BoardUser.builder().board(board).user(assignee).role(BoardRole.MEMBER).build();
-            board.getCollaborators().add(assigneeBoardUser);
-
             TaskRequest requestWithAssignee =
                     new TaskRequest(
                             Objects.requireNonNull(BOARD_ID),
@@ -362,15 +353,14 @@ class TaskServiceTest {
                             null,
                             null);
 
-            when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(userRepository.findById(Objects.requireNonNull(USER_ID)))
-                    .thenReturn(Optional.of(user));
-            when(userRepository.findById(Objects.requireNonNull(ASSIGNEE_ID)))
-                    .thenReturn(Optional.of(assignee));
+            when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
             when(columnRepository.findById(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.of(column));
+            when(taskValidationService.validateAssigneeInBoard(
+                            ASSIGNEE_ID, board, userLookupService))
+                    .thenReturn(assignee);
             when(taskRepository.findMaxPositionByColumnId(Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.empty());
             when(taskMapper.toEntity(any(), any(), any(), eq(assignee), any())).thenReturn(task);
@@ -382,7 +372,8 @@ class TaskServiceTest {
 
             // Then
             assertNotNull(result);
-            verify(userRepository).findById(ASSIGNEE_ID);
+            verify(taskValidationService)
+                    .validateAssigneeInBoard(ASSIGNEE_ID, board, userLookupService);
         }
     }
 
@@ -525,6 +516,9 @@ class TaskServiceTest {
                     .thenReturn(Optional.of(task));
             when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
                     .thenReturn(Optional.of(columnFromOtherBoard));
+            doThrow(new BadRequestException("Column does not belong to this board"))
+                    .when(taskValidationService)
+                    .validateColumnInBoard(columnFromOtherBoard, board);
 
             // When & Then
             assertThrows(
@@ -537,10 +531,6 @@ class TaskServiceTest {
         @Test
         void updateTask_WhenAssigneeChanged_UpdatesAssignee() {
             // Given
-            BoardUser assigneeBoardUser =
-                    BoardUser.builder().board(board).user(assignee).role(BoardRole.MEMBER).build();
-            board.getCollaborators().add(assigneeBoardUser);
-
             TaskRequest requestWithAssignee =
                     new TaskRequest(
                             Objects.requireNonNull(BOARD_ID),
@@ -556,8 +546,9 @@ class TaskServiceTest {
 
             when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(userRepository.findById(Objects.requireNonNull(ASSIGNEE_ID)))
-                    .thenReturn(Optional.of(assignee));
+            when(taskValidationService.validateAssigneeInBoard(
+                            ASSIGNEE_ID, board, userLookupService))
+                    .thenReturn(assignee);
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
             // When
@@ -793,6 +784,9 @@ class TaskServiceTest {
                     .thenReturn(Optional.of(task));
             when(columnRepository.findById(Objects.requireNonNull(NEW_COLUMN_ID)))
                     .thenReturn(Optional.of(columnFromOtherBoard));
+            doThrow(new BadRequestException("Column does not belong to this board"))
+                    .when(taskValidationService)
+                    .validateColumnInBoard(columnFromOtherBoard, board);
 
             // When & Then
             assertThrows(

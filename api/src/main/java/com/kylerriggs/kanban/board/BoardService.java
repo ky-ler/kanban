@@ -16,7 +16,7 @@ import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
 import com.kylerriggs.kanban.user.User;
-import com.kylerriggs.kanban.user.UserRepository;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.UserService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
@@ -37,9 +37,10 @@ import java.util.stream.Collectors;
 public class BoardService {
     private final BoardRepository boardRepository;
     private final BoardUserRepository boardUserRepository;
-    private final UserRepository userRepository;
     private final BoardMapper boardMapper;
     private final UserService userService;
+    private final UserLookupService userLookupService;
+    private final BoardLimitPolicy boardLimitPolicy;
     private final BoardProperties boardProperties;
     private final TaskMapper taskMapper;
     private final TaskRepository taskRepository;
@@ -58,22 +59,9 @@ public class BoardService {
     public BoardDto createBoard(BoardRequest boardRequest) {
         String requestUserId = userService.getCurrentUserId();
 
-        // Check if user has reached the board limit
-        long userBoardCount = boardRepository.countByCollaboratorsUserId(requestUserId);
-        if (userBoardCount >= boardProperties.getMaxBoardsPerUser()) {
-            throw new BoardLimitExceededException(
-                    "User has reached the maximum limit of "
-                            + boardProperties.getMaxBoardsPerUser()
-                            + " boards");
-        }
+        boardLimitPolicy.assertCanCreateOrCollaborate(requestUserId);
 
-        User owner =
-                userRepository
-                        .findById(requestUserId)
-                        .orElseThrow(
-                                () ->
-                                        new ResourceNotFoundException(
-                                                "User not found: " + requestUserId));
+        User owner = userLookupService.getRequiredUser(requestUserId);
 
         Board board =
                 Board.builder()
@@ -290,14 +278,7 @@ public class BoardService {
         String userId = collaboratorRequest.userId();
         BoardRole role = collaboratorRequest.role();
 
-        // Check if user has reached the board limit
-        long userBoardCount = boardRepository.countByCollaboratorsUserId(userId);
-        if (userBoardCount >= boardProperties.getMaxBoardsPerUser()) {
-            throw new BoardLimitExceededException(
-                    "User has reached the maximum limit of "
-                            + boardProperties.getMaxBoardsPerUser()
-                            + " boards");
-        }
+        boardLimitPolicy.assertCanCreateOrCollaborate(userId);
 
         // Check membership before loading the board to avoid N+1 query
         if (boardUserRepository.existsByBoardIdAndUserId(boardId, userId)) {
@@ -310,11 +291,7 @@ public class BoardService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
-        User userToAdd =
-                userRepository
-                        .findById(userId)
-                        .orElseThrow(
-                                () -> new ResourceNotFoundException("User not found: " + userId));
+        User userToAdd = userLookupService.getRequiredUser(userId);
 
         BoardUser newCollaborator =
                 BoardUser.builder().board(board).user(userToAdd).role(role).build();

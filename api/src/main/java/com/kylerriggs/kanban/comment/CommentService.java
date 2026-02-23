@@ -6,8 +6,7 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
-import com.kylerriggs.kanban.user.UserRepository;
-import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.RequiredArgsConstructor;
@@ -26,8 +25,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
     private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
-    private final UserService userService;
+    private final UserLookupService userLookupService;
     private final BoardEventPublisher eventPublisher;
 
     /**
@@ -53,17 +51,9 @@ public class CommentService {
     @Transactional
     public CommentDto createComment(
             @NonNull UUID boardId, @NonNull UUID taskId, @NonNull CommentRequest request) {
-        String currentUserId = userService.getCurrentUserId();
-
         Task task = requireTaskInBoard(boardId, taskId);
 
-        User author =
-                userRepository
-                        .findById(currentUserId)
-                        .orElseThrow(
-                                () ->
-                                        new ResourceNotFoundException(
-                                                "User not found: " + currentUserId));
+        User author = userLookupService.getRequiredCurrentUser();
 
         Comment comment =
                 Comment.builder().content(request.content()).task(task).author(author).build();

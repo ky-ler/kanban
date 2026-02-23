@@ -9,17 +9,14 @@ import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.column.ColumnRepository;
 import com.kylerriggs.kanban.exception.BadRequestException;
-import com.kylerriggs.kanban.exception.BoardAccessException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.label.Label;
-import com.kylerriggs.kanban.label.LabelRepository;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 import com.kylerriggs.kanban.user.User;
-import com.kylerriggs.kanban.user.UserRepository;
-import com.kylerriggs.kanban.user.UserService;
+import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +28,6 @@ import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,11 +43,10 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final BoardRepository boardRepository;
-    private final UserRepository userRepository;
     private final ColumnRepository columnRepository;
-    private final LabelRepository labelRepository;
     private final TaskMapper taskMapper;
-    private final UserService userService;
+    private final UserLookupService userLookupService;
+    private final TaskValidationService taskValidationService;
     private final BoardEventPublisher eventPublisher;
     private final ActivityLogService activityLogService;
     private final ObjectMapper objectMapper;
@@ -86,15 +81,7 @@ public class TaskService {
      */
     @Transactional
     public TaskDto createTask(@NonNull TaskRequest createTaskRequest) {
-        String requestUserId = userService.getCurrentUserId();
-
-        User createdBy =
-                userRepository
-                        .findById(requestUserId)
-                        .orElseThrow(
-                                () ->
-                                        new ResourceNotFoundException(
-                                                "User not found: " + requestUserId));
+        User createdBy = userLookupService.getRequiredCurrentUser();
 
         Board board =
                 boardRepository
@@ -113,35 +100,14 @@ public class TaskService {
                                                 "Column not found: "
                                                         + createTaskRequest.columnId()));
 
-        // Validate column belongs to the specified board
-        if (!column.getBoard().getId().equals(board.getId())) {
-            throw new BadRequestException("Column does not belong to this board");
-        }
-
-        User assignedTo = null;
+        taskValidationService.validateColumnInBoard(column, board);
 
         String requestAssigneeId = createTaskRequest.assigneeId();
-
-        if (StringUtils.hasText(requestAssigneeId)) {
-            String assigneeId = Objects.requireNonNull(requestAssigneeId);
-
-            board.getCollaborators().stream()
-                    .filter(c -> c.getUser().getId().equals(assigneeId))
-                    .findFirst()
-                    .orElseThrow(
-                            () ->
-                                    new BoardAccessException(
-                                            "User is not a collaborator on the board: "
-                                                    + assigneeId));
-
-            assignedTo =
-                    userRepository
-                            .findById(assigneeId)
-                            .orElseThrow(
-                                    () ->
-                                            new ResourceNotFoundException(
-                                                    "User not found: " + assigneeId));
-        }
+        User assignedTo =
+                StringUtils.hasText(requestAssigneeId)
+                        ? taskValidationService.validateAssigneeInBoard(
+                                requestAssigneeId, board, userLookupService)
+                        : null;
 
         // Get the next position for this column (append to end with GAP spacing)
         Long maxPosition = taskRepository.findMaxPositionByColumnId(column.getId()).orElse(0L);
@@ -154,20 +120,9 @@ public class TaskService {
 
         // Handle labels
         if (createTaskRequest.labelIds() != null && !createTaskRequest.labelIds().isEmpty()) {
-            Set<Label> labels = new LinkedHashSet<>();
-            for (UUID labelId : createTaskRequest.labelIds()) {
-                Label label =
-                        labelRepository
-                                .findByIdAndBoardId(labelId, board.getId())
-                                .orElseThrow(
-                                        () ->
-                                                new BadRequestException(
-                                                        "Label not found or doesn't belong to this"
-                                                                + " board: "
-                                                                + labelId));
-                labels.add(label);
-            }
-            newTask.setLabels(labels);
+            newTask.setLabels(
+                    taskValidationService.validateLabelsInBoard(
+                            createTaskRequest.labelIds(), board.getId()));
         }
 
         // Save task directly to ensure ID is generated before broadcasting
@@ -250,11 +205,7 @@ public class TaskService {
                                                     "Column not found: "
                                                             + updateTaskRequest.columnId()));
 
-            // Validate new column belongs to the same board
-            if (!newColumn.getBoard().getId().equals(board.getId())) {
-                throw new BadRequestException("Column does not belong to this board");
-            }
-
+            taskValidationService.validateColumnInBoard(newColumn, board);
             taskToUpdate.setColumn(newColumn);
         }
 
@@ -262,24 +213,9 @@ public class TaskService {
 
         if (!Objects.equals(oldAssigneeId, requestAssigneeId)) {
             if (StringUtils.hasText(requestAssigneeId)) {
-                String newAssigneeId = Objects.requireNonNull(requestAssigneeId);
-
-                board.getCollaborators().stream()
-                        .filter(c -> c.getUser().getId().equals(newAssigneeId))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new BoardAccessException(
-                                                "User is not a collaborator on the board: "
-                                                        + newAssigneeId));
-
                 User newAssignee =
-                        userRepository
-                                .findById(newAssigneeId)
-                                .orElseThrow(
-                                        () ->
-                                                new ResourceNotFoundException(
-                                                        "User not found: " + newAssigneeId));
+                        taskValidationService.validateAssigneeInBoard(
+                                requestAssigneeId, board, userLookupService);
                 taskToUpdate.setAssignedTo(newAssignee);
             } else {
                 taskToUpdate.setAssignedTo(null);
@@ -289,21 +225,12 @@ public class TaskService {
         // Update labels
         List<UUID> requestLabelIds = updateTaskRequest.labelIds();
         if (requestLabelIds != null) {
-            Set<Label> newLabels = new LinkedHashSet<>();
-            for (UUID labelId : requestLabelIds) {
-                Label label =
-                        labelRepository
-                                .findByIdAndBoardId(labelId, board.getId())
-                                .orElseThrow(
-                                        () ->
-                                                new BadRequestException(
-                                                        "Label not found or doesn't belong to this"
-                                                                + " board: "
-                                                                + labelId));
-                newLabels.add(label);
-            }
             taskToUpdate.getLabels().clear();
-            taskToUpdate.getLabels().addAll(newLabels);
+            taskToUpdate
+                    .getLabels()
+                    .addAll(
+                            taskValidationService.validateLabelsInBoard(
+                                    requestLabelIds, board.getId()));
         }
 
         // Atomically update board's dateModified to avoid optimistic locking conflicts
@@ -546,11 +473,7 @@ public class TaskService {
                                             new ResourceNotFoundException(
                                                     "Column not found: " + newColumnId));
 
-            // Validate new column belongs to the same board
-            if (!targetColumn.getBoard().getId().equals(board.getId())) {
-                throw new BadRequestException("Column does not belong to this board");
-            }
-
+            taskValidationService.validateColumnInBoard(targetColumn, board);
             taskToMove.setColumn(targetColumn);
         }
 
