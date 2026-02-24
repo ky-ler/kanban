@@ -39,6 +39,7 @@ export default defineConfig({
       target: "src/api/gen/endpoints",
       client: "zod",
       fileExtension: ".zod.ts",
+      prettier: true,
     },
   },
 });
