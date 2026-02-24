@@ -57,6 +57,7 @@ class BoardServiceTest {
     @Mock private UserLookupService userLookupService;
     @Mock private BoardLimitPolicy boardLimitPolicy;
     @Mock private BoardProperties boardProperties;
+    @Mock private com.kylerriggs.kanban.comment.CommentRepository commentRepository;
     @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private BoardService boardService;
 
@@ -225,7 +226,7 @@ class BoardServiceTest {
     @Nested
     class GetBoardsForUserTests {
         @Test
-        void getBoardsForUser_ReturnsUserBoards() {
+        void getBoardsForUser_ReturnsActiveBoards() {
             // Given
             BoardSummary summary =
                     new BoardSummary(
@@ -239,7 +240,7 @@ class BoardServiceTest {
                             true);
 
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(boardRepository.findAllByCollaboratorsUserIdWithTasksAndColumn(USER_ID))
+            when(boardRepository.findAllActiveByCollaboratorsUserId(USER_ID))
                     .thenReturn(List.of(board));
             when(boardMapper.toSummaryDto(board, USER_ID)).thenReturn(summary);
 
@@ -249,6 +250,52 @@ class BoardServiceTest {
             // Then
             assertEquals(1, result.size());
             assertEquals(BOARD_ID, result.get(0).id());
+            verify(boardRepository).findAllActiveByCollaboratorsUserId(USER_ID);
+        }
+    }
+
+    @Nested
+    class GetArchivedBoardsForUserTests {
+        @Test
+        void getArchivedBoardsForUser_ReturnsArchivedBoardsCreatedByUser() {
+            // Given
+            Board archivedBoard =
+                    Board.builder()
+                            .id(UUID.randomUUID())
+                            .name("Archived Board")
+                            .description("Archived")
+                            .createdBy(user)
+                            .isArchived(true)
+                            .tasks(new HashSet<>())
+                            .collaborators(new HashSet<>())
+                            .columns(new HashSet<>())
+                            .build();
+            archivedBoard.setDateCreated(Instant.now());
+            archivedBoard.setDateModified(Instant.now());
+
+            BoardSummary summary =
+                    new BoardSummary(
+                            archivedBoard.getId(),
+                            "Archived Board",
+                            "Archived",
+                            Instant.now().toString(),
+                            0,
+                            0,
+                            true,
+                            false);
+
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findArchivedByCreatorId(USER_ID))
+                    .thenReturn(List.of(archivedBoard));
+            when(boardMapper.toSummaryDto(archivedBoard, USER_ID)).thenReturn(summary);
+
+            // When
+            List<BoardSummary> result = boardService.getArchivedBoardsForUser();
+
+            // Then
+            assertEquals(1, result.size());
+            assertTrue(result.get(0).isArchived());
+            verify(boardRepository).findArchivedByCreatorId(USER_ID);
         }
     }
 
@@ -338,6 +385,23 @@ class BoardServiceTest {
 
             assertFalse(board.isArchived());
             verify(taskRepository, never()).archiveByBoardId(any(), any());
+        }
+
+        @Test
+        void updateBoardArchive_WhenUnarchivingAndBoardLimitExceeded_ThrowsException() {
+            board.setArchived(true);
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            doThrow(new BoardLimitExceededException("limit"))
+                    .when(boardLimitPolicy)
+                    .assertCanCreateOrCollaborate(USER_ID);
+
+            assertThrows(
+                    BoardLimitExceededException.class,
+                    () ->
+                            boardService.updateBoardArchive(
+                                    BOARD_ID, new BoardArchiveRequest(false, false)));
+            assertTrue(board.isArchived()); // Board should remain archived
         }
     }
 

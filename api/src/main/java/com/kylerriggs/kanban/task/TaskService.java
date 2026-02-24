@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -549,6 +550,11 @@ public class TaskService {
 
         // Case: placing between two tasks
         if (beforePos != null && afterPos != null) {
+            if (afterPos >= beforePos) {
+                throw new BadRequestException(
+                        "After-task must come before before-task in target column");
+            }
+
             long mid = afterPos + (beforePos - afterPos) / 2;
             if (mid <= afterPos || mid >= beforePos) {
                 rebalanceColumn(columnId, movingTaskId);
@@ -569,7 +575,16 @@ public class TaskService {
                                                 new ResourceNotFoundException(
                                                         "Before-task not found in target column: "
                                                                 + beforeTaskId));
+
+                if (afterPos >= beforePos) {
+                    throw new BadRequestException(
+                            "After-task must come before before-task in target column");
+                }
+
                 mid = afterPos + (beforePos - afterPos) / 2;
+                if (mid <= afterPos || mid >= beforePos) {
+                    throw new BadRequestException("Unable to compute position between neighbors");
+                }
             }
             return mid;
         }
@@ -602,7 +617,12 @@ public class TaskService {
         try {
             return Priority.valueOf(priorityValue.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid priority: " + priorityValue);
+            String allowedValues =
+                    Arrays.stream(Priority.values())
+                            .map(Enum::name)
+                            .collect(Collectors.joining(", "));
+            throw new BadRequestException(
+                    "Invalid priority: " + priorityValue + ". Allowed values: " + allowedValues);
         }
     }
 }

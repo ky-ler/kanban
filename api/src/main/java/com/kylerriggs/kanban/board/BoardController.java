@@ -76,14 +76,25 @@ public class BoardController {
     }
 
     /**
-     * Retrieves all boards that the current user is a collaborator on. Returns summary information
-     * for each board.
+     * Retrieves all active (non-archived) boards that the current user is a collaborator on.
+     * Returns summary information for each board.
      *
      * @return list of board summaries
      */
     @GetMapping
     public ResponseEntity<List<BoardSummary>> getBoardsForUser() {
         List<BoardSummary> boards = boardService.getBoardsForUser();
+        return ResponseEntity.ok(boards);
+    }
+
+    /**
+     * Retrieves all archived boards created by the current user.
+     *
+     * @return list of archived board summaries
+     */
+    @GetMapping("/archived")
+    public ResponseEntity<List<BoardSummary>> getArchivedBoardsForUser() {
+        List<BoardSummary> boards = boardService.getArchivedBoardsForUser();
         return ResponseEntity.ok(boards);
     }
 
@@ -112,7 +123,7 @@ public class BoardController {
      * @return the updated board DTO
      */
     @PatchMapping("/{boardId}/archive")
-    @PreAuthorize("@boardAccess.isAdmin(#boardId)")
+    @PreAuthorize("@boardAccess.isCreator(#boardId)")
     public ResponseEntity<BoardDto> updateBoardArchive(
             @NonNull @PathVariable UUID boardId,
             @NonNull @Valid @RequestBody BoardArchiveRequest request) {

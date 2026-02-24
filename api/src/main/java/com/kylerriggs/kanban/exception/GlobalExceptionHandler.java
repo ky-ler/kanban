@@ -40,10 +40,10 @@ public class GlobalExceptionHandler {
         ErrorResponse response =
                 new ErrorResponse(
                         System.currentTimeMillis(),
-                        HttpStatus.FORBIDDEN.value(),
+                        HttpStatus.CONFLICT.value(),
                         "Board Limit Exceeded",
                         ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(BoardAccessException.class)

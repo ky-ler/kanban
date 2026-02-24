@@ -312,9 +312,11 @@ class TaskServiceTest {
             when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
                     .thenReturn(column);
 
-            assertThrows(
-                    BadRequestException.class,
-                    () -> taskService.createTask(requestWithInvalidPriority));
+            BadRequestException exception =
+                    assertThrows(
+                            BadRequestException.class,
+                            () -> taskService.createTask(requestWithInvalidPriority));
+            assertTrue(exception.getMessage().contains("Allowed values:"));
 
             verify(taskRepository, never()).save(any());
         }
@@ -601,11 +603,14 @@ class TaskServiceTest {
             when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
 
-            assertThrows(
-                    BadRequestException.class,
-                    () ->
-                            taskService.updateTask(
-                                    Objects.requireNonNull(TASK_ID), requestWithInvalidPriority));
+            BadRequestException exception =
+                    assertThrows(
+                            BadRequestException.class,
+                            () ->
+                                    taskService.updateTask(
+                                            Objects.requireNonNull(TASK_ID),
+                                            requestWithInvalidPriority));
+            assertTrue(exception.getMessage().contains("Allowed values:"));
         }
     }
 
@@ -831,6 +836,53 @@ class TaskServiceTest {
 
             assertThrows(
                     ResourceNotFoundException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
+        }
+
+        @Test
+        void moveTask_WhenAfterAndBeforeAreSame_ThrowsBadRequestException() {
+            MoveTaskRequest request =
+                    new MoveTaskRequest(AFTER_TASK_ID, Objects.requireNonNull(AFTER_TASK_ID), null);
+            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+
+            assertThrows(
+                    BadRequestException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
+        }
+
+        @Test
+        void moveTask_WhenAfterTaskIsMovingTask_ThrowsBadRequestException() {
+            MoveTaskRequest request =
+                    new MoveTaskRequest(Objects.requireNonNull(TASK_ID), null, null);
+            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+
+            assertThrows(
+                    BadRequestException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
+        }
+
+        @Test
+        void moveTask_WhenBeforeTaskIsMovingTask_ThrowsBadRequestException() {
+            MoveTaskRequest request =
+                    new MoveTaskRequest(null, Objects.requireNonNull(TASK_ID), null);
+            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+
+            assertThrows(
+                    BadRequestException.class,
+                    () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
+        }
+
+        @Test
+        void moveTask_WhenAfterPositionIsNotBeforePosition_ThrowsBadRequestException() {
+            MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, BEFORE_TASK_ID, null);
+            when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
+            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
+                    .thenReturn(Optional.of(3_000_000L));
+            when(taskRepository.findPositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
+                    .thenReturn(Optional.of(1_000_000L));
+
+            assertThrows(
+                    BadRequestException.class,
                     () -> taskService.moveTask(Objects.requireNonNull(TASK_ID), request));
         }
     }

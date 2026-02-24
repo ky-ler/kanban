@@ -1,9 +1,6 @@
 package com.kylerriggs.kanban.task;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import jakarta.persistence.LockModeType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -11,7 +8,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import jakarta.persistence.LockModeType;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
     /**
@@ -101,8 +101,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      */
     @Query(
             "SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Task t WHERE t.id ="
-                + " :taskId AND (t.board.createdBy.id = :userId OR EXISTS (SELECT 1 FROM BoardUser"
-                + " bu WHERE bu.board.id = t.board.id AND bu.user.id = :userId))")
+                    + " :taskId AND (t.board.createdBy.id = :userId OR EXISTS (SELECT 1 FROM BoardUser"
+                    + " bu WHERE bu.board.id = t.board.id AND bu.user.id = :userId))")
     boolean isUserAuthorizedForTask(@Param("taskId") UUID taskId, @Param("userId") String userId);
 
     /**

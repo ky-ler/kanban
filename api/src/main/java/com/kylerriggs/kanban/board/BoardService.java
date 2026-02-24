@@ -143,8 +143,21 @@ public class BoardService {
     public List<BoardSummary> getBoardsForUser() {
         String requestUserId = userService.getCurrentUserId();
 
-        List<Board> boards =
-                boardRepository.findAllByCollaboratorsUserIdWithTasksAndColumn(requestUserId);
+        List<Board> boards = boardRepository.findAllActiveByCollaboratorsUserId(requestUserId);
+
+        return boards.stream().map(p -> boardMapper.toSummaryDto(p, requestUserId)).toList();
+    }
+
+    /**
+     * Retrieves all archived boards that the current user created. Only the board creator can view
+     * their archived boards.
+     *
+     * @return list of archived board summaries for the current user
+     */
+    public List<BoardSummary> getArchivedBoardsForUser() {
+        String requestUserId = userService.getCurrentUserId();
+
+        List<Board> boards = boardRepository.findArchivedByCreatorId(requestUserId);
 
         return boards.stream().map(p -> boardMapper.toSummaryDto(p, requestUserId)).toList();
     }
@@ -193,6 +206,12 @@ public class BoardService {
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         boolean shouldArchive = request.isArchived();
+
+        // When unarchiving, check the board limit for the requesting user
+        if (!shouldArchive && boardToUpdate.isArchived()) {
+            boardLimitPolicy.assertCanCreateOrCollaborate(requestUserId);
+        }
+
         if (boardToUpdate.isArchived() == shouldArchive) {
             Board currentBoard =
                     boardRepository
