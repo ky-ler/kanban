@@ -29,6 +29,7 @@ import {
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import type { BoardRequest } from "@/api/gen/model";
 import { createBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface NewBoardDialogProps {
   trigger?: React.ReactNode;
@@ -75,11 +76,17 @@ export const NewBoardDialog = ({
     defaultValues: { name: "", description: "" } as BoardRequest,
     validators: { onSubmit: createBoardBody },
     onSubmit: async ({ value }) => {
-      toast.promise(createBoardMutation.mutateAsync({ data: value }), {
-        loading: "Creating board...",
-        success: "Board created!",
-        error: "Failed to create board",
-      });
+      const toastId = toast.loading("Creating board...");
+      try {
+        await createBoardMutation.mutateAsync({ data: value });
+        toast.success("Board created!", { id: toastId });
+      } catch (error) {
+        if (handleMutationAuthError(error)) {
+          toast.dismiss(toastId);
+          return;
+        }
+        toast.error("Failed to create board", { id: toastId });
+      }
     },
   });
 

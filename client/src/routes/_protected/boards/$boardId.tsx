@@ -11,6 +11,7 @@ import {
 import { Archive, EllipsisVertical, Info, Users } from "lucide-react";
 import { FavoriteButton } from "@/features/boards/components/favorite-button";
 import { Alert } from "@/components/ui/alert";
+import { BoardWebSocketBanner } from "@/features/boards/components/board-websocket-banner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,8 +54,11 @@ import {
 import { updateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 import { CollaboratorDtoRole } from "@/api/gen/model";
 import { KanbanBoard } from "@/features/boards/components/kanban-board";
-import { useBoardSubscription } from "@/features/boards/hooks/use-board-subscription";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
+import {
+  handleMutationAuthError,
+  rethrowProtectedRouteError,
+} from "@/features/auth/route-auth";
 import { TaskFilterBar } from "@/features/boards/components/task-filter-bar";
 import {
   filterTasks,
@@ -81,8 +85,20 @@ export const Route = createFileRoute("/_protected/boards/$boardId")({
     labels: search.labels as string | undefined,
     due: search.due as string | undefined,
   }),
-  loader: ({ context: { queryClient }, params: { boardId } }) =>
-    queryClient.ensureQueryData(getGetBoardQueryOptions(boardId)),
+  loader: async ({
+    context: { queryClient },
+    params: { boardId },
+    location,
+  }) => {
+    try {
+      await queryClient.ensureQueryData(getGetBoardQueryOptions(boardId));
+    } catch (error) {
+      rethrowProtectedRouteError(
+        error,
+        `${location.pathname}${location.searchStr}${location.hash}`,
+      );
+    }
+  },
   component: BoardRoute,
 });
 
@@ -95,7 +111,6 @@ function BoardComponent() {
   const queryClient = useQueryClient();
   const auth = useAuth0Context();
   const { data: board, isLoading, error } = useGetBoardSuspense(boardId);
-  useBoardSubscription(boardId);
   const filters = parseFiltersFromSearch(search);
   const [searchInput, setSearchInput] = useState(filters.query ?? "");
   const [editValue, setEditValue] = useState("");
@@ -152,7 +167,10 @@ function BoardComponent() {
         });
         setEditingField(null);
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to update board");
       },
     },
@@ -171,7 +189,10 @@ function BoardComponent() {
           });
           navigate({ to: "/boards" });
         },
-        onError: () => {
+        onError: (error) => {
+          if (handleMutationAuthError(error)) {
+            return;
+          }
           toast.error("Failed to archive board");
         },
       },
@@ -216,6 +237,8 @@ function BoardComponent() {
 
   return (
     <>
+      <BoardWebSocketBanner />
+
       {/* Board Info Header */}
       <div className="flex items-center justify-between gap-2 px-4 pt-3 sm:items-start sm:pt-4">
         <div className="min-w-0 flex-1">

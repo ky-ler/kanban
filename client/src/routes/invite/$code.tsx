@@ -9,6 +9,11 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Kanban, AlertCircle, LogIn, UserPlus } from "lucide-react";
+import {
+  getAuthLoginSearch,
+  getCurrentAppPath,
+} from "@/features/auth/auth-navigation";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import {
   usePreviewInvite,
@@ -26,8 +31,8 @@ function InvitePage() {
   const navigate = useNavigate();
   const auth = useAuth0Context();
 
-  const isAuthenticated = auth?.isAuthenticated ?? false;
-  const isLoading = auth?.isLoading ?? true;
+  const isAuthenticated = auth.isAuthenticated;
+  const isLoading = auth.isLoading;
 
   const {
     data: previewResponse,
@@ -57,17 +62,19 @@ function InvitePage() {
           },
         });
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to join the board. Please try again.");
       },
     },
   });
 
   const handleSignIn = () => {
-    // Save current URL to redirect back after login
-    const returnTo = window.location.pathname;
-    auth?.loginWithRedirect({
-      appState: { returnTo },
+    void navigate({
+      to: "/auth/login",
+      search: getAuthLoginSearch(getCurrentAppPath()),
     });
   };
 

@@ -17,6 +17,7 @@ import { CommentInput } from "./comment-input";
 import { CommentItem } from "./comment-item";
 import { ActivityItem } from "./activity-item";
 import { toast } from "sonner";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 type FeedItem =
   | { type: "comment"; data: CommentDto; timestamp: Date }
@@ -62,7 +63,10 @@ export function ActivityFeed({
           queryKey: getGetTaskQueryKey(taskId),
         });
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to create comment");
       },
     },
@@ -79,7 +83,10 @@ export function ActivityFeed({
           queryKey: getGetTaskQueryKey(taskId),
         });
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to update comment");
       },
     },
@@ -96,7 +103,10 @@ export function ActivityFeed({
           queryKey: getGetTaskQueryKey(taskId),
         });
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to delete comment");
       },
     },

@@ -9,6 +9,7 @@ import {
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import type { BoardSummary, BoardDto } from "@/api/gen/model";
 import { cn } from "@/lib/utils";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface FavoriteButtonProps {
   boardId: string;
@@ -80,7 +81,7 @@ export function FavoriteButton({
 
         return { previousBoards, previousBoard };
       },
-      onError: (_error, _variables, context) => {
+      onError: (error, _variables, context) => {
         // Rollback on error
         if (context?.previousBoards) {
           queryClient.setQueryData(
@@ -93,6 +94,9 @@ export function FavoriteButton({
             getGetBoardQueryKey(boardId),
             context.previousBoard,
           );
+        }
+        if (handleMutationAuthError(error)) {
+          return;
         }
         toast.error("Failed to update favorite status");
       },

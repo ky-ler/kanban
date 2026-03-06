@@ -79,6 +79,10 @@ import { TaskDescriptionView } from "@/features/tasks/components/task-descriptio
 import { InlineSaveActions } from "@/components/inline-save-actions";
 import { useBoardSubscription } from "@/features/boards/hooks/use-board-subscription";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
+import {
+  handleMutationAuthError,
+  rethrowProtectedRouteError,
+} from "@/features/auth/route-auth";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
@@ -86,17 +90,28 @@ import { z } from "zod";
 export const Route = createFileRoute(
   "/_protected/boards/$boardId/tasks/$taskId",
 )({
-  loader: async ({ context: { queryClient }, params: { boardId, taskId } }) => {
-    await Promise.all([
-      queryClient.ensureQueryData(getGetBoardQueryOptions(boardId)),
-      queryClient.ensureQueryData(getGetTaskQueryOptions(taskId)),
-      queryClient.ensureQueryData(
-        getGetTaskActivityQueryOptions(boardId, taskId),
-      ),
-      queryClient.ensureQueryData(
-        getGetTaskCommentsQueryOptions(boardId, taskId),
-      ),
-    ]);
+  loader: async ({
+    context: { queryClient },
+    params: { boardId, taskId },
+    location,
+  }) => {
+    try {
+      await Promise.all([
+        queryClient.ensureQueryData(getGetBoardQueryOptions(boardId)),
+        queryClient.ensureQueryData(getGetTaskQueryOptions(taskId)),
+        queryClient.ensureQueryData(
+          getGetTaskActivityQueryOptions(boardId, taskId),
+        ),
+        queryClient.ensureQueryData(
+          getGetTaskCommentsQueryOptions(boardId, taskId),
+        ),
+      ]);
+    } catch (error) {
+      rethrowProtectedRouteError(
+        error,
+        `${location.pathname}${location.searchStr}${location.hash}`,
+      );
+    }
   },
   component: TaskComponent,
 });
@@ -191,7 +206,10 @@ function TaskComponent() {
           queryKey: getGetTaskQueryKey(taskId),
         });
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to update task");
       },
     },
@@ -209,7 +227,10 @@ function TaskComponent() {
           queryKey: getGetTaskActivityQueryKey(boardId, taskId),
         });
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to update task status");
       },
     },

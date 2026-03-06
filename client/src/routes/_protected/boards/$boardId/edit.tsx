@@ -32,10 +32,26 @@ import {
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import type { BoardRequest } from "@/api/gen/model";
 import { updateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
+import {
+  handleMutationAuthError,
+  rethrowProtectedRouteError,
+} from "@/features/auth/route-auth";
 
 export const Route = createFileRoute("/_protected/boards/$boardId/edit")({
-  loader: ({ context: { queryClient }, params: { boardId } }) =>
-    queryClient.ensureQueryData(getGetBoardQueryOptions(boardId)),
+  loader: async ({
+    context: { queryClient },
+    params: { boardId },
+    location,
+  }) => {
+    try {
+      await queryClient.ensureQueryData(getGetBoardQueryOptions(boardId));
+    } catch (error) {
+      rethrowProtectedRouteError(
+        error,
+        `${location.pathname}${location.searchStr}${location.hash}`,
+      );
+    }
+  },
   component: EditBoardComponent,
 });
 
@@ -64,11 +80,17 @@ function EditBoardComponent() {
     } as BoardRequest,
     validators: { onSubmit: updateBoardBody },
     onSubmit: async ({ value }) => {
-      toast.promise(updateBoardMutation.mutateAsync({ boardId, data: value }), {
-        loading: "Updating board...",
-        success: "Board updated!",
-        error: "Failed to update board",
-      });
+      const toastId = toast.loading("Updating board...");
+      try {
+        await updateBoardMutation.mutateAsync({ boardId, data: value });
+        toast.success("Board updated!", { id: toastId });
+      } catch (error) {
+        if (handleMutationAuthError(error)) {
+          toast.dismiss(toastId);
+          return;
+        }
+        toast.error("Failed to update board", { id: toastId });
+      }
     },
   });
 

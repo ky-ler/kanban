@@ -35,13 +35,27 @@ import {
 
 import { CollaboratorDtoRole } from "@/api/gen/model";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import {
+  handleMutationAuthError,
+  rethrowProtectedRouteError,
+} from "@/features/auth/route-auth";
 
 export const Route = createFileRoute(
   "/_protected/boards/$boardId/collaborators",
 )({
-  loader: async ({ context: { queryClient }, params: { boardId } }) => {
-    // Only prefetch board data, invites will be fetched on demand by the InvitesTab
-    await queryClient.ensureQueryData(getGetBoardQueryOptions(boardId));
+  loader: async ({
+    context: { queryClient },
+    params: { boardId },
+    location,
+  }) => {
+    try {
+      await queryClient.ensureQueryData(getGetBoardQueryOptions(boardId));
+    } catch (error) {
+      rethrowProtectedRouteError(
+        error,
+        `${location.pathname}${location.searchStr}${location.hash}`,
+      );
+    }
   },
   component: CollaboratorsComponent,
 });
@@ -72,12 +86,18 @@ function CollaboratorsComponent() {
     },
   });
 
-  const handleRemoveCollaborator = (userId: string) => {
-    toast.promise(removeCollaboratorMutation.mutateAsync({ boardId, userId }), {
-      loading: "Removing collaborator...",
-      success: "Collaborator removed successfully",
-      error: "Failed to remove collaborator",
-    });
+  const handleRemoveCollaborator = async (userId: string) => {
+    const toastId = toast.loading("Removing collaborator...");
+    try {
+      await removeCollaboratorMutation.mutateAsync({ boardId, userId });
+      toast.success("Collaborator removed successfully", { id: toastId });
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        toast.dismiss(toastId);
+        return;
+      }
+      toast.error("Failed to remove collaborator", { id: toastId });
+    }
   };
 
   const returnToBoard = (open: boolean) => {

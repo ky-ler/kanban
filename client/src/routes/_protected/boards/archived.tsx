@@ -26,6 +26,7 @@ import { useUpdateBoardArchive } from "@/api/gen/endpoints/board-controller/boar
 import { getGetBoardsForUserQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { getGetArchivedBoardsForUserQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import type { BoardSummary } from "@/api/gen/model";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 export const Route = createFileRoute("/_protected/boards/archived")({
   loader: ({ context: { queryClient } }) =>
@@ -97,6 +98,9 @@ function ArchivedBoardsComponent() {
           });
         },
         onError: (error: unknown) => {
+          if (handleMutationAuthError(error)) {
+            return;
+          }
           const message =
             error instanceof Error ? error.message : String(error);
           if (message.includes("409")) {

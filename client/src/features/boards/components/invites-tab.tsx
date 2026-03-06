@@ -31,6 +31,7 @@ import {
   CreateInviteRequestMaxUses,
   type BoardInviteDto,
 } from "@/api/gen/model";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface InvitesTabProps {
   boardId: string;
@@ -84,29 +85,38 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
     },
   });
 
-  const handleCreateInvite = () => {
-    toast.promise(
-      createInviteMutation.mutateAsync({
+  const handleCreateInvite = async () => {
+    const toastId = toast.loading("Creating invite...");
+    try {
+      await createInviteMutation.mutateAsync({
         data: {
           boardId,
           expiration,
           maxUses,
         },
-      }),
-      {
-        loading: "Creating invite...",
-        success: "Invite created!",
-        error: "Failed to create invite",
-      },
-    );
+      });
+      toast.success("Invite created!", { id: toastId });
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        toast.dismiss(toastId);
+        return;
+      }
+      toast.error("Failed to create invite", { id: toastId });
+    }
   };
 
-  const handleRevokeInvite = (inviteId: string) => {
-    toast.promise(revokeInviteMutation.mutateAsync({ inviteId }), {
-      loading: "Revoking invite...",
-      success: "Invite revoked",
-      error: "Failed to revoke invite",
-    });
+  const handleRevokeInvite = async (inviteId: string) => {
+    const toastId = toast.loading("Revoking invite...");
+    try {
+      await revokeInviteMutation.mutateAsync({ inviteId });
+      toast.success("Invite revoked", { id: toastId });
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        toast.dismiss(toastId);
+        return;
+      }
+      toast.error("Failed to revoke invite", { id: toastId });
+    }
   };
 
   const copyInviteLink = async (code: string) => {
