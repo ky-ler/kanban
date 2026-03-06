@@ -31,7 +31,7 @@ const titleVariantConfig: Record<
 > = {
   board: {
     viewClassName:
-      "group w-full max-w-full rounded-md border border-transparent px-2 py-1 text-xl font-bold tracking-tight sm:text-3xl hover:text-primary hover:border-border/40 cursor-pointer transition-colors",
+      "group w-full max-w-full rounded-md border border-transparent text-xl font-bold tracking-tight sm:text-3xl hover:text-primary hover:border-border/40 cursor-pointer transition-colors",
     inputClassName:
       "!text-xl !font-bold !tracking-tight sm:!text-3xl md:!text-3xl",
     pencilClassName:
@@ -40,7 +40,7 @@ const titleVariantConfig: Record<
   },
   task: {
     viewClassName:
-      "group hover:text-primary hover:border-border/40 w-full max-w-full cursor-pointer rounded-md border border-transparent px-2 py-1 text-left text-xl transition-colors",
+      "group hover:text-primary w-full max-w-full cursor-pointer rounded-md border border-transparent text-xl transition-colors",
     inputClassName: "text-xl font-semibold md:text-xl",
     pencilClassName:
       "ml-2 inline h-4 w-4 opacity-70 transition-opacity md:opacity-0 md:group-hover:opacity-100",
@@ -100,11 +100,11 @@ export function EditableTitleText({
 
   if (isEditing) {
     return (
-      <div className={cn("w-full space-y-1", config.editContainerClassName)}>
+      <div className={cn("w-full", config.editContainerClassName)}>
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              "focus-within:border-ring flex min-w-0 flex-1 items-center rounded-md border px-2 py-1 transition-colors",
+              "focus-within:border-ring flex min-w-0 flex-1 items-center rounded-md transition-colors",
               errorMessage &&
                 "border-destructive focus-within:border-destructive",
             )}
