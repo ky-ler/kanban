@@ -8,17 +8,47 @@ import {
   Outlet,
   useNavigate,
 } from "@tanstack/react-router";
-import { Users } from "lucide-react";
+import { Archive, EllipsisVertical, Info, Users } from "lucide-react";
 import { FavoriteButton } from "@/features/boards/components/favorite-button";
 import { Alert } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
+import { MarkdownView } from "@/components/rich-text/markdown-view";
+import { InlineSaveActions } from "@/components/inline-save-actions";
+import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  getGetArchivedBoardsForUserQueryKey,
   getGetBoardQueryKey,
   getGetBoardQueryOptions,
   getGetBoardsForUserQueryKey,
   useGetBoardSuspense,
   useUpdateBoard,
+  useUpdateBoardArchive,
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import { updateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 import { CollaboratorDtoRole } from "@/api/gen/model";
@@ -70,6 +100,9 @@ function BoardComponent() {
   const [searchInput, setSearchInput] = useState(filters.query ?? "");
   const [editValue, setEditValue] = useState("");
   const [editingField, setEditingField] = useState<EditingField>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [descriptionEditValue, setDescriptionEditValue] = useState("");
 
   useEffect(() => {
     setSearchInput(filters.query ?? "");
@@ -124,6 +157,25 @@ function BoardComponent() {
       },
     },
   });
+
+  const { mutate: archiveBoard, isPending: isArchiving } =
+    useUpdateBoardArchive({
+      mutation: {
+        onSuccess: () => {
+          toast.success("Board archived");
+          queryClient.invalidateQueries({
+            queryKey: getGetBoardsForUserQueryKey(),
+          });
+          queryClient.invalidateQueries({
+            queryKey: getGetArchivedBoardsForUserQueryKey(),
+          });
+          navigate({ to: "/boards" });
+        },
+        onError: () => {
+          toast.error("Failed to archive board");
+        },
+      },
+    });
 
   const saveName = (value: string) => {
     if (!board) return;
@@ -215,6 +267,57 @@ function BoardComponent() {
               <span className="sr-only">Collaborators</span>
             </Link>
           </Button>
+          <AlertDialog>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <EllipsisVertical className="h-4 w-4" />
+                  <span className="sr-only">Board actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setAboutOpen(true)}>
+                  <Info className="h-4 w-4" />
+                  About This Board
+                </DropdownMenuItem>
+                {isBoardOwner && (
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem variant="destructive">
+                      <Archive className="h-4 w-4" />
+                      Archive Board
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Archive this board?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will archive the board and all its tasks. You can restore
+                  it from the Archive page.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive hover:bg-destructive/90 text-white"
+                  disabled={isArchiving}
+                  onClick={() =>
+                    archiveBoard({
+                      boardId,
+                      data: {
+                        isArchived: true,
+                        confirmArchiveTasks: true,
+                      },
+                    })
+                  }
+                >
+                  Archive
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -236,6 +339,133 @@ function BoardComponent() {
         boardId={boardId}
       />
       <Outlet />
+
+      {/* About This Board Dialog */}
+      <Dialog
+        open={aboutOpen}
+        onOpenChange={(open) => {
+          setAboutOpen(open);
+          if (!open) {
+            setIsEditingDescription(false);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>About This Board</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            {canEditBoardMeta && isEditingDescription ? (
+              <div
+                className="space-y-2"
+                onKeyDown={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (!target.closest('[contenteditable="true"]')) return;
+                  if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
+                    e.preventDefault();
+                    if (!board) return;
+                    const payload = {
+                      name: board.data.name,
+                      description: descriptionEditValue.trim() || undefined,
+                      isArchived: board.data.isArchived,
+                    };
+                    const validationResult = updateBoardBody.safeParse(payload);
+                    if (!validationResult.success) {
+                      toast.error(
+                        validationResult.error.issues[0]?.message ??
+                          "Invalid board update",
+                      );
+                      return;
+                    }
+                    updateBoardMutation.mutate({
+                      boardId,
+                      data: payload,
+                    });
+                    setIsEditingDescription(false);
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setIsEditingDescription(false);
+                  }
+                }}
+              >
+                <MarkdownEditor
+                  value={descriptionEditValue}
+                  onChange={setDescriptionEditValue}
+                  toolbarVariant="full"
+                  autoFocus
+                  placeholder="Add a board description..."
+                  minHeightClassName="min-h-[120px]"
+                />
+                <InlineSaveActions
+                  onSave={() => {
+                    if (!board) return;
+                    const payload = {
+                      name: board.data.name,
+                      description: descriptionEditValue.trim() || undefined,
+                      isArchived: board.data.isArchived,
+                    };
+                    const validationResult = updateBoardBody.safeParse(payload);
+                    if (!validationResult.success) {
+                      toast.error(
+                        validationResult.error.issues[0]?.message ??
+                          "Invalid board update",
+                      );
+                      return;
+                    }
+                    updateBoardMutation.mutate({
+                      boardId,
+                      data: payload,
+                    });
+                    setIsEditingDescription(false);
+                  }}
+                  onCancel={() => setIsEditingDescription(false)}
+                  isSaving={updateBoardMutation.isPending}
+                />
+              </div>
+            ) : canEditBoardMeta ? (
+              <div
+                role="button"
+                tabIndex={0}
+                className={cn(
+                  "rounded-lg border border-transparent px-3 py-2 text-sm transition-colors",
+                  "bg-muted/30 hover:bg-muted/50 hover:border-border cursor-pointer",
+                )}
+                onClick={() => {
+                  setDescriptionEditValue(board?.data.description ?? "");
+                  setIsEditingDescription(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    setDescriptionEditValue(board?.data.description ?? "");
+                    setIsEditingDescription(true);
+                  }
+                }}
+              >
+                <MarkdownView
+                  value={board?.data.description ?? ""}
+                  emptyState={
+                    <p className="text-muted-foreground italic">
+                      Click to add a description...
+                    </p>
+                  }
+                />
+              </div>
+            ) : (
+              <div className="px-3 py-2 text-sm">
+                <MarkdownView
+                  value={board?.data.description ?? ""}
+                  emptyState={
+                    <p className="text-muted-foreground italic">
+                      No description
+                    </p>
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

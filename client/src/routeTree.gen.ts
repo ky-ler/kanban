@@ -17,6 +17,7 @@ import { Route as InviteCodeImport } from './routes/invite/$code'
 import { Route as ProtectedSettingsImport } from './routes/_protected/settings'
 import { Route as ProtectedBoardsIndexImport } from './routes/_protected/boards/index'
 import { Route as ProtectedBoardsCreateImport } from './routes/_protected/boards/create'
+import { Route as ProtectedBoardsArchivedImport } from './routes/_protected/boards/archived'
 import { Route as ProtectedBoardsBoardIdImport } from './routes/_protected/boards/$boardId'
 import { Route as ProtectedBoardsBoardIdEditImport } from './routes/_protected/boards/$boardId/edit'
 import { Route as ProtectedBoardsBoardIdCollaboratorsImport } from './routes/_protected/boards/$boardId/collaborators'
@@ -56,6 +57,12 @@ const ProtectedBoardsIndexRoute = ProtectedBoardsIndexImport.update({
 const ProtectedBoardsCreateRoute = ProtectedBoardsCreateImport.update({
   id: '/boards/create',
   path: '/boards/create',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+
+const ProtectedBoardsArchivedRoute = ProtectedBoardsArchivedImport.update({
+  id: '/boards/archived',
+  path: '/boards/archived',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
 
@@ -126,6 +133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedBoardsBoardIdImport
       parentRoute: typeof ProtectedRouteImport
     }
+    '/_protected/boards/archived': {
+      id: '/_protected/boards/archived'
+      path: '/boards/archived'
+      fullPath: '/boards/archived'
+      preLoaderRoute: typeof ProtectedBoardsArchivedImport
+      parentRoute: typeof ProtectedRouteImport
+    }
     '/_protected/boards/create': {
       id: '/_protected/boards/create'
       path: '/boards/create'
@@ -189,6 +203,7 @@ const ProtectedBoardsBoardIdRouteWithChildren =
 interface ProtectedRouteRouteChildren {
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
   ProtectedBoardsBoardIdRoute: typeof ProtectedBoardsBoardIdRouteWithChildren
+  ProtectedBoardsArchivedRoute: typeof ProtectedBoardsArchivedRoute
   ProtectedBoardsCreateRoute: typeof ProtectedBoardsCreateRoute
   ProtectedBoardsIndexRoute: typeof ProtectedBoardsIndexRoute
 }
@@ -196,6 +211,7 @@ interface ProtectedRouteRouteChildren {
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedSettingsRoute: ProtectedSettingsRoute,
   ProtectedBoardsBoardIdRoute: ProtectedBoardsBoardIdRouteWithChildren,
+  ProtectedBoardsArchivedRoute: ProtectedBoardsArchivedRoute,
   ProtectedBoardsCreateRoute: ProtectedBoardsCreateRoute,
   ProtectedBoardsIndexRoute: ProtectedBoardsIndexRoute,
 }
@@ -210,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof ProtectedSettingsRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
+  '/boards/archived': typeof ProtectedBoardsArchivedRoute
   '/boards/create': typeof ProtectedBoardsCreateRoute
   '/boards': typeof ProtectedBoardsIndexRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
@@ -223,6 +240,7 @@ export interface FileRoutesByTo {
   '/settings': typeof ProtectedSettingsRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
+  '/boards/archived': typeof ProtectedBoardsArchivedRoute
   '/boards/create': typeof ProtectedBoardsCreateRoute
   '/boards': typeof ProtectedBoardsIndexRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
@@ -237,6 +255,7 @@ export interface FileRoutesById {
   '/_protected/settings': typeof ProtectedSettingsRoute
   '/invite/$code': typeof InviteCodeRoute
   '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
+  '/_protected/boards/archived': typeof ProtectedBoardsArchivedRoute
   '/_protected/boards/create': typeof ProtectedBoardsCreateRoute
   '/_protected/boards/': typeof ProtectedBoardsIndexRoute
   '/_protected/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
@@ -252,6 +271,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/invite/$code'
     | '/boards/$boardId'
+    | '/boards/archived'
     | '/boards/create'
     | '/boards'
     | '/boards/$boardId/collaborators'
@@ -264,6 +284,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/invite/$code'
     | '/boards/$boardId'
+    | '/boards/archived'
     | '/boards/create'
     | '/boards'
     | '/boards/$boardId/collaborators'
@@ -276,6 +297,7 @@ export interface FileRouteTypes {
     | '/_protected/settings'
     | '/invite/$code'
     | '/_protected/boards/$boardId'
+    | '/_protected/boards/archived'
     | '/_protected/boards/create'
     | '/_protected/boards/'
     | '/_protected/boards/$boardId/collaborators'
@@ -319,6 +341,7 @@ export const routeTree = rootRoute
       "children": [
         "/_protected/settings",
         "/_protected/boards/$boardId",
+        "/_protected/boards/archived",
         "/_protected/boards/create",
         "/_protected/boards/"
       ]
@@ -338,6 +361,10 @@ export const routeTree = rootRoute
         "/_protected/boards/$boardId/edit",
         "/_protected/boards/$boardId/tasks/$taskId"
       ]
+    },
+    "/_protected/boards/archived": {
+      "filePath": "_protected/boards/archived.tsx",
+      "parent": "/_protected"
     },
     "/_protected/boards/create": {
       "filePath": "_protected/boards/create.tsx",

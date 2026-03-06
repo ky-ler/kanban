@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
+  Archive,
   ChevronRight,
   FolderKanban,
   LogIn,
   LogOut,
   Plus,
-  Settings,
   User,
   UserPlus,
 } from "lucide-react";
@@ -47,9 +47,9 @@ const navItems = [
     icon: FolderKanban,
   },
   {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
+    title: "Archive",
+    url: "/boards/archived",
+    icon: Archive,
   },
 ];
 

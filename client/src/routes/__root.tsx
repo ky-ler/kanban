@@ -19,6 +19,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
+  const { auth } = Route.useRouteContext();
+
+  if (!auth.isAuthenticated && !auth.isLoading) {
+    return (
+      <>
+        <Outlet />
+        <Toaster position="bottom-center" />
+        <TanStackRouterDevtools position="bottom-right" />
+        <ReactQueryDevtools buttonPosition="bottom-right" />
+      </>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
