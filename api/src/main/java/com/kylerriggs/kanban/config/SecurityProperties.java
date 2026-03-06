@@ -14,5 +14,5 @@ import java.util.List;
 @Setter
 public class SecurityProperties {
     private String customClaimPrefix = "https://example.com/claims/";
-    private List<String> corsAllowedOrigins = List.of("https://localhost:5173");
+    private List<String> corsAllowedOrigins = List.of("http://localhost:5173");
 }
