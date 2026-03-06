@@ -212,6 +212,20 @@ class BoardAccessTest {
     }
 
     @Test
+    void isCollaborator_WithExplicitUserId_UsesProvidedUserId() {
+        // Given
+        when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, USER_ID)).thenReturn(true);
+
+        // When
+        boolean result = boardAccess.isCollaborator(USER_ID, Objects.requireNonNull(BOARD_ID));
+
+        // Then
+        assertTrue(result);
+        verify(boardUserRepository).existsByBoardIdAndUserId(BOARD_ID, USER_ID);
+        verifyNoInteractions(securityContext, authentication);
+    }
+
+    @Test
     void isAdmin_WithDifferentBoardId_UsesCorrectBoardId() {
         // Given
         UUID differentBoardId = UUID.fromString("cbfc2988-d933-4c13-a014-009e8b4d0fb5");
