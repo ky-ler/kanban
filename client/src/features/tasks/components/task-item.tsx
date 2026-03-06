@@ -119,14 +119,14 @@ export const TaskItem = ({
   };
 
   return (
-    <Item size="sm" variant="outline" className="items-start gap-2.5">
+    <Item size="sm" variant="outline" className="items-baseline gap-2">
       <Checkbox
         aria-label={task.isCompleted ? "Mark incomplete" : "Mark complete"}
         checked={task.isCompleted}
         disabled={updateTaskStatusMutation.isPending}
         onCheckedChange={handleToggleCompleted}
         onPointerDown={(event) => event.stopPropagation()}
-        className="disabled:cursor-pointer"
+        className="relative top-0.5 disabled:cursor-pointer"
       />
       <Link
         to={"/boards/$boardId/tasks/$taskId"}
