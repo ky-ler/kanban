@@ -275,11 +275,15 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
         setTempColumns(newColumns);
 
         // Call mutation
-        await moveColumnMutation.mutateAsync({
-          boardId,
-          columnId: active.id as string,
-          newPosition: overIndex,
-        });
+        try {
+          await moveColumnMutation.mutateAsync({
+            boardId,
+            columnId: active.id as string,
+            newPosition: overIndex,
+          });
+        } catch {
+          // Mutation hook handles rollback/auth redirect.
+        }
       }
 
       setTempColumns(null);
@@ -331,13 +335,17 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
               : undefined;
 
           // Call mutation
-          await moveTaskMutation.mutateAsync({
-            boardId,
-            taskId: active.id as string,
-            newColumnId: originalColumnId,
-            afterTaskId,
-            beforeTaskId,
-          });
+          try {
+            await moveTaskMutation.mutateAsync({
+              boardId,
+              taskId: active.id as string,
+              newColumnId: originalColumnId,
+              afterTaskId,
+              beforeTaskId,
+            });
+          } catch {
+            // Mutation hook handles rollback/auth redirect.
+          }
         }
       } else if (originalColumnId !== overColumnId) {
         // Cross-column move - temp state already updated in handleDragOver
@@ -356,13 +364,17 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
           dropIndex > 0 ? otherDestTasks[dropIndex - 1]?.id : undefined;
         const beforeTaskId = otherDestTasks[dropIndex]?.id;
 
-        await moveTaskMutation.mutateAsync({
-          boardId,
-          taskId: active.id as string,
-          newColumnId: overColumnId,
-          afterTaskId,
-          beforeTaskId,
-        });
+        try {
+          await moveTaskMutation.mutateAsync({
+            boardId,
+            taskId: active.id as string,
+            newColumnId: overColumnId,
+            afterTaskId,
+            beforeTaskId,
+          });
+        } catch {
+          // Mutation hook handles rollback/auth redirect.
+        }
       }
 
       setTempTasks(null);

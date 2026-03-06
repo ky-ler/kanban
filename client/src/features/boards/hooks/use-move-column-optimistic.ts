@@ -3,6 +3,7 @@ import { moveColumn } from "@/api/gen/endpoints/column-controller/column-control
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useBoardWebSocket } from "../context/board-websocket-context";
 import type { BoardDto, MoveColumnRequest } from "@/api/gen/model";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface UseMoveColumnOptimisticParams {
   boardId: string;
@@ -101,7 +102,7 @@ export const useMoveColumnOptimistic = (boardId: string) => {
       return { previousBoard };
     },
 
-    onError: (_err, _variables, context) => {
+    onError: (error, _variables, context) => {
       // Rollback to previous state on error
       if (context?.previousBoard) {
         queryClient.setQueryData(
@@ -109,6 +110,7 @@ export const useMoveColumnOptimistic = (boardId: string) => {
           context.previousBoard,
         );
       }
+      handleMutationAuthError(error);
     },
 
     onSettled: (_data, error, variables) => {

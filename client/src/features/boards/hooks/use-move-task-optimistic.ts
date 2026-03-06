@@ -3,6 +3,7 @@ import { moveTask } from "@/api/gen/endpoints/task-controller/task-controller";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useBoardWebSocket } from "../context/board-websocket-context";
 import type { BoardDto, MoveTaskRequest } from "@/api/gen/model";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface UseMoveTaskOptimisticParams {
   boardId: string;
@@ -113,7 +114,7 @@ export const useMoveTaskOptimistic = (boardId: string) => {
       return { previousBoard };
     },
 
-    onError: (_err, _variables, context) => {
+    onError: (error, _variables, context) => {
       // Rollback to previous state on error
       if (context?.previousBoard) {
         queryClient.setQueryData(
@@ -121,6 +122,7 @@ export const useMoveTaskOptimistic = (boardId: string) => {
           context.previousBoard,
         );
       }
+      handleMutationAuthError(error);
     },
 
     onSettled: (_data, error, variables) => {
