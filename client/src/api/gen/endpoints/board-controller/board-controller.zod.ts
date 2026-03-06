@@ -445,3 +445,23 @@ export const getTasksForBoardResponseItem = zod.object({
   hasDescription: zod.boolean(),
 });
 export const getTasksForBoardResponse = zod.array(getTasksForBoardResponseItem);
+
+export const getArchivedBoardsForUserResponseCompletedTasksMin = 0;
+
+export const getArchivedBoardsForUserResponseTotalTasksMin = 0;
+
+export const getArchivedBoardsForUserResponseItem = zod.object({
+  id: zod.string().uuid(),
+  name: zod.string().min(1),
+  description: zod.string().optional(),
+  dateModified: zod.string(),
+  completedTasks: zod
+    .number()
+    .min(getArchivedBoardsForUserResponseCompletedTasksMin),
+  totalTasks: zod.number().min(getArchivedBoardsForUserResponseTotalTasksMin),
+  isArchived: zod.boolean(),
+  isFavorite: zod.boolean(),
+});
+export const getArchivedBoardsForUserResponse = zod.array(
+  getArchivedBoardsForUserResponseItem,
+);

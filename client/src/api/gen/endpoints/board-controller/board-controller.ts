@@ -2011,3 +2011,432 @@ export function useGetTasksForBoardSuspense<
 
   return query;
 }
+
+export type getArchivedBoardsForUserResponse200 = {
+  data: BoardSummary[];
+  status: 200;
+};
+
+export type getArchivedBoardsForUserResponseSuccess =
+  getArchivedBoardsForUserResponse200 & {
+    headers: Headers;
+  };
+export type getArchivedBoardsForUserResponse =
+  getArchivedBoardsForUserResponseSuccess;
+
+export const getGetArchivedBoardsForUserUrl = () => {
+  return `/boards/archived`;
+};
+
+export const getArchivedBoardsForUser = async (
+  options?: RequestInit,
+): Promise<getArchivedBoardsForUserResponse> => {
+  return apiClient<getArchivedBoardsForUserResponse>(
+    getGetArchivedBoardsForUserUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetArchivedBoardsForUserInfiniteQueryKey = () => {
+  return ["infinite", `/boards/archived`] as const;
+};
+
+export const getGetArchivedBoardsForUserQueryKey = () => {
+  return [`/boards/archived`] as const;
+};
+
+export const getGetArchivedBoardsForUserInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof getArchivedBoardsForUser>>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseInfiniteQueryOptions<
+      Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+      TError,
+      TData
+    >
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetArchivedBoardsForUserInfiniteQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+  > = ({ signal }) => getArchivedBoardsForUser({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GetArchivedBoardsForUserInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+>;
+export type GetArchivedBoardsForUserInfiniteQueryError = unknown;
+
+export function useGetArchivedBoardsForUserInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getArchivedBoardsForUser>>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+          TError,
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetArchivedBoardsForUserInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getArchivedBoardsForUser>>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+          TError,
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetArchivedBoardsForUserInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getArchivedBoardsForUser>>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGetArchivedBoardsForUserInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getArchivedBoardsForUser>>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetArchivedBoardsForUserInfiniteQueryOptions(options);
+
+  const query = useInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getGetArchivedBoardsForUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+      TError,
+      TData
+    >
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetArchivedBoardsForUserQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+  > = ({ signal }) => getArchivedBoardsForUser({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GetArchivedBoardsForUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+>;
+export type GetArchivedBoardsForUserQueryError = unknown;
+
+export function useGetArchivedBoardsForUser<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+          TError,
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetArchivedBoardsForUser<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+          TError,
+          Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetArchivedBoardsForUser<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGetArchivedBoardsForUser<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetArchivedBoardsForUserQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getGetArchivedBoardsForUserSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+      TError,
+      TData
+    >
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetArchivedBoardsForUserQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+  > = ({ signal }) => getArchivedBoardsForUser({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GetArchivedBoardsForUserSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getArchivedBoardsForUser>>
+>;
+export type GetArchivedBoardsForUserSuspenseQueryError = unknown;
+
+export function useGetArchivedBoardsForUserSuspense<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetArchivedBoardsForUserSuspense<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetArchivedBoardsForUserSuspense<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGetArchivedBoardsForUserSuspense<
+  TData = Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getArchivedBoardsForUser>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetArchivedBoardsForUserSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
