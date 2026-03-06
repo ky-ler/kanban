@@ -29,7 +29,11 @@ public class BoardAccess extends BaseAccess {
      */
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public boolean isCollaborator(@NonNull UUID boardId) {
-        String requestUserId = currentUserId();
+        return isCollaborator(currentUserId(), boardId);
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    public boolean isCollaborator(@NonNull String requestUserId, @NonNull UUID boardId) {
         boolean requestUserIsCollaborator =
                 boardUserRepository.existsByBoardIdAndUserId(boardId, requestUserId);
         if (!requestUserIsCollaborator) {
