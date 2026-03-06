@@ -15,7 +15,9 @@ import { ErrorPage } from "@/components/error-page";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => <RootComponent />,
-  errorComponent: () => <ErrorPage />,
+  errorComponent: ({ error, reset }) => (
+    <ErrorPage error={error} reset={reset} />
+  ),
 });
 
 function RootComponent() {

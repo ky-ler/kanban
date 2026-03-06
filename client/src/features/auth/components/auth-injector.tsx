@@ -7,13 +7,10 @@ export const AuthInjector = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      setAuthTokenGetter(getAccessTokenSilently);
+      setAuthTokenGetter(async () => getAccessTokenSilently());
     } else {
-      setAuthTokenGetter(async () => {
-        throw new Error("User is not authenticated.");
-      });
+      setAuthTokenGetter(async () => null);
     }
   }, [getAccessTokenSilently, isAuthenticated]);
-
   return null;
 };

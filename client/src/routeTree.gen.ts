@@ -14,6 +14,8 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as ProtectedRouteImport } from './routes/_protected/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as InviteCodeImport } from './routes/invite/$code'
+import { Route as AuthLoginImport } from './routes/auth/login'
+import { Route as AuthCallbackImport } from './routes/auth/callback'
 import { Route as ProtectedSettingsImport } from './routes/_protected/settings'
 import { Route as ProtectedBoardsIndexImport } from './routes/_protected/boards/index'
 import { Route as ProtectedBoardsCreateImport } from './routes/_protected/boards/create'
@@ -39,6 +41,18 @@ const IndexRoute = IndexImport.update({
 const InviteCodeRoute = InviteCodeImport.update({
   id: '/invite/$code',
   path: '/invite/$code',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthLoginRoute = AuthLoginImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthCallbackRoute = AuthCallbackImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -118,6 +132,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof ProtectedSettingsImport
       parentRoute: typeof ProtectedRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginImport
+      parentRoute: typeof rootRoute
     }
     '/invite/$code': {
       id: '/invite/$code'
@@ -224,6 +252,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof ProtectedRouteRouteWithChildren
   '/settings': typeof ProtectedSettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/login': typeof AuthLoginRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards/archived': typeof ProtectedBoardsArchivedRoute
@@ -238,6 +268,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof ProtectedRouteRouteWithChildren
   '/settings': typeof ProtectedSettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/login': typeof AuthLoginRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards/archived': typeof ProtectedBoardsArchivedRoute
@@ -253,6 +285,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/_protected/settings': typeof ProtectedSettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/login': typeof AuthLoginRoute
   '/invite/$code': typeof InviteCodeRoute
   '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/_protected/boards/archived': typeof ProtectedBoardsArchivedRoute
@@ -269,6 +303,8 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/settings'
+    | '/auth/callback'
+    | '/auth/login'
     | '/invite/$code'
     | '/boards/$boardId'
     | '/boards/archived'
@@ -282,6 +318,8 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/settings'
+    | '/auth/callback'
+    | '/auth/login'
     | '/invite/$code'
     | '/boards/$boardId'
     | '/boards/archived'
@@ -295,6 +333,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_protected'
     | '/_protected/settings'
+    | '/auth/callback'
+    | '/auth/login'
     | '/invite/$code'
     | '/_protected/boards/$boardId'
     | '/_protected/boards/archived'
@@ -309,12 +349,16 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthLoginRoute: typeof AuthLoginRoute
   InviteCodeRoute: typeof InviteCodeRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthLoginRoute: AuthLoginRoute,
   InviteCodeRoute: InviteCodeRoute,
 }
 
@@ -330,6 +374,8 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/_protected",
+        "/auth/callback",
+        "/auth/login",
         "/invite/$code"
       ]
     },
@@ -349,6 +395,12 @@ export const routeTree = rootRoute
     "/_protected/settings": {
       "filePath": "_protected/settings.tsx",
       "parent": "/_protected"
+    },
+    "/auth/callback": {
+      "filePath": "auth/callback.tsx"
+    },
+    "/auth/login": {
+      "filePath": "auth/login.tsx"
     },
     "/invite/$code": {
       "filePath": "invite/$code.tsx"
