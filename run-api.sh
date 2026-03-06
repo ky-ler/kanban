@@ -2,4 +2,4 @@
 set -a
 source .env
 set +a
-cd api && ./mvnw spring-boot:run "$@"
+cd api && ./mvnw clean spring-boot:run -Dspring-boot.run.profiles=dev "$@"
