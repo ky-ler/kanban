@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/kanban}
+    username: ${DB_USERNAME:username}
+    password: ${DB_PASSWORD:password}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:https://dev-qprlf4kpcqixju57.us.auth0.com/}
+          audiences: ${JWT_AUDIENCES:https://kanban-api}
+
+logging:
+  level:
+    com.kylerriggs.kanban: DEBUG
+
+kanban:
+  security:
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
