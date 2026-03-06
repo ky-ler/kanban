@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,16 +22,18 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private final ErrorResponseFactory errorResponseFactory;
+
+    public GlobalExceptionHandler(ErrorResponseFactory errorResponseFactory) {
+        this.errorResponseFactory = errorResponseFactory;
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex, WebRequest request) {
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.NOT_FOUND.value(),
-                        "Not Found",
-                        ex.getMessage());
+                errorResponseFactory.create(
+                        HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", ex.getMessage(), request);
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
@@ -38,11 +41,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBoardLimitExceededException(
             BoardLimitExceededException ex, WebRequest request) {
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.CONFLICT.value(),
-                        "Board Limit Exceeded",
-                        ex.getMessage());
+                errorResponseFactory.create(
+                        HttpStatus.CONFLICT, "BOARD_LIMIT_EXCEEDED", ex.getMessage(), request);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
@@ -50,11 +50,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBoardAccessException(
             BoardAccessException ex, WebRequest request) {
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.FORBIDDEN.value(),
-                        "Forbidden",
-                        ex.getMessage());
+                errorResponseFactory.create(
+                        HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), request);
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
@@ -62,11 +59,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(
             UnauthorizedException ex, WebRequest request) {
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "Unauthorized",
-                        ex.getMessage());
+                errorResponseFactory.create(
+                        HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", ex.getMessage(), request);
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
@@ -74,11 +68,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleForbiddenException(
             ForbiddenException ex, WebRequest request) {
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.FORBIDDEN.value(),
-                        "Forbidden",
-                        ex.getMessage());
+                errorResponseFactory.create(
+                        HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), request);
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(
+            AuthorizationDeniedException ex, WebRequest request) {
+        ErrorResponse response =
+                errorResponseFactory.create(
+                        HttpStatus.FORBIDDEN,
+                        "FORBIDDEN",
+                        "You are not authorized to access this resource.",
+                        request);
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
@@ -86,11 +89,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadRequestException(
             BadRequestException ex, WebRequest request) {
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Bad Request",
-                        ex.getMessage());
+                errorResponseFactory.create(
+                        HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), request);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -103,12 +103,11 @@ public class GlobalExceptionHandler {
                 .forEach(error -> fieldErrors.put(error.getField(), error.getDefaultMessage()));
 
         ValidationErrorResponse response =
-                new ValidationErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Validation Failed",
+                errorResponseFactory.createValidation(
+                        "VALIDATION_FAILED",
                         "One or more fields failed validation",
-                        fieldErrors);
+                        fieldErrors,
+                        request);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -124,12 +123,11 @@ public class GlobalExceptionHandler {
                                         violation.getMessage()));
 
         ValidationErrorResponse response =
-                new ValidationErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Validation Failed",
+                errorResponseFactory.createValidation(
+                        "VALIDATION_FAILED",
                         "One or more constraints were violated",
-                        fieldErrors);
+                        fieldErrors,
+                        request);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -138,11 +136,11 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException ex, WebRequest request) {
         log.debug("Malformed JSON request: {}", ex.getMessage());
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Bad Request",
-                        "Malformed request body");
+                errorResponseFactory.create(
+                        HttpStatus.BAD_REQUEST,
+                        "MALFORMED_REQUEST",
+                        "Malformed request body",
+                        request);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -151,11 +149,11 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException ex, WebRequest request) {
         log.warn("Data integrity violation: {}", ex.getMessage());
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.CONFLICT.value(),
-                        "Conflict",
-                        "The operation could not be completed due to a data conflict");
+                errorResponseFactory.create(
+                        HttpStatus.CONFLICT,
+                        "DATA_CONFLICT",
+                        "The operation could not be completed due to a data conflict",
+                        request);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
@@ -164,11 +162,11 @@ public class GlobalExceptionHandler {
             ObjectOptimisticLockingFailureException ex, WebRequest request) {
         log.info("Optimistic locking failure: {}", ex.getMessage());
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.CONFLICT.value(),
-                        "Conflict",
-                        "The resource was modified by another request. Please retry.");
+                errorResponseFactory.create(
+                        HttpStatus.CONFLICT,
+                        "OPTIMISTIC_LOCK_FAILED",
+                        "The resource was modified by another request. Please retry.",
+                        request);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
@@ -176,11 +174,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, WebRequest request) {
         log.error("Unexpected error occurred", ex);
         ErrorResponse response =
-                new ErrorResponse(
-                        System.currentTimeMillis(),
-                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        "Internal Server Error",
-                        "An unexpected error occurred");
+                errorResponseFactory.create(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "INTERNAL_ERROR",
+                        "An unexpected error occurred",
+                        request);
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
