@@ -26,15 +26,12 @@ export function useBoardSubscription(
 ) {
   const { enabled = true, onEvent } = options;
   const context = useBoardWebSocket();
-
-  // Store callback in ref to avoid re-registering listener on every render
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
   useEffect(() => {
     if (!context || !enabled || !onEvent) return;
 
-    // Register a listener with the provider
     const unsubscribe = context.registerListener((event) => {
       onEventRef.current?.(event);
     });

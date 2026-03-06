@@ -1,19 +1,19 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  useCallback,
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Client, type IMessage } from "@stomp/stompjs";
+import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { getAuthToken } from "@/features/auth/token-provider";
 import { env } from "@/config/env";
-import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 
-// Type definitions
 export interface BoardEvent {
   type: string;
   boardId: string;
@@ -21,10 +21,19 @@ export interface BoardEvent {
   details: string | null;
 }
 
-type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
+type ConnectionStatus =
+  | "connecting"
+  | "connected"
+  | "retrying"
+  | "disconnected"
+  | "error";
+
+type FailureReason = "auth" | "access" | "network" | "protocol" | null;
 
 interface BoardWebSocketContextType {
   status: ConnectionStatus;
+  retryAttempt: number;
+  failureReason: FailureReason;
   reconnect: () => void;
   disconnect: () => void;
   registerListener: (listener: (event: BoardEvent) => void) => () => void;
@@ -41,7 +50,6 @@ const MAX_RETRY_DELAY = 30000;
 const MAX_RETRY_ATTEMPTS = 5;
 const PENDING_MUTATION_TIMEOUT = 5000;
 
-// List of events that require full board structure invalidation
 const STRUCTURE_MODIFYING_EVENTS = [
   "TASK_CREATED",
   "TASK_UPDATED",
@@ -70,23 +78,108 @@ export function BoardWebSocketProvider({
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const connectRef = useRef<() => Promise<void>>(async () => {});
   const retryCountRef = useRef(0);
-  const [status, setStatus] = useState<ConnectionStatus>("disconnected");
-
-  // Set of listeners to notify when events arrive
+  const manualDisconnectRef = useRef(false);
+  const connectionGenerationRef = useRef(0);
+  const isMountedRef = useRef(false);
   const listenersRef = useRef<Set<(event: BoardEvent) => void>>(new Set());
-
-  // Track in-flight mutation entity IDs to suppress self-triggered WebSocket invalidation
   const pendingMutationsRef = useRef<Set<string>>(new Set());
   const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
+  const shouldLogDebug =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+  const [connection, setConnection] = useState<{
+    status: ConnectionStatus;
+    retryAttempt: number;
+    failureReason: FailureReason;
+  }>({
+    status: "disconnected",
+    retryAttempt: 0,
+    failureReason: null,
+  });
 
-  // Function to register a listener (used by hooks)
+  const clearReconnectTimeout = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearPendingMutationTimers = useCallback(() => {
+    pendingTimersRef.current.forEach((timer) => clearTimeout(timer));
+    pendingTimersRef.current.clear();
+    pendingMutationsRef.current.clear();
+  }, []);
+
+  const classifyFailureReason = useCallback((message?: string | null) => {
+    if (!message) {
+      return null;
+    }
+
+    const normalizedMessage = message.toLowerCase();
+
+    if (
+      normalizedMessage.includes("board_access_denied") ||
+      normalizedMessage.includes("not a collaborator")
+    ) {
+      return "access" as const;
+    }
+
+    if (
+      /authoriz|auth|forbidden|jwt/.test(normalizedMessage) &&
+      !normalizedMessage.includes("board subscription forbidden")
+    ) {
+      return "auth" as const;
+    }
+
+    if (normalizedMessage.includes("board subscription forbidden")) {
+      return "access" as const;
+    }
+
+    return null;
+  }, []);
+
+  const updateConnection = useCallback(
+    (
+      status: ConnectionStatus,
+      retryAttempt = retryCountRef.current,
+      failureReason: FailureReason = null,
+    ) => {
+      setConnection({ status, retryAttempt, failureReason });
+    },
+    [],
+  );
+
+  const handleAuthFailure = useCallback(() => {
+    clearReconnectTimeout();
+    const client = clientRef.current;
+    clientRef.current = null;
+    if (client?.active) {
+      void client.deactivate();
+    }
+    retryCountRef.current = 0;
+    updateConnection("error", 0, "auth");
+  }, [clearReconnectTimeout, updateConnection]);
+
+  const handleAccessDenied = useCallback(() => {
+    clearReconnectTimeout();
+    const client = clientRef.current;
+    clientRef.current = null;
+    if (client?.active) {
+      void client.deactivate();
+    }
+    retryCountRef.current = 0;
+    updateConnection("error", 0, "access");
+  }, [clearReconnectTimeout, updateConnection]);
+
   const registerListener = useCallback(
     (listener: (event: BoardEvent) => void) => {
       listenersRef.current.add(listener);
-      // Return unsubscribe function
+
       return () => {
         listenersRef.current.delete(listener);
       };
@@ -94,169 +187,318 @@ export function BoardWebSocketProvider({
     [],
   );
 
-  // Register an entity ID as having a pending optimistic mutation
   const registerPendingMutation = useCallback((entityId: string) => {
     pendingMutationsRef.current.add(entityId);
-    // Auto-clear after timeout as a safety net
+
+    const existing = pendingTimersRef.current.get(entityId);
+    if (existing) {
+      clearTimeout(existing);
+    }
+
     const timer = setTimeout(() => {
       pendingMutationsRef.current.delete(entityId);
       pendingTimersRef.current.delete(entityId);
     }, PENDING_MUTATION_TIMEOUT);
-    // Clear any existing timer for this entity
-    const existing = pendingTimersRef.current.get(entityId);
-    if (existing) clearTimeout(existing);
+
     pendingTimersRef.current.set(entityId, timer);
   }, []);
 
-  // Clear a pending mutation (called after mutation settles)
   const clearPendingMutation = useCallback((entityId: string) => {
     pendingMutationsRef.current.delete(entityId);
     const timer = pendingTimersRef.current.get(entityId);
+
     if (timer) {
       clearTimeout(timer);
       pendingTimersRef.current.delete(entityId);
     }
   }, []);
 
-  const connect = useCallback(async () => {
-    if (!enabled || !boardId) return;
+  const scheduleReconnect = useCallback(
+    (failureReason: Exclude<FailureReason, null>, generation: number) => {
+      if (
+        manualDisconnectRef.current ||
+        !isMountedRef.current ||
+        connectionGenerationRef.current !== generation
+      ) {
+        return;
+      }
 
-    // Clean up existing connection
-    if (clientRef.current?.active) {
-      clientRef.current.deactivate();
+      if (reconnectTimeoutRef.current) {
+        return;
+      }
+
+      if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
+        updateConnection("error", retryCountRef.current, failureReason);
+        return;
+      }
+
+      retryCountRef.current += 1;
+      const nextAttempt = retryCountRef.current;
+      const delay = Math.min(
+        INITIAL_RETRY_DELAY * Math.pow(2, nextAttempt - 1),
+        MAX_RETRY_DELAY,
+      );
+
+      updateConnection("retrying", nextAttempt, failureReason);
+      reconnectTimeoutRef.current = setTimeout(() => {
+        reconnectTimeoutRef.current = null;
+
+        if (
+          manualDisconnectRef.current ||
+          !isMountedRef.current ||
+          connectionGenerationRef.current !== generation
+        ) {
+          return;
+        }
+
+        void connectRef.current();
+      }, delay);
+    },
+    [updateConnection],
+  );
+
+  const connect = useCallback(async () => {
+    if (!enabled || !boardId) {
+      return;
     }
 
-    setStatus("connecting");
+    manualDisconnectRef.current = false;
+    clearReconnectTimeout();
+    connectionGenerationRef.current += 1;
+    const generation = connectionGenerationRef.current;
+    const existingClient = clientRef.current;
+    clientRef.current = null;
+
+    if (existingClient?.active) {
+      void existingClient.deactivate();
+    }
+
+    updateConnection("connecting", retryCountRef.current, null);
 
     try {
       const token = await getAuthToken();
-      // Convert http(s) to ws(s) for native WebSocket
+
+      if (
+        !isMountedRef.current ||
+        manualDisconnectRef.current ||
+        connectionGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      if (!token) {
+        handleAuthFailure();
+        return;
+      }
+
       const baseUrl = env.VITE_API_URL.replace(/\/$/, "").replace(
         /^http/,
         "ws",
       );
       const wsUrl = `${baseUrl}/ws`;
-      console.log("[WebSocket] Connecting to:", wsUrl);
+
+      if (shouldLogDebug) {
+        console.debug("[WebSocket] Connecting to:", wsUrl);
+      }
 
       const client = new Client({
         brokerURL: wsUrl,
         connectHeaders: {
           Authorization: `Bearer ${token}`,
         },
-        // debug: (str) => {
-        //   console.debug("[STOMP]", str);
-        // },
-        reconnectDelay: 0, // We handle reconnection ourselves
-
+        reconnectDelay: 0,
+        heartbeatIncoming: 20000,
+        heartbeatOutgoing: 20000,
         onConnect: () => {
-          retryCountRef.current = 0;
-          setStatus("connected");
-          console.log(
-            `[WebSocket] Connected, subscribing to /topic/boards/${boardId}`,
-          );
-
-          // Subscribe to the board's topic
-          client.subscribe(`/topic/boards/${boardId}`, (message: IMessage) => {
-            try {
-              const event = JSON.parse(message.body) as BoardEvent;
-              console.log("[WebSocket] Received event:", event);
-
-              // 1. Invalidate queries if needed (global handling)
-              // Skip invalidation for events triggered by this client's own mutations
-              const isPending =
-                event.entityId &&
-                pendingMutationsRef.current.has(event.entityId);
-              if (
-                STRUCTURE_MODIFYING_EVENTS.includes(event.type) &&
-                !isPending
-              ) {
-                queryClient.invalidateQueries({
-                  queryKey: getGetBoardQueryKey(boardId),
-                });
-              }
-
-              // 2. Notify all registered listeners
-              listenersRef.current.forEach((listener) => {
-                try {
-                  listener(event);
-                } catch (err) {
-                  console.error("Error in board event listener:", err);
-                }
-              });
-            } catch (e) {
-              console.error("[WebSocket] Error parsing message:", e);
-            }
-          });
-        },
-
-        onStompError: (frame) => {
-          console.error("[WebSocket] STOMP error:", frame.headers.message);
-          setStatus("error");
-        },
-
-        onWebSocketClose: () => {
-          console.log("[WebSocket] Connection closed");
-          setStatus("disconnected");
-          clientRef.current = null;
-
-          // Check if max retries exceeded
-          if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
-            setStatus("disconnected");
+          if (
+            !isMountedRef.current ||
+            manualDisconnectRef.current ||
+            connectionGenerationRef.current !== generation
+          ) {
+            void client.deactivate();
             return;
           }
 
-          // Calculate exponential backoff delay
-          const delay = Math.min(
-            INITIAL_RETRY_DELAY * Math.pow(2, retryCountRef.current),
-            MAX_RETRY_DELAY,
-          );
-          retryCountRef.current += 1;
+          retryCountRef.current = 0;
+          updateConnection("connected", 0, null);
 
-          // Attempt reconnection with backoff
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
-          }, delay);
+          client.subscribe(
+            `/topic/boards/${boardId}`,
+            (message: IMessage) => {
+              try {
+                const event = JSON.parse(message.body) as BoardEvent;
+
+                if (shouldLogDebug) {
+                  console.debug("[WebSocket] Received event:", event);
+                }
+
+                const isPending =
+                  event.entityId &&
+                  pendingMutationsRef.current.has(event.entityId);
+
+                if (
+                  STRUCTURE_MODIFYING_EVENTS.includes(event.type) &&
+                  !isPending
+                ) {
+                  queryClient.invalidateQueries({
+                    queryKey: getGetBoardQueryKey(boardId),
+                  });
+                }
+
+                listenersRef.current.forEach((listener) => {
+                  try {
+                    listener(event);
+                  } catch (error) {
+                    console.error("Error in board event listener:", error);
+                  }
+                });
+              } catch (error) {
+                console.error("[WebSocket] Error parsing message:", error);
+              }
+            },
+            {
+              Authorization: `Bearer ${token}`,
+            },
+          );
+        },
+        onStompError: (frame) => {
+          const message =
+            frame.headers.message ?? frame.body ?? "Unknown STOMP error";
+          const failureReason = classifyFailureReason(message);
+
+          console.error("[WebSocket] STOMP error:", message);
+
+          if (failureReason === "access") {
+            handleAccessDenied();
+            return;
+          }
+
+          if (failureReason === "auth") {
+            handleAuthFailure();
+            return;
+          }
+
+          if (
+            manualDisconnectRef.current ||
+            !isMountedRef.current ||
+            connectionGenerationRef.current !== generation
+          ) {
+            return;
+          }
+
+          scheduleReconnect("protocol", generation);
+        },
+        onWebSocketClose: (event) => {
+          clientRef.current = null;
+
+          if (
+            manualDisconnectRef.current ||
+            !isMountedRef.current ||
+            connectionGenerationRef.current !== generation
+          ) {
+            updateConnection("disconnected", 0, null);
+            return;
+          }
+
+          const isAuthClose = event.code === 1008;
+          const failureReason =
+            classifyFailureReason(event.reason) ??
+            (isAuthClose ? "auth" : null);
+
+          if (failureReason === "access") {
+            handleAccessDenied();
+            return;
+          }
+
+          if (failureReason === "auth") {
+            handleAuthFailure();
+            return;
+          }
+
+          scheduleReconnect("network", generation);
+        },
+        onWebSocketError: () => {
+          if (
+            manualDisconnectRef.current ||
+            !isMountedRef.current ||
+            connectionGenerationRef.current !== generation
+          ) {
+            return;
+          }
+
+          scheduleReconnect("network", generation);
         },
       });
 
       clientRef.current = client;
       client.activate();
-    } catch (e) {
-      console.error("[WebSocket] Connection error:", e);
-      setStatus("error");
+    } catch (error) {
+      console.error("[WebSocket] Connection error:", error);
+
+      if (
+        !isMountedRef.current ||
+        manualDisconnectRef.current ||
+        connectionGenerationRef.current !== generation
+      ) {
+        return;
+      }
+
+      handleAuthFailure();
     }
-  }, [boardId, enabled, queryClient]);
+  }, [
+    boardId,
+    clearReconnectTimeout,
+    classifyFailureReason,
+    enabled,
+    handleAuthFailure,
+    handleAccessDenied,
+    queryClient,
+    scheduleReconnect,
+    shouldLogDebug,
+    updateConnection,
+  ]);
+
+  connectRef.current = connect;
 
   const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
+    manualDisconnectRef.current = true;
+    connectionGenerationRef.current += 1;
+    clearReconnectTimeout();
+    const client = clientRef.current;
+    clientRef.current = null;
+
+    if (client?.active) {
+      void client.deactivate();
     }
-    if (clientRef.current?.active) {
-      clientRef.current.deactivate();
-      clientRef.current = null;
-    }
+
     retryCountRef.current = 0;
-    setStatus("disconnected");
-  }, []);
+    updateConnection("disconnected", 0, null);
+  }, [clearReconnectTimeout, updateConnection]);
 
   const reconnect = useCallback(() => {
+    manualDisconnectRef.current = false;
     retryCountRef.current = 0;
-    connect();
+    void connect();
   }, [connect]);
 
-  // Connect on mount (or when boardId changes)
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (enabled) {
-      connect();
+      void connect();
     }
+
     return () => {
+      isMountedRef.current = false;
+      clearPendingMutationTimers();
       disconnect();
     };
-  }, [connect, disconnect, enabled]);
+  }, [clearPendingMutationTimers, connect, disconnect, enabled]);
 
   const value = {
-    status,
+    status: connection.status,
+    retryAttempt: connection.retryAttempt,
+    failureReason: connection.failureReason,
     reconnect,
     disconnect,
     registerListener,
