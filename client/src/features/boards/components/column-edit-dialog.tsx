@@ -21,6 +21,7 @@ import {
   FieldLabel,
   FieldSet,
 } from "@/components/ui/field";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface ColumnEditDialogProps {
   open: boolean;
@@ -44,11 +45,18 @@ export const ColumnEditDialog = ({
     },
     validators: { onSubmit: updateColumnBody },
     onSubmit: async ({ value }) => {
-      await updateColumnMutation.mutateAsync({
-        boardId,
-        columnId: column.id,
-        data: { name: value.name },
-      });
+      try {
+        await updateColumnMutation.mutateAsync({
+          boardId,
+          columnId: column.id,
+          data: { name: value.name },
+        });
+      } catch (error) {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
+        throw error;
+      }
       queryClient.invalidateQueries({
         queryKey: getGetBoardQueryKey(boardId),
       });

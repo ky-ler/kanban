@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface ColumnDeleteDialogProps {
   open: boolean;
@@ -44,7 +45,10 @@ export const ColumnDeleteDialog = ({
         queryKey: getGetBoardQueryKey(boardId),
       });
       onOpenChange(false);
-    } catch {
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        return;
+      }
       setError(
         "Cannot delete column. Make sure all tasks are moved or deleted first.",
       );

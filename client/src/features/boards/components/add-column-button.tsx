@@ -23,6 +23,7 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Plus } from "lucide-react";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface AddColumnButtonProps {
   boardId: string;
@@ -39,10 +40,17 @@ export const AddColumnButton = ({ boardId }: AddColumnButtonProps) => {
     },
     validators: { onSubmit: createColumnBody },
     onSubmit: async ({ value }) => {
-      await createColumnMutation.mutateAsync({
-        boardId,
-        data: { name: value.name },
-      });
+      try {
+        await createColumnMutation.mutateAsync({
+          boardId,
+          data: { name: value.name },
+        });
+      } catch (error) {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
+        throw error;
+      }
       queryClient.invalidateQueries({
         queryKey: getGetBoardQueryKey(boardId),
       });

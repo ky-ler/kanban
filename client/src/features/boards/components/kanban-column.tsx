@@ -39,6 +39,7 @@ import { updateColumnArchiveBody } from "@/api/gen/endpoints/column-controller/c
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface KanbanColumnProps {
   column: ColumnDto;
@@ -81,7 +82,10 @@ export const KanbanColumn = ({
           queryKey: getGetBoardQueryKey(boardId),
         });
       },
-      onError: () => {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
         toast.error("Failed to update column archive status");
       },
     },
@@ -100,7 +104,7 @@ export const KanbanColumn = ({
     }
   }, [column.isArchived]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmed = title.trim();
     if (!trimmed) return;
 
@@ -111,16 +115,19 @@ export const KanbanColumn = ({
       return;
     }
 
-    toast.promise(
-      createTaskMutation.mutateAsync({
+    const toastId = toast.loading("Creating task...");
+    try {
+      await createTaskMutation.mutateAsync({
         data: payload,
-      }),
-      {
-        loading: "Creating task...",
-        success: "Task created!",
-        error: "Failed to create task",
-      },
-    );
+      });
+      toast.success("Task created!", { id: toastId });
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        toast.dismiss(toastId);
+        return;
+      }
+      toast.error("Failed to create task", { id: toastId });
+    }
   };
 
   const handleToggleArchive = async () => {
@@ -147,20 +154,25 @@ export const KanbanColumn = ({
       return;
     }
 
-    toast.promise(
-      updateColumnArchiveMutation.mutateAsync({
+    const toastId = toast.loading(
+      shouldArchive ? "Archiving column..." : "Unarchiving column...",
+    );
+    try {
+      await updateColumnArchiveMutation.mutateAsync({
         boardId,
         columnId: column.id,
         data: payload,
-      }),
-      {
-        loading: shouldArchive
-          ? "Archiving column..."
-          : "Unarchiving column...",
-        success: shouldArchive ? "Column archived" : "Column unarchived",
-        error: "Failed to update column archive status",
-      },
-    );
+      });
+      toast.success(shouldArchive ? "Column archived" : "Column unarchived", {
+        id: toastId,
+      });
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        toast.dismiss(toastId);
+        return;
+      }
+      toast.error("Failed to update column archive status", { id: toastId });
+    }
   };
 
   const { setNodeRef } = useDroppable({
