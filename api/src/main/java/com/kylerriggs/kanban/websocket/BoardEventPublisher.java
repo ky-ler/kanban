@@ -32,7 +32,7 @@ public class BoardEventPublisher {
      * @param entityId The ID of the entity that changed (can be null)
      */
     public void publish(@NonNull String type, @NonNull UUID boardId, @Nullable UUID entityId) {
-        log.info("Publishing event: type={}, boardId={}, entityId={}", type, boardId, entityId);
+        log.debug("Publishing event: type={}, boardId={}, entityId={}", type, boardId, entityId);
         BoardEvent event = new BoardEvent(type, boardId, entityId, null);
         eventPublisher.publishEvent(new BoardEventWrapper(event));
     }

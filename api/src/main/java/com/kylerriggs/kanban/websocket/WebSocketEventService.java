@@ -29,8 +29,8 @@ public class WebSocketEventService {
      */
     public void broadcast(@NonNull UUID boardId, @NonNull BoardEvent event) {
         String destination = "/topic/boards/" + boardId;
-        log.info("WebSocket broadcasting: {} to {}", event.type(), destination);
+        log.debug("WebSocket broadcasting: {} to {}", event.type(), destination);
         messagingTemplate.convertAndSend(destination, event);
-        log.info("WebSocket broadcast complete for: {}", event.type());
+        log.debug("WebSocket broadcast complete for: {}", event.type());
     }
 }

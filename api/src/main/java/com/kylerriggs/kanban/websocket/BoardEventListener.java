@@ -25,7 +25,7 @@ public class BoardEventListener {
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleBoardEvent(BoardEventPublisher.BoardEventWrapper wrapper) {
-        log.info(
+        log.debug(
                 "Received event from publisher, broadcasting: type={}, boardId={}",
                 wrapper.event().type(),
                 wrapper.event().boardId());
