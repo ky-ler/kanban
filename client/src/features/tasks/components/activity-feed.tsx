@@ -147,7 +147,7 @@ export function ActivityFeed({
 
   if (commentsError || activityError) {
     return (
-      <div className="text-muted-foreground py-4 text-center text-sm">
+      <div className="text-muted-foreground py-4 text-center text-xs">
         Failed to load activity
       </div>
     );
@@ -187,7 +187,7 @@ export function ActivityFeed({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="text-muted-foreground h-4 w-4" />
-          <span className="text-sm font-medium">Comments and activity</span>
+          <span className="text-xs font-medium">Comments and activity</span>
         </div>
         {hasActivity && (
           <Button
@@ -223,10 +223,10 @@ export function ActivityFeed({
           {!hasComments && !hasActivity ? (
             <>
               <History className="mb-2 h-8 w-8" />
-              <p className="text-sm">No activity yet</p>
+              <p className="text-xs">No activity yet</p>
             </>
           ) : (
-            <p className="text-sm">No comments yet</p>
+            <p className="text-xs">No comments yet</p>
           )}
         </div>
       ) : (

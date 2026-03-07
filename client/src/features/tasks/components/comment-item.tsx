@@ -127,7 +127,7 @@ export function CommentItem({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-xs">
           <span className="truncate font-medium">
             {comment.author.username}
           </span>
@@ -186,7 +186,7 @@ export function CommentItem({
               }}
               style={{ cursor: isAuthor ? "pointer" : "default" }}
             >
-              <div className="text-sm">
+              <div className="text-xs">
                 <MarkdownView value={comment.content} />
               </div>
             </div>

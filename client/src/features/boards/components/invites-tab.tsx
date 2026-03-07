@@ -18,6 +18,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
 import { Copy, Link2, Trash2, Clock, Users, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -158,67 +164,73 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
   return (
     <div className="space-y-6">
       {/* Create Invite Form */}
-      <div className="space-y-4 rounded-lg border p-4">
-        <h4 className="flex items-center gap-2 font-medium">
-          <Link2 className="h-4 w-4" />
-          Create New Invite
-        </h4>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-muted-foreground text-sm">
-              Expires after
-            </label>
-            <Select
-              value={expiration}
-              onValueChange={(v) =>
-                setExpiration(v as CreateInviteRequestExpiration)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {EXPIRATION_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-4 w-4" />
+            Create New Invite
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-muted-foreground text-xs">
+                Expires after
+              </label>
+              <Select
+                value={expiration}
+                onValueChange={(v) =>
+                  setExpiration(v as CreateInviteRequestExpiration)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPIRATION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-muted-foreground text-xs">Max uses</label>
+              <Select
+                value={maxUses}
+                onValueChange={(v) =>
+                  setMaxUses(v as CreateInviteRequestMaxUses)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MAX_USES_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-muted-foreground text-sm">Max uses</label>
-            <Select
-              value={maxUses}
-              onValueChange={(v) => setMaxUses(v as CreateInviteRequestMaxUses)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MAX_USES_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <Button
-          onClick={handleCreateInvite}
-          disabled={createInviteMutation.isPending}
-          className="w-full"
-        >
-          {createInviteMutation.isPending
-            ? "Creating..."
-            : "Create Invite Link"}
-        </Button>
-      </div>
+          <Button
+            onClick={handleCreateInvite}
+            disabled={createInviteMutation.isPending}
+            className="w-full"
+          >
+            {createInviteMutation.isPending
+              ? "Creating..."
+              : "Create Invite Link"}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Invites List */}
       <div className="space-y-3">
-        <h4 className="text-muted-foreground text-sm font-medium">
+        <h4 className="text-muted-foreground text-xs font-medium">
           Active Invites ({invites.length})
         </h4>
         {isLoading ? (
@@ -237,86 +249,87 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
               const inactive = expired || maxedOut;
 
               return (
-                <div
+                <Card
                   key={invite.id}
-                  className={`space-y-2 rounded-lg border p-3 ${
-                    inactive ? "bg-muted/50 opacity-60" : "bg-card"
-                  }`}
+                  size="sm"
+                  className={inactive ? "opacity-60" : ""}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-                      {invite.code}
-                    </code>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyInviteLink(invite.code)}
-                        className="h-8 w-8 p-0"
-                      >
-                        {copiedCode === invite.code ? (
-                          <Check className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive h-8 w-8 p-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Revoke this invite?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This invite link will no longer work. This action
-                              cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <code className="bg-muted rounded-md px-2 py-1 font-mono text-xs">
+                        {invite.code}
+                      </code>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyInviteLink(invite.code)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {copiedCode === invite.code ? (
+                            <Check className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
                             <Button
-                              variant="destructive"
-                              onClick={() => handleRevokeInvite(invite.id)}
-                              disabled={revokeInviteMutation.isPending}
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive h-8 w-8 p-0"
                             >
-                              {revokeInviteMutation.isPending
-                                ? "Revoking..."
-                                : "Revoke"}
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Revoke this invite?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This invite link will no longer work. This
+                                action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <Button
+                                variant="destructive"
+                                onClick={() => handleRevokeInvite(invite.id)}
+                                disabled={revokeInviteMutation.isPending}
+                              >
+                                {revokeInviteMutation.isPending
+                                  ? "Revoking..."
+                                  : "Revoke"}
+                              </Button>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-muted-foreground flex items-center gap-4 text-xs">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {expired ? (
-                        <span className="text-destructive">Expired</span>
-                      ) : (
-                        getExpirationStatus(invite)
-                      )}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {maxedOut ? (
-                        <span className="text-destructive">
-                          Max uses reached
-                        </span>
-                      ) : (
-                        getUsageStatus(invite)
-                      )}
-                    </span>
-                  </div>
-                </div>
+                    <div className="text-muted-foreground flex items-center gap-4 text-xs">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {expired ? (
+                          <span className="text-destructive">Expired</span>
+                        ) : (
+                          getExpirationStatus(invite)
+                        )}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {maxedOut ? (
+                          <span className="text-destructive">
+                            Max uses reached
+                          </span>
+                        ) : (
+                          getUsageStatus(invite)
+                        )}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>

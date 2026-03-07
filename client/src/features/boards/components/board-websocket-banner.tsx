@@ -1,3 +1,8 @@
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+} from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -6,7 +11,6 @@ import {
 } from "@/features/auth/auth-navigation";
 import { useBoardWebSocket } from "@/features/boards/context/board-websocket-context";
 import { router } from "@/lib/router";
-import { cn } from "@/lib/utils";
 import { AlertCircle, WifiOff } from "lucide-react";
 
 export function BoardWebSocketBanner() {
@@ -59,13 +63,9 @@ export function BoardWebSocketBanner() {
   };
 
   return (
-    <div
-      className={cn(
-        "mx-4 mt-2 flex items-center gap-2 rounded-md px-3 py-2 text-sm",
-        isTerminalError
-          ? "bg-destructive/10 text-destructive"
-          : "bg-muted text-muted-foreground",
-      )}
+    <Alert
+      variant={isTerminalError ? "destructive" : "default"}
+      className="mx-4 mt-2"
     >
       {isTerminalError ? (
         context.failureReason === "access" ? (
@@ -76,18 +76,20 @@ export function BoardWebSocketBanner() {
       ) : (
         <Spinner className="size-4 shrink-0" />
       )}
-      <span className="flex-1">{message}</span>
+      <AlertDescription>{message}</AlertDescription>
       {isTerminalError && (
-        <Button
-          type="button"
-          size="sm"
-          variant={isTerminalError ? "destructive" : "secondary"}
-          className="h-7 shrink-0 px-2.5 text-xs"
-          onClick={handleAction}
-        >
-          {buttonLabel}
-        </Button>
+        <AlertAction>
+          <Button
+            type="button"
+            size="sm"
+            variant={isTerminalError ? "destructive" : "secondary"}
+            className="h-7 shrink-0 px-2.5 text-xs"
+            onClick={handleAction}
+          >
+            {buttonLabel}
+          </Button>
+        </AlertAction>
       )}
-    </div>
+    </Alert>
   );
 }

@@ -200,7 +200,7 @@ function InvitePage() {
             </Button>
           ) : (
             <div className="space-y-4">
-              <p className="text-muted-foreground text-center text-sm">
+              <p className="text-muted-foreground text-center text-xs">
                 Sign in to join this board
               </p>
               <Button onClick={handleSignIn} className="w-full" size="lg">

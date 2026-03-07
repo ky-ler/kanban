@@ -21,7 +21,7 @@ export function ActivityList({ boardId, taskId }: ActivityListProps) {
 
   if (error) {
     return (
-      <div className="text-muted-foreground py-4 text-center text-sm">
+      <div className="text-muted-foreground py-4 text-center text-xs">
         Failed to load activity
       </div>
     );
@@ -33,7 +33,7 @@ export function ActivityList({ boardId, taskId }: ActivityListProps) {
     return (
       <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
         <History className="mb-2 h-8 w-8" />
-        <p className="text-sm">No activity yet</p>
+        <p className="text-xs">No activity yet</p>
       </div>
     );
   }

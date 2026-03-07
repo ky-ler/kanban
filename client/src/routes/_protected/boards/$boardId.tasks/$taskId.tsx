@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -405,190 +406,192 @@ function TaskComponent() {
 
         {/* Main content area */}
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          <ScrollArea className="flex min-h-0 flex-1 flex-col">
           {/* Left side - Main content */}
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-6">
-                {/* Details grid */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  {/* Assignee */}
-                  <EditableSelectField
-                    icon={
-                      <User className="text-muted-foreground h-4 w-4 shrink-0" />
-                    }
-                    label="Assignee"
-                    value={task.data.assignedTo?.id ?? "__none__"}
-                    displayValue={
-                      task.data.assignedTo?.username || "Unassigned"
-                    }
-                    isEditing={editingField === "assignee"}
-                    onEdit={() => setEditingField("assignee")}
-                    onSave={(value) =>
-                      saveField(
-                        "assignee",
-                        value === "__none__" ? undefined : value,
-                      )
-                    }
-                    onCancel={() => setEditingField(null)}
-                    options={[
-                      { value: "__none__", label: "Unassigned" },
-                      ...(board?.data?.collaborators?.map((c) => ({
-                        value: c?.user?.id ?? "__none__",
-                        label: c?.user?.username ?? "",
-                      })) ?? []),
-                    ]}
-                  />
+          <div className="flex-1 p-6">
+            <div className="space-y-6">
+              {/* Details grid */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {/* Assignee */}
+                <EditableSelectField
+                  icon={
+                    <User className="text-muted-foreground h-4 w-4 shrink-0" />
+                  }
+                  label="Assignee"
+                  value={task.data.assignedTo?.id ?? "__none__"}
+                  displayValue={
+                    task.data.assignedTo?.username || "Unassigned"
+                  }
+                  isEditing={editingField === "assignee"}
+                  onEdit={() => setEditingField("assignee")}
+                  onSave={(value) =>
+                    saveField(
+                      "assignee",
+                      value === "__none__" ? undefined : value,
+                    )
+                  }
+                  onCancel={() => setEditingField(null)}
+                  options={[
+                    { value: "__none__", label: "Unassigned" },
+                    ...(board?.data?.collaborators?.map((c) => ({
+                      value: c?.user?.id ?? "__none__",
+                      label: c?.user?.username ?? "",
+                    })) ?? []),
+                  ]}
+                />
 
-                  {/* Column */}
-                  <EditableSelectField
-                    icon={
-                      <Columns className="text-muted-foreground h-4 w-4 shrink-0" />
-                    }
-                    label="Column"
-                    value={task.data.columnId}
-                    displayValue={columnName ?? ""}
-                    isEditing={editingField === "column"}
-                    onEdit={() => setEditingField("column")}
-                    onSave={(value) => saveField("column", value)}
-                    onCancel={() => setEditingField(null)}
-                    options={
-                      board?.data?.columns?.map((col) => ({
-                        value: col.id,
-                        label: col.name,
-                      })) ?? []
-                    }
-                  />
-
-                  {/* Due Date */}
-                  <EditableDateField
-                    icon={
-                      <CalendarIcon className="text-muted-foreground h-4 w-4 shrink-0" />
-                    }
-                    label="Due Date"
-                    value={task.data.dueDate ?? ""}
-                    displayValue={
-                      task.data.dueDate
-                        ? formatDate(task.data.dueDate)
-                        : "Not set"
-                    }
-                    isEditing={editingField === "dueDate"}
-                    onEdit={() => setEditingField("dueDate")}
-                    onSave={(value) => saveField("dueDate", value)}
-                    onCancel={() => setEditingField(null)}
-                  />
-
-                  {/* Priority */}
-                  <EditableSelectField
-                    icon={
-                      <Flag className="text-muted-foreground h-4 w-4 shrink-0" />
-                    }
-                    label="Priority"
-                    value={task.data.priority ?? "__none__"}
-                    displayValue={priorityLabel || "None"}
-                    isEditing={editingField === "priority"}
-                    onEdit={() => setEditingField("priority")}
-                    onSave={(value) =>
-                      saveField(
-                        "priority",
-                        value === "__none__" ? undefined : value,
-                      )
-                    }
-                    onCancel={() => setEditingField(null)}
-                    options={[
-                      { value: "__none__", label: "None" },
-                      { value: "LOW", label: "Low" },
-                      { value: "MEDIUM", label: "Medium" },
-                      { value: "HIGH", label: "High" },
-                      { value: "URGENT", label: "Urgent" },
-                    ]}
-                  />
-                </div>
-
-                <TaskStatusActions
-                  isArchived={task.data.isArchived}
-                  isPending={updateTaskStatusMutation.isPending}
-                  onToggleArchived={() =>
-                    updateStatus({ isArchived: !task.data.isArchived })
+                {/* Column */}
+                <EditableSelectField
+                  icon={
+                    <Columns className="text-muted-foreground h-4 w-4 shrink-0" />
+                  }
+                  label="Column"
+                  value={task.data.columnId}
+                  displayValue={columnName ?? ""}
+                  isEditing={editingField === "column"}
+                  onEdit={() => setEditingField("column")}
+                  onSave={(value) => saveField("column", value)}
+                  onCancel={() => setEditingField(null)}
+                  options={
+                    board?.data?.columns?.map((col) => ({
+                      value: col.id,
+                      label: col.name,
+                    })) ?? []
                   }
                 />
 
-                {/* Labels */}
-                <EditableLabels
-                  boardId={boardId}
-                  labels={task.data.labels ?? []}
-                  isEditing={editingField === "labels"}
-                  onEdit={() => setEditingField("labels")}
-                  onSave={(value) =>
-                    saveField("labels", value, { closeEditor: false })
+                {/* Due Date */}
+                <EditableDateField
+                  icon={
+                    <CalendarIcon className="text-muted-foreground h-4 w-4 shrink-0" />
                   }
+                  label="Due Date"
+                  value={task.data.dueDate ?? ""}
+                  displayValue={
+                    task.data.dueDate
+                      ? formatDate(task.data.dueDate)
+                      : "Not set"
+                  }
+                  isEditing={editingField === "dueDate"}
+                  onEdit={() => setEditingField("dueDate")}
+                  onSave={(value) => saveField("dueDate", value)}
                   onCancel={() => setEditingField(null)}
                 />
 
-                {/* Description */}
-                <EditableDescription
-                  value={task.data.description ?? ""}
-                  isEditing={editingField === "description"}
-                  onEdit={() => {
-                    setEditValue(task.data.description ?? "");
-                    setEditingField("description");
-                  }}
+                {/* Priority */}
+                <EditableSelectField
+                  icon={
+                    <Flag className="text-muted-foreground h-4 w-4 shrink-0" />
+                  }
+                  label="Priority"
+                  value={task.data.priority ?? "__none__"}
+                  displayValue={priorityLabel || "None"}
+                  isEditing={editingField === "priority"}
+                  onEdit={() => setEditingField("priority")}
                   onSave={(value) =>
-                    saveField("description", value || undefined)
+                    saveField(
+                      "priority",
+                      value === "__none__" ? undefined : value,
+                    )
                   }
                   onCancel={() => setEditingField(null)}
-                  editValue={editValue}
-                  setEditValue={setEditValue}
+                  options={[
+                    { value: "__none__", label: "None" },
+                    { value: "LOW", label: "Low" },
+                    { value: "MEDIUM", label: "Medium" },
+                    { value: "HIGH", label: "High" },
+                    { value: "URGENT", label: "Urgent" },
+                  ]}
                 />
+              </div>
 
-                {/* Metadata */}
-                <Separator />
-                <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-xs sm:gap-6">
-                  <div className="flex items-center gap-1.5">
-                    <User className="h-3 w-3" />
-                    <span>Created by {task.data.createdBy.username}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3 w-3" />
-                    <span>{formatDate(task.data.dateCreated)}</span>
-                  </div>
+              <TaskStatusActions
+                isArchived={task.data.isArchived}
+                isPending={updateTaskStatusMutation.isPending}
+                onToggleArchived={() =>
+                  updateStatus({ isArchived: !task.data.isArchived })
+                }
+              />
+
+              {/* Labels */}
+              <EditableLabels
+                boardId={boardId}
+                labels={task.data.labels ?? []}
+                isEditing={editingField === "labels"}
+                onEdit={() => setEditingField("labels")}
+                onSave={(value) =>
+                  saveField("labels", value, { closeEditor: false })
+                }
+                onCancel={() => setEditingField(null)}
+              />
+
+              {/* Description */}
+              <EditableDescription
+                value={task.data.description ?? ""}
+                isEditing={editingField === "description"}
+                onEdit={() => {
+                  setEditValue(task.data.description ?? "");
+                  setEditingField("description");
+                }}
+                onSave={(value) =>
+                  saveField("description", value || undefined)
+                }
+                onCancel={() => setEditingField(null)}
+                editValue={editValue}
+                setEditValue={setEditValue}
+              />
+
+              {/* Metadata */}
+              <Separator />
+              <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-xs sm:gap-6">
+                <div className="flex items-center gap-1.5">
+                  <User className="h-3 w-3" />
+                  <span>Created by {task.data.createdBy.username}</span>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
+                  <span>{formatDate(task.data.dateCreated)}</span>
+                </div>
+              </div>
 
-                {/* Mobile comments/activity */}
-                {isMobileActivityOpen && (
-                  <div className="bg-muted/30 mt-3 rounded-lg border p-4 md:hidden">
+              {/* Mobile comments/activity */}
+              {isMobileActivityOpen && (
+                <Card className="mt-3 bg-muted/30 md:hidden">
+                  <CardContent>
                     <ActivityFeed
                       boardId={boardId}
                       taskId={taskId}
                       currentUserId={currentUserId}
                     />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 shrink-0 border-t px-6 pt-3 pb-2 backdrop-blur md:hidden">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-between"
-                onClick={() =>
-                  setIsMobileActivityOpen((currentValue) => !currentValue)
-                }
-              >
-                <span className="inline-flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  {isMobileActivityOpen
-                    ? "Hide comments and activity"
-                    : "Show comments and activity"}
-                </span>
-                {isMobileActivityOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
+
+          <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 shrink-0 border-t px-6 pt-3 pb-2 backdrop-blur md:hidden">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-between"
+              onClick={() =>
+                setIsMobileActivityOpen((currentValue) => !currentValue)
+              }
+            >
+              <span className="inline-flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                {isMobileActivityOpen
+                  ? "Hide comments and activity"
+                  : "Show comments and activity"}
+              </span>
+              {isMobileActivityOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          </ScrollArea>
 
           {/* Right side - Activity & Comments */}
           <div className="bg-muted/30 hidden shrink-0 flex-col border-t md:flex md:w-96 md:border-t-0 md:border-l">
@@ -630,7 +633,7 @@ function TaskStatusActions({
       >
         <div className="min-w-0">
           <p className="text-muted-foreground text-xs">Archive</p>
-          <p className="text-sm font-medium">
+          <p className="text-xs font-medium">
             {isArchived ? "Archived" : "Active"}
           </p>
         </div>
@@ -702,7 +705,7 @@ function EditableSelectField({
               if (!open) onCancel();
             }}
           >
-            <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0">
+            <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-xs font-medium shadow-none focus:ring-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -714,7 +717,7 @@ function EditableSelectField({
             </SelectContent>
           </Select>
         ) : (
-          <p className="truncate text-sm font-medium">{displayValue}</p>
+          <p className="truncate text-xs font-medium">{displayValue}</p>
         )}
       </div>
     </div>
@@ -780,7 +783,7 @@ function EditableDateField({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 justify-start px-0 text-sm font-medium shadow-none hover:bg-transparent"
+                className="h-7 justify-start px-0 text-xs font-medium shadow-none hover:bg-transparent"
               >
                 {selectedDate
                   ? format(selectedDate, "MMMM d, yyyy")
@@ -816,7 +819,7 @@ function EditableDateField({
             </PopoverContent>
           </Popover>
         ) : (
-          <p className="text-sm font-medium">{displayValue}</p>
+          <p className="text-xs font-medium">{displayValue}</p>
         )}
       </div>
     </div>
@@ -856,7 +859,7 @@ function EditableLabels({
     <div>
       <div className="mb-2 flex items-center gap-2">
         <Tag className="text-muted-foreground h-4 w-4" />
-        <h3 className="text-muted-foreground text-sm font-medium">Labels</h3>
+        <h3 className="text-muted-foreground text-xs font-medium">Labels</h3>
       </div>
       {isEditing ? (
         <div className="space-y-2">
@@ -896,7 +899,7 @@ function EditableLabels({
                 ))}
             </div>
           ) : (
-            <p className="text-muted-foreground text-sm italic">
+            <p className="text-muted-foreground text-xs italic">
               Click to add labels
             </p>
           )}
@@ -954,7 +957,7 @@ function EditableDescription({
     <div>
       <div className="mb-2 flex items-center gap-2">
         <AlignLeft className="text-muted-foreground h-4 w-4" />
-        <h3 className="text-muted-foreground text-sm font-medium">
+        <h3 className="text-muted-foreground text-xs font-medium">
           Description
         </h3>
       </div>

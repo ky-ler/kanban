@@ -78,7 +78,7 @@ export function CommentInput({
     return (
       <div
         className={cn(
-          "bg-muted/50 cursor-text rounded-lg border border-transparent px-3 py-2 text-sm",
+          "bg-muted/50 cursor-text rounded-lg border border-transparent px-3 py-2 text-xs",
           "text-muted-foreground hover:bg-muted hover:border-border transition-colors",
         )}
         onClick={() => setIsExpanded(true)}

@@ -14,7 +14,7 @@ import { handleMutationAuthError } from "@/features/auth/route-auth";
 interface FavoriteButtonProps {
   boardId: string;
   isFavorite: boolean;
-  size?: "sm" | "default" | "lg" | "icon";
+  size?: "xs" | "sm" | "default" | "lg" | "icon" | "icon-xs" | "icon-sm" | "icon-lg";
   variant?: "default" | "ghost" | "outline";
   showLabel?: boolean;
   className?: string;

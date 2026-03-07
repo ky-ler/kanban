@@ -1,15 +1,10 @@
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import {
+  ArrowRight,
   GripVertical,
   KanbanSquare,
   LayoutDashboard,
@@ -38,101 +33,92 @@ function Index() {
   return (
     <div className="bg-background text-foreground min-h-svh">
       {/* Nav */}
-      <header className="bg-background/80 sticky top-0 z-50 border-b backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-          <div className="flex items-center gap-2 font-semibold">
-            <KanbanSquare className="size-5" />
+      <header className="bg-background/80 sticky top-0 z-50 border-b backdrop-blur supports-backdrop-filter:bg-background/60">
+        <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-6">
+          <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+            <KanbanSquare className="size-5 text-primary" />
             Kanban
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={signIn}>
               Sign In
+            </Button>
+            <Button size="sm" onClick={signUp}>
+              Get Started
             </Button>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-3xl px-6 py-24 text-center md:py-32">
-        <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
+      <section className="mx-auto max-w-3xl px-6 py-20 text-center md:py-28">
+        <p className="text-primary mb-3 text-xs font-medium uppercase tracking-widest">
+          Project Management
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
           Organize your work, your way
         </h1>
-        <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-lg">
-          A simple, real-time kanban board to help you and your team stay on top
-          of tasks — from backlog to done.
+        <p className="text-muted-foreground mx-auto mt-4 max-w-lg text-sm">
+          A real-time kanban board to help you and your team stay on top of tasks
+          — from backlog to done.
         </p>
-        <div className="mt-8 flex items-center justify-center gap-4">
+        <div className="mt-8 flex items-center justify-center gap-3">
           <Button size="lg" onClick={signUp}>
-            Get Started
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() =>
-              document
-                .getElementById("features")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-          >
-            Learn More
+            Get Started Free
+            <ArrowRight className="size-4" />
           </Button>
         </div>
       </section>
-
-      <Separator className="mx-auto max-w-5xl" />
 
       {/* Features */}
-      <section id="features" className="mx-auto max-w-5xl px-6 py-20 md:py-24">
-        <h2 className="mb-10 text-center text-2xl font-semibold">
-          Everything you need to stay productive
-        </h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <LayoutDashboard className="text-primary size-8" />
-              <CardTitle className="mt-2">Boards &amp; Columns</CardTitle>
-              <CardDescription>
-                Create and customize kanban boards with columns that match your
-                workflow.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Users className="text-primary size-8" />
-              <CardTitle className="mt-2">Real-time Collaboration</CardTitle>
-              <CardDescription>
-                Invite team members and see updates the moment they happen.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <GripVertical className="text-primary size-8" />
-              <CardTitle className="mt-2">Drag &amp; Drop</CardTitle>
-              <CardDescription>
-                Reorder tasks and columns effortlessly with intuitive drag and
-                drop.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+      <section className="mx-auto max-w-4xl px-6 pb-20 md:pb-28">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {[
+            {
+              icon: LayoutDashboard,
+              title: "Boards & Columns",
+              description:
+                "Create and customize kanban boards with columns that match your workflow.",
+            },
+            {
+              icon: Users,
+              title: "Real-time Collaboration",
+              description:
+                "Invite team members and see updates the moment they happen.",
+            },
+            {
+              icon: GripVertical,
+              title: "Drag & Drop",
+              description:
+                "Reorder tasks and columns effortlessly with intuitive drag and drop.",
+            },
+          ].map((feature) => (
+            <Card key={feature.title}>
+              <CardContent className="space-y-2">
+                <feature.icon className="text-primary size-5" />
+                <h3 className="text-sm font-medium">{feature.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-5xl" />
-
       {/* Bottom CTA */}
-      <section className="mx-auto max-w-3xl px-6 py-20 text-center md:py-24">
-        <h2 className="text-2xl font-semibold">Ready to get organized?</h2>
-        <p className="text-muted-foreground mt-2">
-          Start managing your projects in seconds — no credit card required.
-        </p>
-        <Button size="lg" className="mt-6" onClick={signUp}>
-          Sign Up Free
-        </Button>
+      <section className="border-t">
+        <div className="mx-auto max-w-3xl px-6 py-16 text-center md:py-20">
+          <h2 className="text-lg font-semibold">Ready to get organized?</h2>
+          <p className="text-muted-foreground mt-2 text-xs">
+            Start managing your projects in seconds.
+          </p>
+          <Button className="mt-6" onClick={signUp}>
+            Sign Up Free
+            <ArrowRight className="size-4" />
+          </Button>
+        </div>
       </section>
     </div>
   );

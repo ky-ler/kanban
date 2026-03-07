@@ -76,14 +76,14 @@ export const ColumnDeleteDialog = ({
               </>
             )}
           </AlertDialogDescription>
-          {error && <p className="text-destructive mt-2 text-sm">{error}</p>}
+          {error && <p className="text-destructive mt-2 text-xs">{error}</p>}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={hasTasksWarning || deleteColumnMutation.isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            variant="destructive"
           >
             {deleteColumnMutation.isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>

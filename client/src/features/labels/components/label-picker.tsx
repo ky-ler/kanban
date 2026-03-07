@@ -148,7 +148,7 @@ export function LabelPicker({
           variant="ghost"
           role="combobox"
           aria-expanded={isOpen}
-          className="bg-muted/30 hover:bg-muted/50 hover:border-border aria-expanded:bg-muted/50 aria-expanded:border-border h-auto min-h-[44px] w-full justify-start rounded-lg border border-transparent px-3 py-3 font-normal shadow-none transition-colors"
+          className="bg-muted/30 hover:bg-muted/50 hover:border-border aria-expanded:bg-muted/50 aria-expanded:border-border h-auto min-h-[44px] w-full justify-start rounded-md border border-transparent px-3 py-3 font-normal shadow-none transition-colors"
         >
           {selectedLabels.length > 0 ? (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -169,7 +169,7 @@ export function LabelPicker({
         {isCreating ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Create Label</span>
+              <span className="text-xs font-medium">Create Label</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -213,7 +213,7 @@ export function LabelPicker({
                     key={color.name}
                     type="button"
                     className={cn(
-                      "h-6 w-6 rounded border-2",
+                      "h-6 w-6 rounded-md border-2",
                       classes.bg,
                       newLabelColor === color.name
                         ? "ring-primary ring-2 ring-offset-1"
@@ -244,7 +244,7 @@ export function LabelPicker({
                     <div
                       key={label.id}
                       className={cn(
-                        "flex items-center gap-1 rounded",
+                        "flex items-center gap-1 rounded-md",
                         "hover:bg-accent transition-colors",
                         isSelected && "bg-accent/50",
                       )}
@@ -252,7 +252,7 @@ export function LabelPicker({
                       <div
                         role="button"
                         tabIndex={0}
-                        className="focus-visible:ring-ring flex flex-1 cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm outline-none focus-visible:ring-2"
+                        className="focus-visible:ring-ring flex flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs outline-none focus-visible:ring-2"
                         onClick={() => toggleLabel(label.id)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
@@ -270,7 +270,7 @@ export function LabelPicker({
                       </div>
                       <button
                         type="button"
-                        className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded p-1.5 transition-colors"
+                        className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md p-1.5 transition-colors"
                         onClick={(e) => handleDeleteLabel(e, label.id)}
                         title="Delete label"
                       >
@@ -281,7 +281,7 @@ export function LabelPicker({
                 })}
               </div>
             ) : (
-              <p className="text-muted-foreground py-2 text-center text-sm">
+              <p className="text-muted-foreground py-2 text-center text-xs">
                 No labels yet
               </p>
             )}

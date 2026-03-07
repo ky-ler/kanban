@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Filter,
   X,
-  Check,
   User,
   Calendar,
   Tag,
@@ -16,6 +15,7 @@ import {
   Search,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { TaskFilters } from "../utils/filter-tasks";
 import { hasActiveFilters } from "../utils/filter-tasks";
@@ -136,45 +136,31 @@ export function TaskFilterBar({
                 <button
                   type="button"
                   className={cn(
-                    "hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
+                    "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
                     !filters.assignee && "bg-accent",
                   )}
                   onClick={() => updateFilter("assignee", undefined)}
                 >
-                  <div
-                    className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded border",
-                      !filters.assignee
-                        ? "bg-primary border-primary"
-                        : "border-input",
-                    )}
-                  >
-                    {!filters.assignee && (
-                      <Check className="text-primary-foreground h-3 w-3" />
-                    )}
-                  </div>
+                  <Checkbox
+                    checked={!filters.assignee}
+                    className="pointer-events-none"
+                    tabIndex={-1}
+                  />
                   All
                 </button>
                 <button
                   type="button"
                   className={cn(
-                    "hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
+                    "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
                     filters.assignee === "unassigned" && "bg-accent",
                   )}
                   onClick={() => updateFilter("assignee", "unassigned")}
                 >
-                  <div
-                    className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded border",
-                      filters.assignee === "unassigned"
-                        ? "bg-primary border-primary"
-                        : "border-input",
-                    )}
-                  >
-                    {filters.assignee === "unassigned" && (
-                      <Check className="text-primary-foreground h-3 w-3" />
-                    )}
-                  </div>
+                  <Checkbox
+                    checked={filters.assignee === "unassigned"}
+                    className="pointer-events-none"
+                    tabIndex={-1}
+                  />
                   Unassigned
                 </button>
                 {collaborators.map((collab) => (
@@ -182,23 +168,16 @@ export function TaskFilterBar({
                     key={collab.user?.id}
                     type="button"
                     className={cn(
-                      "hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
+                      "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
                       filters.assignee === collab.user?.id && "bg-accent",
                     )}
                     onClick={() => updateFilter("assignee", collab.user?.id)}
                   >
-                    <div
-                      className={cn(
-                        "flex h-4 w-4 items-center justify-center rounded border",
-                        filters.assignee === collab.user?.id
-                          ? "bg-primary border-primary"
-                          : "border-input",
-                      )}
-                    >
-                      {filters.assignee === collab.user?.id && (
-                        <Check className="text-primary-foreground h-3 w-3" />
-                      )}
-                    </div>
+                    <Checkbox
+                      checked={filters.assignee === collab.user?.id}
+                      className="pointer-events-none"
+                      tabIndex={-1}
+                    />
                     <span className="truncate">{collab.user?.username}</span>
                   </button>
                 ))}
@@ -223,25 +202,18 @@ export function TaskFilterBar({
                       key={priority.value}
                       type="button"
                       className={cn(
-                        "hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
+                        "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
                         isSelected && "bg-accent/50",
                       )}
                       onClick={() =>
                         toggleArrayFilter("priorities", priority.value)
                       }
                     >
-                      <div
-                        className={cn(
-                          "flex h-4 w-4 items-center justify-center rounded border",
-                          isSelected
-                            ? "bg-primary border-primary"
-                            : "border-input",
-                        )}
-                      >
-                        {isSelected && (
-                          <Check className="text-primary-foreground h-3 w-3" />
-                        )}
-                      </div>
+                      <Checkbox
+                        checked={isSelected}
+                        className="pointer-events-none"
+                        tabIndex={-1}
+                      />
                       {priority.label}
                     </button>
                   );
@@ -266,25 +238,18 @@ export function TaskFilterBar({
                           key={label.id}
                           type="button"
                           className={cn(
-                            "hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
+                            "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
                             isSelected && "bg-accent/50",
                           )}
                           onClick={() =>
                             toggleArrayFilter("labelIds", label.id)
                           }
                         >
-                          <div
-                            className={cn(
-                              "flex h-4 w-4 items-center justify-center rounded border",
-                              isSelected
-                                ? "bg-primary border-primary"
-                                : "border-input",
-                            )}
-                          >
-                            {isSelected && (
-                              <Check className="text-primary-foreground h-3 w-3" />
-                            )}
-                          </div>
+                          <Checkbox
+                            checked={isSelected}
+                            className="pointer-events-none"
+                            tabIndex={-1}
+                          />
                           <LabelBadge label={label} size="sm" />
                         </button>
                       );
@@ -310,7 +275,7 @@ export function TaskFilterBar({
                       key={option.label}
                       type="button"
                       className={cn(
-                        "hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
+                        "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
                         isSelected && "bg-accent",
                       )}
                       onClick={() => updateFilter("due", option.value)}
@@ -342,7 +307,7 @@ export function TaskFilterBar({
               <div className="p-2">
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-foreground hover:bg-accent flex w-full items-center justify-center gap-1.5 rounded px-2 py-1.5 text-sm"
+                  className="text-muted-foreground hover:text-foreground hover:bg-accent flex w-full items-center justify-center gap-1.5 rounded-sm px-2 py-1.5 text-xs"
                   onClick={clearAllFilters}
                 >
                   <X className="h-3.5 w-3.5" />

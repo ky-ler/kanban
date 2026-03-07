@@ -1,16 +1,14 @@
-import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, FolderKanban, Plus, Star } from "lucide-react";
+import { CheckCircle2, FolderKanban, Plus, Star } from "lucide-react";
 import { NewBoardDialog } from "@/features/boards/components/new-board-dialog";
 import { FavoriteButton } from "@/features/boards/components/favorite-button";
 import {
@@ -36,159 +34,85 @@ export const Route = createFileRoute("/_protected/boards/")({
   component: BoardsComponent,
 });
 
-function BoardListItem({
-  board,
-  isSelected,
-  onSelect,
-}: {
-  board: BoardSummary;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
+function BoardCard({ board }: { board: BoardSummary }) {
   const progress =
     board.totalTasks > 0
       ? Math.round((board.completedTasks / board.totalTasks) * 100)
       : 0;
 
   return (
-    <button
-      onClick={onSelect}
-      className={cn(
-        "w-full rounded-lg border p-3 text-left transition-colors",
-        isSelected
-          ? "border-primary bg-primary/5"
-          : "hover:bg-muted/50 border-transparent",
-      )}
+    <Link
+      to="/boards/$boardId"
+      params={{ boardId: String(board.id) }}
+      search={{
+        q: undefined,
+        assignee: undefined,
+        priority: undefined,
+        labels: undefined,
+        due: undefined,
+      }}
+      className="group/link block"
     >
-      <div className="flex items-center gap-2">
-        {board.isFavorite && (
-          <Star className="h-4 w-4 shrink-0 fill-yellow-400 text-yellow-400" />
-        )}
-        <span className="line-clamp-1 font-medium">{board.name}</span>
-      </div>
-      <div className="text-muted-foreground mt-1 text-sm">
-        {board.completedTasks}/{board.totalTasks} tasks
-      </div>
-      <div className="bg-secondary mt-2 h-1.5 w-full rounded-full">
-        <div
-          className="bg-primary h-1.5 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </button>
-  );
-}
-
-function BoardPreviewPlaceholder() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-      <div className="bg-muted rounded-full p-4">
-        <FolderKanban className="text-muted-foreground h-8 w-8" />
-      </div>
-      <p className="text-muted-foreground">Select a board to view details</p>
-    </div>
-  );
-}
-
-function BoardPreviewContent({ board }: { board: BoardSummary }) {
-  const progress =
-    board.totalTasks > 0
-      ? Math.round((board.completedTasks / board.totalTasks) * 100)
-      : 0;
-
-  return (
-    <div className="flex h-full flex-col">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="line-clamp-2">{board.name}</CardTitle>
-          <FavoriteButton
-            boardId={board.id}
-            isFavorite={board.isFavorite}
-            showLabel
-            variant="outline"
-          />
-        </div>
-        <CardDescription className="line-clamp-3">
-          {board.description || "No description yet"}
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="flex-1 space-y-6">
-        {/* Progress Section */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{progress}%</span>
-          </div>
-          <div className="bg-secondary h-2.5 w-full rounded-full">
-            <div
-              className="bg-primary h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+      <Card className="relative transition-shadow hover:shadow-md">
+        <CardHeader>
+          <CardTitle className="line-clamp-1 text-sm font-semibold group-hover/link:text-primary transition-colors">
+            {board.name}
+          </CardTitle>
+          <CardAction>
+            <FavoriteButton
+              boardId={board.id}
+              isFavorite={board.isFavorite}
+              variant="ghost"
+              size="icon-sm"
             />
-          </div>
-          <p className="text-muted-foreground text-sm">
-            {board.completedTasks} of {board.totalTasks} tasks completed
-          </p>
-        </div>
+          </CardAction>
+          {board.description && (
+            <CardDescription className="line-clamp-2">
+              {board.description}
+            </CardDescription>
+          )}
+        </CardHeader>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-muted/50 rounded-lg p-3">
-            <p className="text-muted-foreground text-xs tracking-wide uppercase">
-              Total Tasks
-            </p>
-            <p className="mt-1 text-2xl font-semibold">{board.totalTasks}</p>
+        <CardContent className="space-y-3">
+          {/* Progress bar */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium tabular-nums">{progress}%</span>
+            </div>
+            <div className="bg-secondary h-1 w-full overflow-hidden rounded-full">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  progress === 100 ? "bg-green-500" : "bg-primary",
+                )}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3">
-            <p className="text-muted-foreground text-xs tracking-wide uppercase">
-              Completed
-            </p>
-            <p className="mt-1 text-2xl font-semibold">
-              {board.completedTasks}
-            </p>
+
+          {/* Stats row */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <CheckCircle2 className="size-3" />
+              <span>
+                {board.completedTasks}/{board.totalTasks} tasks
+              </span>
+            </div>
+            <span>{new Date(board.dateModified).toLocaleDateString()}</span>
           </div>
-        </div>
-
-        {/* Last Modified */}
-        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Calendar className="h-4 w-4" />
-          <span>
-            Last modified: {new Date(board.dateModified).toLocaleDateString()}
-          </span>
-        </div>
-      </CardContent>
-
-      <CardFooter>
-        <Button asChild className="w-full">
-          <Link
-            to="/boards/$boardId"
-            params={{ boardId: String(board.id) }}
-            search={{
-              q: undefined,
-              assignee: undefined,
-              priority: undefined,
-              labels: undefined,
-              due: undefined,
-            }}
-          >
-            Open Board
-          </Link>
-        </Button>
-      </CardFooter>
-    </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
 function BoardsComponent() {
   const { data: boards, isLoading, error } = useGetBoardsForUserSuspense();
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
-
-  const selectedBoard =
-    boards?.data.find((b) => b.id === selectedBoardId) ?? null;
 
   if (isLoading || !boards) {
     return (
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="flex flex-1 items-center justify-center">
         <LoadingSpinner title="Loading boards..." />
       </div>
     );
@@ -196,29 +120,36 @@ function BoardsComponent() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        Error loading boards: {error as string}
-      </Alert>
+      <div className="p-6">
+        <Alert variant="destructive">
+          Error loading boards: {error as string}
+        </Alert>
+      </div>
     );
   }
 
   if (boards.data.length === 0) {
     return (
-      <div className="flex h-full flex-col gap-6 p-4">
+      <div className="flex flex-1 items-center justify-center p-6">
         <Empty>
           <EmptyHeader>
-            <EmptyMedia variant={"icon"}>
+            <EmptyMedia variant="icon">
               <FolderKanban />
             </EmptyMedia>
             <EmptyTitle>No boards yet</EmptyTitle>
             <EmptyDescription>
-              Get started by creating your first board. You can invite team
-              members and start organizing your work.
+              Create your first board to start organizing tasks and
+              collaborating with your team.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <NewBoardDialog
-              trigger={<Button>Create Your First Board</Button>}
+              trigger={
+                <Button>
+                  <Plus className="size-3.5" />
+                  Create Your First Board
+                </Button>
+              }
             />
           </EmptyContent>
         </Empty>
@@ -226,58 +157,49 @@ function BoardsComponent() {
     );
   }
 
+  const favoriteBoards = boards.data.filter((b) => b.isFavorite);
+  const allBoards = boards.data;
+
   return (
-    <div className="flex h-full flex-col gap-6 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Boards</h1>
-          <p className="text-muted-foreground">
-            Organize and manage your projects
-          </p>
+    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-lg font-semibold tracking-tight">Boards</h1>
+        <p className="text-xs text-muted-foreground">
+          {allBoards.length} board{allBoards.length !== 1 ? "s" : ""}
+        </p>
+      </div>
+
+      {/* Favorites Section */}
+      {favoriteBoards.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Star className="size-3.5 fill-yellow-400 text-yellow-400" />
+            <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Favorites
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {favoriteBoards.map((board: BoardSummary) => (
+              <BoardCard key={board.id} board={board} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* All Boards */}
+      <section className="space-y-3">
+        {favoriteBoards.length > 0 && (
+          <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            All Boards
+          </h2>
+        )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {allBoards.map((board: BoardSummary) => (
+            <BoardCard key={board.id} board={board} />
+          ))}
         </div>
-        <NewBoardDialog
-          trigger={
-            <Button>
-              <Plus className="h-4 w-4" /> New Board
-            </Button>
-          }
-        />
-      </div>
-
-      {/* Split Layout */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
-        {/* Left Panel - Board List */}
-        <Card className="flex flex-col md:w-80 lg:w-96">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Boards</CardTitle>
-            <CardDescription>{boards.data.length} boards</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 p-0">
-            <ScrollArea className="h-[300px] px-4 pb-4 md:h-full">
-              <div className="space-y-2">
-                {boards.data.map((board: BoardSummary) => (
-                  <BoardListItem
-                    key={board.id}
-                    board={board}
-                    isSelected={selectedBoardId === board.id}
-                    onSelect={() => setSelectedBoardId(board.id)}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Right Panel - Preview */}
-        <Card className="flex min-h-[400px] flex-1 flex-col md:min-h-0">
-          {selectedBoard ? (
-            <BoardPreviewContent board={selectedBoard} />
-          ) : (
-            <BoardPreviewPlaceholder />
-          )}
-        </Card>
-      </div>
+      </section>
     </div>
   );
 }

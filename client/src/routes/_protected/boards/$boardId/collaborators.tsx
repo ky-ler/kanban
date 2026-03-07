@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { router } from "@/lib/router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -127,14 +129,16 @@ function CollaboratorsComponent() {
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeVariant = (
+    role: string,
+  ): "destructive" | "secondary" | "outline" => {
     switch (role) {
       case CollaboratorDtoRole.ADMIN:
-        return "bg-red-100 text-red-800 border-red-200";
+        return "destructive";
       case CollaboratorDtoRole.MEMBER:
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "secondary";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "outline";
     }
   };
 
@@ -196,9 +200,9 @@ function CollaboratorsComponent() {
           <TabsContent value="collaborators" className="mt-4">
             <div className="max-h-80 space-y-3 overflow-y-auto">
               {sortedCollaborators.map((collaborator) => (
-                <div
+                <Item
                   key={collaborator.user?.id}
-                  className="bg-card hover:bg-accent/50 flex items-center gap-4 rounded-lg border p-4 transition-colors"
+                  variant="outline"
                 >
                   <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
                     {collaborator.user?.profileImageUrl ? (
@@ -213,67 +217,65 @@ function CollaboratorsComponent() {
                       <User className="text-primary h-5 w-5" />
                     )}
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-medium">
-                        {collaborator.user?.username}
-                      </h4>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium ${getRoleBadgeColor(
-                          collaborator.role ?? CollaboratorDtoRole.GUEST,
-                        )}`}
-                      >
-                        {getRoleIcon(
-                          collaborator.role ?? CollaboratorDtoRole.GUEST,
-                        )}
-                        {collaborator.role ?? CollaboratorDtoRole.GUEST}
-                      </span>
-                    </div>
-                  </div>
+                  <ItemContent>
+                    <ItemTitle>{collaborator.user?.username}</ItemTitle>
+                    <Badge
+                      variant={getRoleBadgeVariant(
+                        collaborator.role ?? CollaboratorDtoRole.GUEST,
+                      )}
+                    >
+                      {getRoleIcon(
+                        collaborator.role ?? CollaboratorDtoRole.GUEST,
+                      )}
+                      {collaborator.role ?? CollaboratorDtoRole.GUEST}
+                    </Badge>
+                  </ItemContent>
                   {isCurrentUserAdmin &&
                     collaborator.role !== "ADMIN" &&
                     collaborator.user?.id !== currentUserId && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={removeCollaboratorMutation.isPending}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <UserMinus className="h-4 w-4" />
-                            {removeCollaboratorMutation.isPending
-                              ? "Removing..."
-                              : "Remove"}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Are you sure you want to remove this collaborator?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <ItemActions>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
                             <Button
-                              variant="destructive"
-                              onClick={() =>
-                                handleRemoveCollaborator(collaborator.user!.id)
-                              }
+                              variant="outline"
+                              size="sm"
                               disabled={removeCollaboratorMutation.isPending}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
+                              <UserMinus className="h-4 w-4" />
                               {removeCollaboratorMutation.isPending
                                 ? "Removing..."
                                 : "Remove"}
                             </Button>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Are you sure you want to remove this collaborator?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <Button
+                                variant="destructive"
+                                onClick={() =>
+                                  handleRemoveCollaborator(collaborator.user!.id)
+                                }
+                                disabled={removeCollaboratorMutation.isPending}
+                              >
+                                {removeCollaboratorMutation.isPending
+                                  ? "Removing..."
+                                  : "Remove"}
+                              </Button>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </ItemActions>
                     )}
-                </div>
+                </Item>
               ))}
             </div>
           </TabsContent>

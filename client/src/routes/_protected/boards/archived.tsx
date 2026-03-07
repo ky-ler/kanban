@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -45,34 +46,32 @@ function ArchivedBoardCard({
 }) {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <CardTitle className="line-clamp-1 text-base">
-              {board.name}
-            </CardTitle>
-            <CardDescription className="line-clamp-2">
-              {board.description || "No description"}
-            </CardDescription>
-          </div>
+      <CardHeader>
+        <CardTitle className="line-clamp-1">{board.name}</CardTitle>
+        <CardAction>
           <Button
             variant="outline"
-            size="sm"
+            size="xs"
             onClick={() => onUnarchive(board.id)}
             disabled={isUnarchiving}
           >
-            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            Unarchive
+            <RotateCcw className="size-3" />
+            Restore
           </Button>
-        </div>
+        </CardAction>
+        {board.description && (
+          <CardDescription className="line-clamp-2">
+            {board.description}
+          </CardDescription>
+        )}
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="text-muted-foreground flex items-center gap-4 text-sm">
+      <CardContent>
+        <div className="text-muted-foreground flex items-center justify-between text-xs">
           <span>
             {board.completedTasks}/{board.totalTasks} tasks
           </span>
           <span className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" />
+            <Calendar className="size-3" />
             {new Date(board.dateModified).toLocaleDateString()}
           </span>
         </div>
@@ -85,8 +84,8 @@ function ArchivedBoardsComponent() {
   const { data: boards, isLoading } = useGetArchivedBoardsForUserSuspense();
   const queryClient = useQueryClient();
 
-  const { mutate: unarchive, isPending: isUnarchiving } = useUpdateBoardArchive(
-    {
+  const { mutate: unarchive, isPending: isUnarchiving } =
+    useUpdateBoardArchive({
       mutation: {
         onSuccess: () => {
           toast.success("Board unarchived successfully");
@@ -112,8 +111,7 @@ function ArchivedBoardsComponent() {
           }
         },
       },
-    },
-  );
+    });
 
   const handleUnarchive = (boardId: string) => {
     unarchive({
@@ -124,18 +122,19 @@ function ArchivedBoardsComponent() {
 
   if (isLoading || !boards) {
     return (
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="flex flex-1 items-center justify-center">
         <LoadingSpinner title="Loading archived boards..." />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 p-4">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Archived Boards</h1>
-        <p className="text-muted-foreground">
-          View and restore your archived boards
+        <h1 className="text-lg font-semibold tracking-tight">Archive</h1>
+        <p className="text-xs text-muted-foreground">
+          {boards.data.length} archived board
+          {boards.data.length !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -147,8 +146,8 @@ function ArchivedBoardsComponent() {
             </EmptyMedia>
             <EmptyTitle>No archived boards</EmptyTitle>
             <EmptyDescription>
-              When you archive a board, it will appear here. You can unarchive
-              it at any time.
+              When you archive a board, it will appear here. You can restore it
+              at any time.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

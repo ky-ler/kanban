@@ -8,7 +8,13 @@ import {
   Outlet,
   useNavigate,
 } from "@tanstack/react-router";
-import { Archive, EllipsisVertical, Info, Users } from "lucide-react";
+import {
+  Archive,
+  ChevronRight,
+  EllipsisVertical,
+  Info,
+  Users,
+} from "lucide-react";
 import { FavoriteButton } from "@/features/boards/components/favorite-button";
 import { Alert } from "@/components/ui/alert";
 import { BoardWebSocketBanner } from "@/features/boards/components/board-websocket-banner";
@@ -239,122 +245,136 @@ function BoardComponent() {
     <>
       <BoardWebSocketBanner />
 
-      {/* Board Info Header */}
-      <div className="flex items-center justify-between gap-2 px-4 pt-3 sm:items-start sm:pt-4">
-        <div className="min-w-0 flex-1">
-          <EditableTitleText
-            variant="board"
-            value={board.data.name}
-            isEditing={editingField === "name"}
-            canEdit={canEditBoardMeta}
-            onEdit={() => {
-              setEditValue(board.data.name);
-              setEditingField("name");
-            }}
-            onSave={saveName}
-            onCancel={() => setEditingField(null)}
-            editValue={editValue}
-            setEditValue={setEditValue}
-            ViewComponent="h1"
-          />
-        </div>
-        <div className="flex h-full shrink-0 items-center gap-2">
-          <div className="hidden md:block">
-            <TaskFilterBar
-              boardId={boardId}
-              collaborators={board.data.collaborators ?? []}
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              searchValue={searchInput}
-              onSearchChange={setSearchInput}
-            />
-          </div>
-          <FavoriteButton
-            boardId={boardId}
-            isFavorite={board.data.isFavorite}
-            variant="outline"
-          />
-          <Button asChild variant="outline" size="icon">
+      {/* Board Header */}
+      <div className="border-b bg-background/50">
+        <div className="flex items-center gap-2 px-4 py-2">
+          {/* Breadcrumb + Title */}
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <Link
-              to={"/boards/$boardId/collaborators"}
-              params={{ boardId }}
-              search={{
-                q: undefined,
-                assignee: undefined,
-                priority: undefined,
-                labels: undefined,
-                due: undefined,
-              }}
+              to="/boards"
+              className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              <Users className="h-4 w-4" />
-              <span className="sr-only">Collaborators</span>
+              Boards
             </Link>
-          </Button>
-          <AlertDialog>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <EllipsisVertical className="h-4 w-4" />
-                  <span className="sr-only">Board actions</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setAboutOpen(true)}>
-                  <Info className="h-4 w-4" />
-                  About This Board
-                </DropdownMenuItem>
-                {isBoardOwner && (
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem variant="destructive">
-                      <Archive className="h-4 w-4" />
-                      Archive Board
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Archive this board?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will archive the board and all its tasks. You can restore
-                  it from the Archive page.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive hover:bg-destructive/90 text-white"
-                  disabled={isArchiving}
-                  onClick={() =>
-                    archiveBoard({
-                      boardId,
-                      data: {
-                        isArchived: true,
-                        confirmArchiveTasks: true,
-                      },
-                    })
-                  }
-                >
-                  Archive
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <EditableTitleText
+                variant="board"
+                value={board.data.name}
+                isEditing={editingField === "name"}
+                canEdit={canEditBoardMeta}
+                onEdit={() => {
+                  setEditValue(board.data.name);
+                  setEditingField("name");
+                }}
+                onSave={saveName}
+                onCancel={() => setEditingField(null)}
+                editValue={editValue}
+                setEditValue={setEditValue}
+                ViewComponent="h1"
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex shrink-0 items-center gap-1">
+            <div className="hidden md:block">
+              <TaskFilterBar
+                boardId={boardId}
+                collaborators={board.data.collaborators ?? []}
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
+                searchValue={searchInput}
+                onSearchChange={setSearchInput}
+              />
+            </div>
+            <FavoriteButton
+              boardId={boardId}
+              isFavorite={board.data.isFavorite}
+              variant="ghost"
+            />
+            <Button asChild variant="ghost" size="icon">
+              <Link
+                to={"/boards/$boardId/collaborators"}
+                params={{ boardId }}
+                search={{
+                  q: undefined,
+                  assignee: undefined,
+                  priority: undefined,
+                  labels: undefined,
+                  due: undefined,
+                }}
+              >
+                <Users className="size-3.5" />
+                <span className="sr-only">Collaborators</span>
+              </Link>
+            </Button>
+            <AlertDialog>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <EllipsisVertical className="size-3.5" />
+                    <span className="sr-only">Board actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-auto">
+                  <DropdownMenuItem onSelect={() => setAboutOpen(true)}>
+                    <Info className="size-3.5" />
+                    About This Board
+                  </DropdownMenuItem>
+                  {isBoardOwner && (
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem variant="destructive">
+                        <Archive className="size-3.5" />
+                        Archive Board
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Archive this board?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will archive the board and all its tasks. You can
+                    restore it from the Archive page.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={isArchiving}
+                    onClick={() =>
+                      archiveBoard({
+                        boardId,
+                        data: {
+                          isArchived: true,
+                          confirmArchiveTasks: true,
+                        },
+                      })
+                    }
+                  >
+                    Archive
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+
+        {/* Mobile Filter Bar */}
+        <div className="px-4 pb-2 md:hidden">
+          <TaskFilterBar
+            boardId={boardId}
+            collaborators={board.data.collaborators ?? []}
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+          />
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="px-4 md:hidden">
-        <TaskFilterBar
-          boardId={boardId}
-          collaborators={board.data.collaborators ?? []}
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          searchValue={searchInput}
-          onSearchChange={setSearchInput}
-        />
-      </div>
       {/* Kanban Board */}
       <KanbanBoard
         columns={board.data.columns ?? []}
@@ -377,7 +397,7 @@ function BoardComponent() {
           <DialogHeader>
             <DialogTitle>About This Board</DialogTitle>
           </DialogHeader>
-          <div className="mt-2">
+          <div className="mt-2 min-w-0">
             {canEditBoardMeta && isEditingDescription ? (
               <div
                 className="space-y-2"
@@ -451,8 +471,8 @@ function BoardComponent() {
                 role="button"
                 tabIndex={0}
                 className={cn(
-                  "rounded-lg border border-transparent px-3 py-2 text-sm transition-colors",
-                  "bg-muted/30 hover:bg-muted/50 hover:border-border cursor-pointer",
+                  "rounded-lg border border-transparent px-3 py-2 text-xs transition-colors",
+                  "cursor-pointer bg-muted/30 hover:border-border hover:bg-muted/50",
                 )}
                 onClick={() => {
                   setDescriptionEditValue(board?.data.description ?? "");
@@ -475,7 +495,7 @@ function BoardComponent() {
                 />
               </div>
             ) : (
-              <div className="px-3 py-2 text-sm">
+              <div className="px-3 py-2 text-xs">
                 <MarkdownView
                   value={board?.data.description ?? ""}
                   emptyState={

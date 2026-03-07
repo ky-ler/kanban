@@ -11,7 +11,7 @@ export function TaskDescriptionView({
     <MarkdownView
       value={value}
       emptyState={
-        <span className="text-muted-foreground text-sm italic">
+        <span className="text-muted-foreground text-xs italic">
           Click to add a description...
         </span>
       }

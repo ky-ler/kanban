@@ -459,7 +459,7 @@ function EditorHelpDialog() {
                   className="flex items-center justify-between gap-3 text-sm"
                 >
                   <span>{item.action}</span>
-                  <kbd className="bg-muted border-border rounded border px-2 py-0.5 font-mono text-xs">
+                  <kbd className="bg-muted border-border rounded-md border px-2 py-0.5 font-mono text-xs">
                     {formatShortcutLabel(item.shortcut)}
                   </kbd>
                 </div>
@@ -476,7 +476,7 @@ function EditorHelpDialog() {
                   className="flex items-center justify-between gap-3 text-sm"
                 >
                   <span>{item.label}</span>
-                  <code className="bg-muted border-border rounded border px-2 py-0.5 font-mono text-xs">
+                  <code className="bg-muted border-border rounded-md border px-2 py-0.5 font-mono text-xs">
                     {item.syntax}
                   </code>
                 </div>
@@ -1041,7 +1041,7 @@ function ToolbarPlugin({
               <span className="text-sm font-medium">Normal text</span>
               <DropdownMenuShortcut
                 className={cn(
-                  "rounded border px-1.5 py-0.5 font-mono text-xs leading-none tracking-normal",
+                  "rounded-md border px-1.5 py-0.5 font-mono text-xs leading-none tracking-normal",
                   activeTextStyle === "paragraph"
                     ? "border-accent-foreground/30 text-accent-foreground/90"
                     : "border-border bg-muted/50 text-muted-foreground",
@@ -1074,7 +1074,7 @@ function ToolbarPlugin({
                   </span>
                   <DropdownMenuShortcut
                     className={cn(
-                      "rounded border px-1.5 py-0.5 font-mono text-xs leading-none tracking-normal",
+                      "rounded-md border px-1.5 py-0.5 font-mono text-xs leading-none tracking-normal",
                       isActive
                         ? "border-accent-foreground/30 text-accent-foreground/90"
                         : "border-border bg-muted/50 text-muted-foreground",
@@ -1427,7 +1427,7 @@ export function MarkdownEditor({
         text: {
           bold: "font-semibold",
           italic: "italic",
-          code: "bg-muted font-mono text-[0.85em] rounded px-1 py-0.5 border border-border",
+          code: "bg-muted font-mono text-[0.85em] rounded-md px-1 py-0.5 border border-border",
           strikethrough: "line-through",
         },
         list: {

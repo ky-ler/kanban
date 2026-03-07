@@ -193,7 +193,7 @@ export const KanbanColumn = ({
       >
         {dragHandleProps && (
           <CardHeader
-            className="flex flex-shrink-0 touch-none flex-row items-center justify-between space-y-0 rounded px-4 active:cursor-grabbing"
+            className="flex flex-shrink-0 touch-none flex-row items-center justify-between space-y-0 rounded-md px-4 active:cursor-grabbing"
             {...dragHandleProps}
           >
             <CardTitle className="text-base">
@@ -283,7 +283,7 @@ export const KanbanColumn = ({
                   onClick={handleSubmit}
                   disabled={!title.trim() || createTaskMutation.isPending}
                 >
-                  Add card
+                  Add task
                 </Button>
                 <Button
                   variant="ghost"
@@ -306,7 +306,7 @@ export const KanbanColumn = ({
               disabled={column.isArchived}
             >
               <Plus className="size-4" />
-              {column.isArchived ? "Archived column" : "Add a card"}
+              {column.isArchived ? "Archived column" : "New task"}
             </Button>
           )}
         </CardFooter>

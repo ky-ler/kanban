@@ -18,42 +18,42 @@ const activityConfig: Record<
   TASK_CREATED: {
     icon: Plus,
     label: "created this task",
-    color: "text-green-600 dark:text-green-400",
+    color: "text-chart-1",
   },
   TASK_UPDATED: {
     icon: Pencil,
     label: "updated the task",
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-chart-2",
   },
   TASK_MOVED: {
     icon: ArrowRight,
     label: "moved the task",
-    color: "text-purple-600 dark:text-purple-400",
+    color: "text-chart-3",
   },
   TASK_DELETED: {
     icon: Trash2,
     label: "deleted the task",
-    color: "text-red-600 dark:text-red-400",
+    color: "text-destructive",
   },
   ASSIGNEE_CHANGED: {
     icon: UserCircle,
     label: "changed assignee",
-    color: "text-orange-600 dark:text-orange-400",
+    color: "text-chart-5",
   },
   LABELS_CHANGED: {
     icon: Tag,
     label: "changed labels",
-    color: "text-pink-600 dark:text-pink-400",
+    color: "text-chart-4",
   },
   PRIORITY_CHANGED: {
     icon: AlertCircle,
     label: "changed priority",
-    color: "text-yellow-600 dark:text-yellow-400",
+    color: "text-chart-1",
   },
   DUE_DATE_CHANGED: {
     icon: Calendar,
     label: "changed due date",
-    color: "text-cyan-600 dark:text-cyan-400",
+    color: "text-chart-2",
   },
 };
 
@@ -127,7 +127,7 @@ export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
   const config = activityConfig[activity.type] ?? {
     icon: Pencil,
     label: activity.type.toLowerCase().replace(/_/g, " "),
-    color: "text-gray-600 dark:text-gray-400",
+    color: "text-muted-foreground",
   };
 
   const Icon = config.icon;
@@ -146,7 +146,7 @@ export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center text-sm">
+        <div className="flex items-center text-xs">
           <span className="truncate font-medium">{activity.user.username}</span>
           &nbsp;
           <span className="text-muted-foreground">{config.label}</span>

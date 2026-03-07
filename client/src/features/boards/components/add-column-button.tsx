@@ -77,7 +77,7 @@ export const AddColumnButton = ({ boardId }: AddColumnButtonProps) => {
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="h-fit w-3xs flex-col gap-2 rounded-xl border-dashed py-6"
+          className="h-fit w-3xs flex-col gap-2 rounded-lg border-dashed py-6"
         >
           <Plus className="size-6" />
           <span>Add Column</span>

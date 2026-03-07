@@ -10,7 +10,7 @@ interface MarkdownViewProps {
 }
 
 const markdownComponents: Components = {
-  p: ({ children }) => <p className="mb-2 leading-6 last:mb-0">{children}</p>,
+  p: ({ children }) => <p className="mb-2 break-words leading-6 last:mb-0">{children}</p>,
   h1: ({ children }) => (
     <h1 className={cn("mt-4 mb-3 first:mt-0", headingTypographyClasses.h1)}>
       {children}
@@ -63,7 +63,7 @@ const markdownComponents: Components = {
   code: ({ children, className }) => (
     <code
       className={cn(
-        "bg-muted border-border rounded border px-1 py-0.5 font-mono text-[0.85em]",
+        "bg-muted border-border rounded-md border px-1 py-0.5 font-mono text-[0.85em]",
         className,
       )}
     >
