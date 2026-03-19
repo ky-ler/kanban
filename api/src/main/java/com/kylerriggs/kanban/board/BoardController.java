@@ -131,20 +131,18 @@ public class BoardController {
         return ResponseEntity.ok(updatedBoard);
     }
 
-    // /**
-    // * Deletes a board and all its associated data.
-    // * Requires admin privileges on the board.
-    // * Disabled for now, I want to implement archiving instead.
-    // *
-    // * @param boardId the ID of the board to delete
-    // * @return no content
-    // */
-    // @DeleteMapping("/{boardId}")
-    // @PreAuthorize("@boardAccess.isAdmin(#boardId)")
-    // public ResponseEntity<Void> deleteBoard(@PathVariable UUID boardId) {
-    // boardService.deleteBoard(boardId);
-    // return ResponseEntity.noContent().build();
-    // }
+    /**
+     * Deletes an archived board and all its associated data.
+     *
+     * @param boardId the ID of the board to delete
+     * @return no content
+     */
+    @DeleteMapping("/{boardId}")
+    @PreAuthorize("@boardAccess.isCreator(#boardId)")
+    public ResponseEntity<Void> deleteBoard(@NonNull @PathVariable UUID boardId) {
+        boardService.deleteBoard(boardId);
+        return ResponseEntity.noContent().build();
+    }
 
     /**
      * Adds a new collaborator to a board with the specified role. Requires admin privileges on the

@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.column;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -15,6 +16,7 @@ import com.kylerriggs.kanban.column.dto.MoveColumnRequest;
 import com.kylerriggs.kanban.column.dto.UpdateColumnRequest;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.task.TaskArchiveService;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
@@ -43,6 +45,7 @@ class ColumnServiceTest {
     @Mock private ColumnMapper columnMapper;
     @Mock private BoardRepository boardRepository;
     @Mock private TaskRepository taskRepository;
+    @Mock private TaskArchiveService taskArchiveService;
     @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private ColumnService columnService;
 
@@ -89,7 +92,7 @@ class ColumnServiceTest {
 
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(columnRepository.findMaxPositionByBoardId(BOARD_ID)).thenReturn(2);
+            when(columnRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(3L);
             when(columnRepository.save(any(Column.class))).thenReturn(newColumn);
             when(columnMapper.toDto(newColumn)).thenReturn(newColumnDto);
 
@@ -99,7 +102,7 @@ class ColumnServiceTest {
             // Then
             assertEquals("New Column", result.name());
             assertEquals(3, result.position());
-            verify(columnRepository, never()).incrementPositionsFrom(any(), anyInt());
+            verify(columnRepository, never()).incrementActivePositionsFrom(any(), anyInt());
             verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq("COLUMN_CREATED"), eq(BOARD_ID), any());
         }
@@ -119,6 +122,7 @@ class ColumnServiceTest {
 
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
+            when(columnRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(3L);
             when(columnRepository.save(any(Column.class))).thenReturn(newColumn);
             when(columnMapper.toDto(newColumn)).thenReturn(newColumnDto);
 
@@ -127,7 +131,7 @@ class ColumnServiceTest {
 
             // Then
             assertEquals(1, result.position());
-            verify(columnRepository).incrementPositionsFrom(BOARD_ID, 1);
+            verify(columnRepository).incrementActivePositionsFrom(BOARD_ID, 1);
             verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
@@ -199,6 +203,9 @@ class ColumnServiceTest {
         void updateColumnArchive_WhenConfirmed_ArchivesColumnAndTasks() {
             when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
             when(taskRepository.countByColumnIdAndIsArchivedFalse(COLUMN_ID)).thenReturn(2L);
+            when(taskRepository.findByColumnIdOrderByPosition(COLUMN_ID))
+                    .thenReturn(java.util.List.of());
+            when(columnRepository.findMaxPositionByBoardId(BOARD_ID)).thenReturn(0);
             when(columnRepository.save(column)).thenReturn(column);
             when(columnMapper.toDto(column)).thenReturn(columnDto);
 
@@ -208,7 +215,9 @@ class ColumnServiceTest {
 
             assertTrue(column.isArchived());
             assertEquals(COLUMN_ID, result.id());
-            verify(taskRepository).archiveByColumnId(eq(COLUMN_ID), any());
+            assertEquals(0, column.getRestorePosition());
+            verify(taskArchiveService).archiveTasks(java.util.List.of());
+            verify(columnRepository).decrementActivePositionsAfter(BOARD_ID, 0);
             verify(boardRepository).touchDateModified(eq(BOARD_ID), any());
             verify(eventPublisher).publish("COLUMN_UPDATED", BOARD_ID, COLUMN_ID);
         }
@@ -216,7 +225,9 @@ class ColumnServiceTest {
         @Test
         void updateColumnArchive_WhenUnarchiving_DoesNotUnarchiveTasks() {
             column.setArchived(true);
+            column.setRestorePosition(0);
             when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
+            when(columnRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(2L);
             when(columnRepository.save(column)).thenReturn(column);
             when(columnMapper.toDto(column)).thenReturn(columnDto);
 
@@ -224,7 +235,9 @@ class ColumnServiceTest {
                     BOARD_ID, COLUMN_ID, new ColumnArchiveRequest(false, false));
 
             assertFalse(column.isArchived());
-            verify(taskRepository, never()).archiveByColumnId(any(), any());
+            assertNull(column.getRestorePosition());
+            verify(columnRepository).incrementActivePositionsFrom(BOARD_ID, 0);
+            verify(taskArchiveService, never()).archiveTasks(anyCollection());
         }
     }
 
@@ -233,14 +246,15 @@ class ColumnServiceTest {
         @Test
         void deleteColumn_Success() {
             // Given
+            column.setArchived(true);
             when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(columnRepository.hasTasksInColumn(COLUMN_ID)).thenReturn(false);
+            when(taskRepository.countByColumnIdAndIsArchivedFalse(COLUMN_ID)).thenReturn(0L);
 
             // When
             columnService.deleteColumn(COLUMN_ID);
 
             // Then
-            verify(columnRepository).decrementPositionsAfter(BOARD_ID, 0);
+            verify(taskRepository).deleteByColumnId(COLUMN_ID);
             verify(columnRepository).delete(Objects.requireNonNull(column));
             verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq("COLUMN_DELETED"), eq(BOARD_ID), any());
@@ -249,8 +263,9 @@ class ColumnServiceTest {
         @Test
         void deleteColumn_WithTasks_ThrowsException() {
             // Given
+            column.setArchived(true);
             when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(columnRepository.hasTasksInColumn(COLUMN_ID)).thenReturn(true);
+            when(taskRepository.countByColumnIdAndIsArchivedFalse(COLUMN_ID)).thenReturn(1L);
 
             // When & Then
             assertThrows(BadRequestException.class, () -> columnService.deleteColumn(COLUMN_ID));
@@ -285,8 +300,10 @@ class ColumnServiceTest {
             columnService.moveColumn(COLUMN_ID, request);
 
             // Then
-            verify(columnRepository, never()).decrementPositionsInRange(any(), anyInt(), anyInt());
-            verify(columnRepository, never()).incrementPositionsInRange(any(), anyInt(), anyInt());
+            verify(columnRepository, never())
+                    .decrementActivePositionsInRange(any(), anyInt(), anyInt());
+            verify(columnRepository, never())
+                    .incrementActivePositionsInRange(any(), anyInt(), anyInt());
             verify(boardRepository, never()).save(any());
         }
 
@@ -295,14 +312,14 @@ class ColumnServiceTest {
             // Given
             MoveColumnRequest request = new MoveColumnRequest(3);
             when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(columnRepository.countByBoardId(BOARD_ID)).thenReturn(5L);
+            when(columnRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(5L);
 
             // When
             columnService.moveColumn(COLUMN_ID, request);
 
             // Then
             assertEquals(3, column.getPosition());
-            verify(columnRepository).decrementPositionsInRange(BOARD_ID, 1, 3);
+            verify(columnRepository).decrementActivePositionsInRange(BOARD_ID, 1, 3);
             verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq("COLUMN_MOVED"), eq(BOARD_ID), any());
         }
@@ -313,14 +330,14 @@ class ColumnServiceTest {
             column.setPosition(3);
             MoveColumnRequest request = new MoveColumnRequest(1);
             when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(columnRepository.countByBoardId(BOARD_ID)).thenReturn(5L);
+            when(columnRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(5L);
 
             // When
             columnService.moveColumn(COLUMN_ID, request);
 
             // Then
             assertEquals(1, column.getPosition());
-            verify(columnRepository).incrementPositionsInRange(BOARD_ID, 1, 3);
+            verify(columnRepository).incrementActivePositionsInRange(BOARD_ID, 1, 3);
             verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
@@ -329,7 +346,7 @@ class ColumnServiceTest {
             // Given
             MoveColumnRequest request = new MoveColumnRequest(10);
             when(columnRepository.findByIdWithLock(COLUMN_ID)).thenReturn(Optional.of(column));
-            when(columnRepository.countByBoardId(BOARD_ID)).thenReturn(5L);
+            when(columnRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(5L);
 
             // When & Then
             assertThrows(

@@ -12,6 +12,7 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.Task;
+import com.kylerriggs.kanban.task.TaskArchiveService;
 import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
@@ -26,7 +27,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +44,7 @@ public class BoardService {
     private final BoardProperties boardProperties;
     private final TaskMapper taskMapper;
     private final TaskRepository taskRepository;
+    private final TaskArchiveService taskArchiveService;
     private final CommentRepository commentRepository;
     private final BoardEventPublisher eventPublisher;
 
@@ -180,6 +181,11 @@ public class BoardService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
+        if (boardToUpdate.isArchived() != boardRequest.isArchived()) {
+            throw new BadRequestException(
+                    "Use the archive endpoint to change board archive state.");
+        }
+
         boardToUpdate.setName(boardRequest.name());
         boardToUpdate.setDescription(boardRequest.description());
         boardToUpdate.setArchived(boardRequest.isArchived());
@@ -206,9 +212,10 @@ public class BoardService {
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
         boolean shouldArchive = request.isArchived();
+        boolean isUnarchiving = !shouldArchive && boardToUpdate.isArchived();
 
         // When unarchiving, check the board limit for the requesting user
-        if (!shouldArchive && boardToUpdate.isArchived()) {
+        if (isUnarchiving) {
             boardLimitPolicy.assertCanCreateOrCollaborate(requestUserId);
         }
 
@@ -234,12 +241,19 @@ public class BoardService {
             }
 
             if (unarchivedTaskCount > 0) {
-                taskRepository.archiveByBoardId(boardId, Instant.now());
+                taskArchiveService.archiveTasks(taskRepository.findByBoardId(boardId));
             }
         }
 
         boardToUpdate.setArchived(shouldArchive);
         boardRepository.save(boardToUpdate);
+
+        if (isUnarchiving) {
+            taskRepository.findByBoardId(boardId).stream()
+                    .filter(Task::isArchived)
+                    .filter(task -> !task.getColumn().isArchived())
+                    .forEach(taskArchiveService::restoreTask);
+        }
 
         eventPublisher.publish("BOARD_UPDATED", boardId, boardId);
 
@@ -267,21 +281,20 @@ public class BoardService {
                                 CommentRepository.TaskCommentCount::getCommentCount));
     }
 
-    // /**
-    // * Deletes a board and all its associated data (tasks, columns,
-    // collaborators).
-    // * Disabled for now. Implementing soft deletes/archiving instead.
-    // *
-    // * @param boardId the ID of the board to delete
-    // * @throws ResourceNotFoundException if the board doesn't exist
-    // */
-    // @Transactional
-    // public void deleteBoard(UUID boardId) {
-    // Board boardToDelete = boardRepository.findById(boardId)
-    // .orElseThrow(() -> new ResourceNotFoundException("Board not found: " +
-    // boardId));
-    // boardRepository.delete(boardToDelete);
-    // }
+    @Transactional
+    public void deleteBoard(@NonNull UUID boardId) {
+        Board boardToDelete =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
+
+        if (!boardToDelete.isArchived()) {
+            throw new BadRequestException("Board must be archived before it can be deleted.");
+        }
+
+        boardRepository.delete(boardToDelete);
+    }
 
     /**
      * Adds a new collaborator to a board with the specified role.

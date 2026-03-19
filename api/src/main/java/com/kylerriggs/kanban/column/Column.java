@@ -28,6 +28,8 @@ public class Column {
     @jakarta.persistence.Column(nullable = false)
     private Integer position;
 
+    private Integer restorePosition;
+
     @Builder.Default
     @jakarta.persistence.Column(nullable = false)
     private boolean isArchived = false;

@@ -101,7 +101,17 @@ public class BoardMapper {
      * @return the board as a summary DTO
      */
     public BoardSummary toSummaryDto(Board board, String currentUserId) {
-        int completedTasks = (int) board.getTasks().stream().filter(Task::isCompleted).count();
+        long totalTasks =
+                board.isArchived()
+                        ? board.getTasks().size()
+                        : board.getTasks().stream().filter(task -> !task.isArchived()).count();
+        int completedTasks =
+                (int)
+                        (board.isArchived()
+                                ? board.getTasks().stream().filter(Task::isCompleted).count()
+                                : board.getTasks().stream()
+                                        .filter(task -> !task.isArchived() && task.isCompleted())
+                                        .count());
 
         boolean isFavorite =
                 board.getCollaborators().stream()
@@ -113,7 +123,7 @@ public class BoardMapper {
                 board.getDescription(),
                 board.getDateModified().toString(),
                 completedTasks,
-                board.getTasks().size(),
+                (int) totalTasks,
                 board.isArchived(),
                 isFavorite);
     }

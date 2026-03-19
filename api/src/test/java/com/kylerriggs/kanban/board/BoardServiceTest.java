@@ -2,6 +2,7 @@ package com.kylerriggs.kanban.board;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,6 +14,7 @@ import com.kylerriggs.kanban.board.dto.BoardRequest;
 import com.kylerriggs.kanban.board.dto.BoardSummary;
 import com.kylerriggs.kanban.board.dto.CollaboratorDto;
 import com.kylerriggs.kanban.board.dto.CollaboratorRequest;
+import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.column.dto.ColumnDto;
 import com.kylerriggs.kanban.config.BoardProperties;
 import com.kylerriggs.kanban.exception.BadRequestException;
@@ -20,6 +22,7 @@ import com.kylerriggs.kanban.exception.BoardLimitExceededException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.exception.UnauthorizedException;
 import com.kylerriggs.kanban.task.Task;
+import com.kylerriggs.kanban.task.TaskArchiveService;
 import com.kylerriggs.kanban.task.TaskMapper;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
@@ -57,6 +60,7 @@ class BoardServiceTest {
     @Mock private UserLookupService userLookupService;
     @Mock private BoardLimitPolicy boardLimitPolicy;
     @Mock private BoardProperties boardProperties;
+    @Mock private TaskArchiveService taskArchiveService;
     @Mock private com.kylerriggs.kanban.comment.CommentRepository commentRepository;
     @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private BoardService boardService;
@@ -358,9 +362,11 @@ class BoardServiceTest {
 
         @Test
         void updateBoardArchive_WhenConfirmed_ArchivesBoardAndTasks() {
+            Task activeTask = Task.builder().id(UUID.randomUUID()).board(board).build();
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(taskRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(3L);
+            when(taskRepository.findByBoardId(BOARD_ID)).thenReturn(List.of(activeTask));
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
             when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
 
@@ -369,22 +375,34 @@ class BoardServiceTest {
 
             assertNotNull(result);
             assertTrue(board.isArchived());
-            verify(taskRepository).archiveByBoardId(eq(BOARD_ID), any());
+            verify(taskArchiveService).archiveTasks(List.of(activeTask));
             verify(eventPublisher).publish("BOARD_UPDATED", BOARD_ID, BOARD_ID);
         }
 
         @Test
-        void updateBoardArchive_WhenUnarchiving_DoesNotUnarchiveTasks() {
+        void updateBoardArchive_WhenUnarchiving_UnarchivesTasksInActiveColumns() {
             board.setArchived(true);
+            Column activeColumn =
+                    Column.builder().id(UUID.randomUUID()).name("Todo").board(board).build();
+            Task archivedTask =
+                    Task.builder()
+                            .id(UUID.randomUUID())
+                            .board(board)
+                            .column(activeColumn)
+                            .isArchived(true)
+                            .build();
+
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+            when(taskRepository.findByBoardId(BOARD_ID)).thenReturn(List.of(archivedTask));
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
             when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
 
             boardService.updateBoardArchive(BOARD_ID, new BoardArchiveRequest(false, false));
 
             assertFalse(board.isArchived());
-            verify(taskRepository, never()).archiveByBoardId(any(), any());
+            verify(taskArchiveService, never()).archiveTasks(anyCollection());
+            verify(taskArchiveService).restoreTask(archivedTask);
         }
 
         @Test

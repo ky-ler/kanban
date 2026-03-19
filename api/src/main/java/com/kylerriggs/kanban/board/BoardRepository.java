@@ -12,19 +12,6 @@ import java.util.UUID;
 
 public interface BoardRepository extends JpaRepository<Board, UUID> {
     /**
-     * Fetches all boards where the user is a collaborator, including tasks, columns, and assignees
-     * to avoid N+1 queries.
-     *
-     * @param userId the user ID to filter collaborators by
-     * @return all matching boards with task and column details hydrated
-     */
-    @Query(
-            "SELECT DISTINCT p FROM Board p LEFT JOIN FETCH p.tasks i LEFT JOIN FETCH i.column LEFT"
-                    + " JOIN FETCH i.assignedTo WHERE p.id IN (SELECT pu.board.id FROM BoardUser pu"
-                    + " WHERE pu.user.id = :userId)")
-    List<Board> findAllByCollaboratorsUserIdWithTasksAndColumn(@Param("userId") String userId);
-
-    /**
      * Fetches all non-archived boards where the user is a collaborator, including tasks, columns,
      * and assignees to avoid N+1 queries.
      *

@@ -9,6 +9,7 @@ import com.kylerriggs.kanban.column.dto.MoveColumnRequest;
 import com.kylerriggs.kanban.column.dto.UpdateColumnRequest;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.task.TaskArchiveService;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 
@@ -28,6 +29,7 @@ public class ColumnService {
     private final ColumnMapper columnMapper;
     private final BoardRepository boardRepository;
     private final TaskRepository taskRepository;
+    private final TaskArchiveService taskArchiveService;
     private final BoardEventPublisher eventPublisher;
 
     /**
@@ -45,14 +47,24 @@ public class ColumnService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
 
+        if (board.isArchived()) {
+            throw new BadRequestException(
+                    "Board is archived. Unarchive it before modifying columns.");
+        }
+
+        int activeColumnCount = (int) columnRepository.countByBoardIdAndIsArchivedFalse(boardId);
         Integer position = request.position();
 
         // If position is null, append to end
         if (position == null) {
-            position = columnRepository.findMaxPositionByBoardId(boardId) + 1;
+            position = activeColumnCount;
         } else {
+            if (position < 0 || position > activeColumnCount) {
+                throw new BadRequestException(
+                        "Invalid position: " + position + ". Max position is " + activeColumnCount);
+            }
             // Shift existing columns at and after the specified position
-            columnRepository.incrementPositionsFrom(boardId, position);
+            columnRepository.incrementActivePositionsFrom(boardId, position);
         }
 
         Column column =
@@ -86,6 +98,15 @@ public class ColumnService {
                                         new ResourceNotFoundException(
                                                 "Column not found: " + columnId));
 
+        if (column.getBoard().isArchived()) {
+            throw new BadRequestException(
+                    "Board is archived. Unarchive it before modifying columns.");
+        }
+
+        if (column.isArchived()) {
+            throw new BadRequestException("Column is archived. Restore it before editing it.");
+        }
+
         column.setName(request.name());
         column = columnRepository.save(column);
 
@@ -115,18 +136,18 @@ public class ColumnService {
                                         new ResourceNotFoundException(
                                                 "Column not found: " + columnId));
 
-        // Check for existing tasks
-        if (columnRepository.hasTasksInColumn(columnId)) {
+        if (!column.isArchived()) {
+            throw new BadRequestException("Column must be archived before it can be deleted.");
+        }
+
+        if (taskRepository.countByColumnIdAndIsArchivedFalse(columnId) > 0) {
             throw new BadRequestException(
-                    "Cannot delete column with tasks. Move or delete tasks first.");
+                    "Cannot delete a column with active tasks. Archive those tasks first.");
         }
 
         Board board = column.getBoard();
         UUID boardId = board.getId();
-        int position = column.getPosition();
-
-        // Shift positions of columns after the deleted one
-        columnRepository.decrementPositionsAfter(boardId, position);
+        taskRepository.deleteByColumnId(columnId);
 
         columnRepository.delete(column);
 
@@ -161,13 +182,22 @@ public class ColumnService {
         UUID boardId = board.getId();
         Integer oldPosition = column.getPosition();
 
+        if (board.isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before moving columns.");
+        }
+
+        if (column.isArchived()) {
+            throw new BadRequestException(
+                    "Archived columns cannot be moved. Restore the column first.");
+        }
+
         // No change needed
         if (oldPosition.equals(newPosition)) {
             return;
         }
 
         // Validate new position is within bounds
-        long columnCount = columnRepository.countByBoardId(boardId);
+        long columnCount = columnRepository.countByBoardIdAndIsArchivedFalse(boardId);
         if (newPosition >= columnCount) {
             throw new BadRequestException(
                     "Invalid position: " + newPosition + ". Max position is " + (columnCount - 1));
@@ -175,10 +205,10 @@ public class ColumnService {
 
         if (newPosition > oldPosition) {
             // Moving right: Shift columns between old and new position left
-            columnRepository.decrementPositionsInRange(boardId, oldPosition, newPosition);
+            columnRepository.decrementActivePositionsInRange(boardId, oldPosition, newPosition);
         } else {
             // Moving left: Shift columns between new and old position right
-            columnRepository.incrementPositionsInRange(boardId, newPosition, oldPosition);
+            columnRepository.incrementActivePositionsInRange(boardId, newPosition, oldPosition);
         }
 
         column.setPosition(newPosition);
@@ -207,6 +237,11 @@ public class ColumnService {
             throw new ResourceNotFoundException("Column not found in board: " + columnId);
         }
 
+        if (column.getBoard().isArchived()) {
+            throw new BadRequestException(
+                    "Board is archived. Unarchive it before restoring or archiving columns.");
+        }
+
         boolean shouldArchive = request.isArchived();
         if (column.isArchived() == shouldArchive) {
             return columnMapper.toDto(column);
@@ -221,8 +256,26 @@ public class ColumnService {
             }
 
             if (unarchivedTaskCount > 0) {
-                taskRepository.archiveByColumnId(columnId, Instant.now());
+                taskArchiveService.archiveTasks(
+                        taskRepository.findByColumnIdOrderByPosition(columnId));
             }
+            column.setRestorePosition(column.getPosition());
+            columnRepository.decrementActivePositionsAfter(boardId, column.getPosition());
+            column.setPosition(columnRepository.findMaxPositionByBoardId(boardId) + 1);
+        } else if (!shouldArchive && column.isArchived()) {
+            int activeColumnCount =
+                    (int) columnRepository.countByBoardIdAndIsArchivedFalse(boardId);
+            int restorePosition =
+                    Math.max(
+                            0,
+                            Math.min(
+                                    column.getRestorePosition() != null
+                                            ? column.getRestorePosition()
+                                            : activeColumnCount,
+                                    activeColumnCount));
+            columnRepository.incrementActivePositionsFrom(boardId, restorePosition);
+            column.setPosition(restorePosition);
+            column.setRestorePosition(null);
         }
 
         column.setArchived(shouldArchive);

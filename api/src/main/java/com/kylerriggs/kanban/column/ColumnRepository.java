@@ -32,6 +32,10 @@ public interface ColumnRepository extends JpaRepository<Column, UUID> {
     @Query("SELECT COALESCE(MAX(c.position), -1) FROM Column c WHERE c.board.id = :boardId")
     int findMaxPositionByBoardId(@Param("boardId") UUID boardId);
 
+    @Query(
+            "SELECT COALESCE(MAX(c.position), -1) FROM Column c WHERE c.board.id = :boardId AND c.isArchived = false")
+    int findMaxActivePositionByBoardId(@Param("boardId") UUID boardId);
+
     /**
      * Counts the number of columns in a board.
      *
@@ -40,6 +44,9 @@ public interface ColumnRepository extends JpaRepository<Column, UUID> {
      */
     @Query("SELECT COUNT(c) FROM Column c WHERE c.board.id = :boardId")
     long countByBoardId(@Param("boardId") UUID boardId);
+
+    @Query("SELECT COUNT(c) FROM Column c WHERE c.board.id = :boardId AND c.isArchived = false")
+    long countByBoardIdAndIsArchivedFalse(@Param("boardId") UUID boardId);
 
     /**
      * Decrements the position of all columns in a board that have a position greater than the
@@ -56,6 +63,13 @@ public interface ColumnRepository extends JpaRepository<Column, UUID> {
     int decrementPositionsAfter(
             @Param("boardId") UUID boardId, @Param("positionThreshold") int positionThreshold);
 
+    @Modifying
+    @Query(
+            "UPDATE Column c SET c.position = c.position - 1 WHERE c.board.id = :boardId AND"
+                    + " c.isArchived = false AND c.position > :positionThreshold")
+    int decrementActivePositionsAfter(
+            @Param("boardId") UUID boardId, @Param("positionThreshold") int positionThreshold);
+
     /**
      * Increments the position of all columns in a board that have a position greater than or equal
      * to the specified threshold. Used when inserting a column at a specific position.
@@ -69,6 +83,13 @@ public interface ColumnRepository extends JpaRepository<Column, UUID> {
             "UPDATE Column c SET c.position = c.position + 1 WHERE c.board.id = :boardId AND"
                     + " c.position >= :positionThreshold")
     int incrementPositionsFrom(
+            @Param("boardId") UUID boardId, @Param("positionThreshold") int positionThreshold);
+
+    @Modifying
+    @Query(
+            "UPDATE Column c SET c.position = c.position + 1 WHERE c.board.id = :boardId AND"
+                    + " c.isArchived = false AND c.position >= :positionThreshold")
+    int incrementActivePositionsFrom(
             @Param("boardId") UUID boardId, @Param("positionThreshold") int positionThreshold);
 
     /**
@@ -88,6 +109,16 @@ public interface ColumnRepository extends JpaRepository<Column, UUID> {
             @Param("minPosition") int minPosition,
             @Param("maxPosition") int maxPosition);
 
+    @Modifying
+    @Query(
+            "UPDATE Column c SET c.position = c.position - 1 WHERE c.board.id = :boardId AND"
+                    + " c.isArchived = false AND c.position > :minPosition AND c.position <="
+                    + " :maxPosition")
+    int decrementActivePositionsInRange(
+            @Param("boardId") UUID boardId,
+            @Param("minPosition") int minPosition,
+            @Param("maxPosition") int maxPosition);
+
     /**
      * Increments positions of columns in a range (used when moving a column up within the board).
      *
@@ -101,6 +132,16 @@ public interface ColumnRepository extends JpaRepository<Column, UUID> {
             "UPDATE Column c SET c.position = c.position + 1 WHERE c.board.id = :boardId AND"
                     + " c.position >= :minPosition AND c.position < :maxPosition")
     int incrementPositionsInRange(
+            @Param("boardId") UUID boardId,
+            @Param("minPosition") int minPosition,
+            @Param("maxPosition") int maxPosition);
+
+    @Modifying
+    @Query(
+            "UPDATE Column c SET c.position = c.position + 1 WHERE c.board.id = :boardId AND"
+                    + " c.isArchived = false AND c.position >= :minPosition AND c.position <"
+                    + " :maxPosition")
+    int incrementActivePositionsInRange(
             @Param("boardId") UUID boardId,
             @Param("minPosition") int minPosition,
             @Param("maxPosition") int maxPosition);
