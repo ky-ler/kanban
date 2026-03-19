@@ -49,7 +49,7 @@ export function rethrowProtectedRouteError(
   }
 
   if (isForbiddenApiError(error)) {
-    throw redirect({ to: "/boards" });
+    throw redirect({ to: "/boards", search: { archive: undefined } });
   }
 
   throw error;

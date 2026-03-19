@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ElementType } from "react";
-import { Check, Pencil, X } from "lucide-react";
+import { IconCheck, IconPencil, IconX } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,7 +145,7 @@ export function EditableTitleText({
               onClick={handleSave}
               className="shrink-0"
             >
-              <Check className="h-4 w-4" />
+              <IconCheck className="h-4 w-4" />
             </Button>
             <Button
               type="button"
@@ -154,12 +154,12 @@ export function EditableTitleText({
               onClick={handleCancel}
               className="shrink-0"
             >
-              <X className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </Button>
           </div>
         </div>
         {errorMessage ? (
-          <p className="text-destructive px-1 text-xs">{errorMessage}</p>
+          <p className="text-destructive px-1">{errorMessage}</p>
         ) : null}
       </div>
     );
@@ -174,7 +174,9 @@ export function EditableTitleText({
       onClick={canEdit ? onEdit : undefined}
     >
       {value}
-      {shouldShowPencil ? <Pencil className={config.pencilClassName} /> : null}
+      {shouldShowPencil ? (
+        <IconPencil className={config.pencilClassName} />
+      ) : null}
     </TitleViewComponent>
   );
 }

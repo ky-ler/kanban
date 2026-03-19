@@ -27,55 +27,48 @@ export const useMoveColumnOptimistic = (boardId: string) => {
     },
 
     onMutate: async ({ columnId, newPosition }) => {
-      // Register pending mutation to suppress self-triggered WebSocket invalidation
       ws?.registerPendingMutation(columnId);
-      // Cancel any outgoing refetches to avoid overwriting optimistic update
+
       await queryClient.cancelQueries({
         queryKey: getGetBoardQueryKey(boardId),
       });
 
-      // Snapshot the previous value
       const previousBoard = queryClient.getQueryData<{ data: BoardDto }>(
         getGetBoardQueryKey(boardId),
       );
 
-      // Optimistically update the cache
       queryClient.setQueryData<{ data: BoardDto }>(
         getGetBoardQueryKey(boardId),
         (old) => {
           if (!old) return old;
 
           const columns = old.data.columns || [];
-          const columnIndex = columns.findIndex((c) => c.id === columnId);
+          const activeColumns = columns.filter((column) => !column.isArchived);
+          const archivedColumns = columns.filter((column) => column.isArchived);
+          const columnIndex = activeColumns.findIndex((c) => c.id === columnId);
 
           if (columnIndex === -1) return old;
 
-          const column = columns[columnIndex];
+          const column = activeColumns[columnIndex];
           const oldPosition = column.position;
 
-          // If moving to same position, no update needed
           if (oldPosition === newPosition) {
             return old;
           }
 
-          // Create new column with updated position
           const updatedColumn = {
             ...column,
             position: newPosition,
           };
 
-          // Filter out the column being moved
-          const otherColumns = columns.filter((c) => c.id !== columnId);
+          const otherColumns = activeColumns.filter((c) => c.id !== columnId);
 
-          // Recalculate positions for affected columns
           const updatedColumns = otherColumns.map((c) => {
             if (newPosition < oldPosition) {
-              // Moving left: shift columns in range [newPosition, oldPosition) right
               if (c.position >= newPosition && c.position < oldPosition) {
                 return { ...c, position: c.position + 1 };
               }
             } else {
-              // Moving right: shift columns in range (oldPosition, newPosition] left
               if (c.position <= newPosition && c.position > oldPosition) {
                 return { ...c, position: c.position - 1 };
               }
@@ -83,10 +76,11 @@ export const useMoveColumnOptimistic = (boardId: string) => {
             return c;
           });
 
-          // Add the moved column and sort by position
-          const finalColumns = [...updatedColumns, updatedColumn].sort(
-            (a, b) => a.position - b.position,
-          );
+          const finalColumns = [
+            ...updatedColumns,
+            updatedColumn,
+            ...archivedColumns,
+          ].sort((a, b) => a.position - b.position);
 
           return {
             ...old,
@@ -98,12 +92,10 @@ export const useMoveColumnOptimistic = (boardId: string) => {
         },
       );
 
-      // Return context with snapshot for rollback
       return { previousBoard };
     },
 
     onError: (error, _variables, context) => {
-      // Rollback to previous state on error
       if (context?.previousBoard) {
         queryClient.setQueryData(
           getGetBoardQueryKey(boardId),
@@ -114,9 +106,7 @@ export const useMoveColumnOptimistic = (boardId: string) => {
     },
 
     onSettled: (_data, error, variables) => {
-      // Clear pending mutation tracking
       ws?.clearPendingMutation(variables.columnId);
-      // Only refetch on error — on success the optimistic cache is already correct
       if (error) {
         queryClient.invalidateQueries({
           queryKey: getGetBoardQueryKey(boardId),

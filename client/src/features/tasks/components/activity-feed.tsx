@@ -12,7 +12,12 @@ import {
 import { getGetTaskQueryKey } from "@/api/gen/endpoints/task-controller/task-controller";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, History, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  IconMessage,
+  IconHistory,
+  IconChevronDown,
+  IconChevronUp,
+} from "@tabler/icons-react";
 import { CommentInput } from "./comment-input";
 import { CommentItem } from "./comment-item";
 import { ActivityItem } from "./activity-item";
@@ -147,7 +152,7 @@ export function ActivityFeed({
 
   if (commentsError || activityError) {
     return (
-      <div className="text-muted-foreground py-4 text-center text-xs">
+      <div className="text-muted-foreground py-4 text-center">
         Failed to load activity
       </div>
     );
@@ -186,24 +191,24 @@ export function ActivityFeed({
       {/* Header with toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageSquare className="text-muted-foreground h-4 w-4" />
-          <span className="text-xs font-medium">Comments and activity</span>
+          <IconMessage className="text-muted-foreground h-4 w-4" />
+          <span className="font-medium">Comments and activity</span>
         </div>
         {hasActivity && (
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-foreground h-auto px-2 py-1 text-xs"
+            className="text-muted-foreground hover:text-foreground h-auto px-2 py-1"
             onClick={() => setShowDetails(!showDetails)}
           >
             {showDetails ? (
               <>
-                <ChevronUp className="mr-1 h-3 w-3" />
+                <IconChevronUp className="mr-1 h-3 w-3" />
                 Hide details
               </>
             ) : (
               <>
-                <ChevronDown className="mr-1 h-3 w-3" />
+                <IconChevronDown className="mr-1 h-3 w-3" />
                 Show details
               </>
             )}
@@ -222,11 +227,11 @@ export function ActivityFeed({
         <div className="text-muted-foreground flex flex-col items-center justify-center py-8">
           {!hasComments && !hasActivity ? (
             <>
-              <History className="mb-2 h-8 w-8" />
-              <p className="text-xs">No activity yet</p>
+              <IconHistory className="mb-2 h-8 w-8" />
+              <p className="">No activity yet</p>
             </>
           ) : (
-            <p className="text-xs">No comments yet</p>
+            <p className="">No comments yet</p>
           )}
         </div>
       ) : (

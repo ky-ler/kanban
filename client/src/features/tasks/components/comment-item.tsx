@@ -16,7 +16,8 @@ import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
 import { MarkdownView } from "@/components/rich-text/markdown-view";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { formatDistanceToNow } from "date-fns";
-import { User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { IconUser } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
 interface CommentItemProps {
@@ -112,28 +113,26 @@ export function CommentItem({
 
   return (
     <div className="flex gap-3 py-2">
-      <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-        {comment.author.profileImageUrl ? (
-          <img
-            src={comment.author.profileImageUrl}
-            alt={comment.author.username}
-            className="h-8 w-8 rounded-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <User className="text-primary h-4 w-4" />
-        )}
-      </div>
+      <Avatar>
+        <AvatarImage
+          src={comment.author.profileImageUrl ?? undefined}
+          alt={comment.author.username}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+        <AvatarFallback>
+          <IconUser className="size-4" />
+        </AvatarFallback>
+      </Avatar>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2">
           <span className="truncate font-medium">
             {comment.author.username}
           </span>
-          <span className="text-muted-foreground/70 text-xs">{timeAgo}</span>
+          <span className="text-muted-foreground/70">{timeAgo}</span>
           {wasEdited && (
-            <span className="text-muted-foreground/50 text-xs">(edited)</span>
+            <span className="text-muted-foreground/50">(edited)</span>
           )}
         </div>
 
@@ -157,9 +156,7 @@ export function CommentItem({
               minHeightClassName="min-h-[96px]"
               autoFocus={true}
             />
-            <p className="text-destructive text-xs">
-              {commentError ?? "\u00A0"}
-            </p>
+            <p className="text-destructive">{commentError ?? "\u00A0"}</p>
             <InlineSaveActions
               onCancel={handleCancel}
               onSave={handleSave}
@@ -186,24 +183,30 @@ export function CommentItem({
               }}
               style={{ cursor: isAuthor ? "pointer" : "default" }}
             >
-              <div className="text-xs">
+              <div className="">
                 <MarkdownView value={comment.content} />
               </div>
             </div>
 
             {isAuthor && (
-              <div className="text-muted-foreground mt-1 flex items-center gap-3 text-xs">
-                <button
-                  className="hover:text-foreground transition-colors hover:underline"
+              <div className="text-muted-foreground mt-1 flex items-center gap-3">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-muted-foreground h-auto p-0"
                   onClick={() => setIsEditing(true)}
                 >
                   Edit
-                </button>
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button className="text-destructive hover:text-destructive/80 transition-colors hover:underline">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-destructive h-auto p-0"
+                    >
                       Delete
-                    </button>
+                    </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>

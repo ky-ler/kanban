@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import {
-  Archive,
-  FolderKanban,
-  KanbanSquare,
-  LogIn,
-  LogOut,
-  Plus,
-  UserPlus,
-} from "lucide-react";
+  IconLayoutKanban,
+  IconLogin,
+  IconLogout,
+  IconPlus,
+  IconUserPlus,
+} from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,8 +22,14 @@ import { NewBoardDialog } from "@/features/boards/components/new-board-dialog";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { to: "/boards", label: "Boards", icon: FolderKanban },
-  { to: "/boards/archived", label: "Archive", icon: Archive },
+  {
+    to: "/boards",
+    label: "Boards",
+    icon: IconLayoutKanban,
+    search: {
+      archive: undefined,
+    },
+  },
 ] as const;
 
 export function AppHeader() {
@@ -39,14 +43,15 @@ export function AppHeader() {
     "?";
 
   return (
-    <header className="bg-background/80 sticky top-0 z-50 border-b backdrop-blur supports-backdrop-filter:bg-background/60">
+    <header className="bg-background/80 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 border-b backdrop-blur">
       <div className="mx-auto flex h-12 items-center gap-4 px-4">
         {/* Logo */}
         <Link
           to="/boards"
+          search={{ archive: undefined }}
           className="flex shrink-0 items-center gap-2 font-semibold tracking-tight"
         >
-          <KanbanSquare className="size-5 text-primary" />
+          <IconLayoutKanban className="text-primary size-5" />
           <span className="text-sm">Kanban</span>
         </Link>
 
@@ -54,7 +59,8 @@ export function AppHeader() {
         {auth.isAuthenticated && (
           <nav className="flex items-center gap-1">
             {navLinks.map((link) => {
-              const isActive = matchRoute({ to: link.to, fuzzy: true });
+              const isOnBoardsRoute = matchRoute({ to: link.to, fuzzy: true });
+              const isActive = isOnBoardsRoute;
               return (
                 <Button
                   key={link.to}
@@ -63,7 +69,7 @@ export function AppHeader() {
                   size="sm"
                   className={cn(isActive && "bg-muted text-foreground")}
                 >
-                  <Link to={link.to}>
+                  <Link to={link.to} search={link.search}>
                     <link.icon className="size-3.5" />
                     <span className="hidden sm:inline">{link.label}</span>
                   </Link>
@@ -81,7 +87,7 @@ export function AppHeader() {
               size="sm"
               onClick={() => setNewBoardOpen(true)}
             >
-              <Plus className="size-3.5" />
+              <IconPlus className="size-3.5" />
               <span className="hidden sm:inline">New Board</span>
             </Button>
           )}
@@ -113,13 +119,13 @@ export function AppHeader() {
                   <p className="text-sm font-medium">
                     {auth.user?.nickname ?? "User"}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-muted-foreground truncate">
                     {auth.user?.email}
                   </p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => auth.logout()}>
-                  <LogOut className="size-4" />
+                  <IconLogout className="size-4" />
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -131,7 +137,7 @@ export function AppHeader() {
                 size="sm"
                 onClick={() => auth.loginWithRedirect()}
               >
-                <LogIn className="size-3.5" />
+                <IconLogin className="size-3.5" />
                 Sign In
               </Button>
               <Button
@@ -143,7 +149,7 @@ export function AppHeader() {
                   })
                 }
               >
-                <UserPlus className="size-3.5" />
+                <IconUserPlus className="size-3.5" />
                 Sign Up
               </Button>
             </div>

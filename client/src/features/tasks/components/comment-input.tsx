@@ -1,8 +1,8 @@
 import { InlineSaveActions } from "@/components/inline-save-actions";
+import { Input } from "@/components/ui/input";
 import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
 import { createCommentBody } from "@/api/gen/endpoints/comment-controller/comment-controller.zod";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
-import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 interface CommentInputProps {
@@ -76,15 +76,11 @@ export function CommentInput({
 
   if (!isExpanded) {
     return (
-      <div
-        className={cn(
-          "bg-muted/50 cursor-text rounded-lg border border-transparent px-3 py-2 text-xs",
-          "text-muted-foreground hover:bg-muted hover:border-border transition-colors",
-        )}
+      <Input
+        readOnly
+        placeholder={placeholder}
         onClick={() => setIsExpanded(true)}
-      >
-        {placeholder}
-      </div>
+      />
     );
   }
 
@@ -106,7 +102,7 @@ export function CommentInput({
         minHeightClassName="min-h-[96px]"
         autoFocus={true}
       />
-      <p className="text-destructive text-xs">{commentError ?? "\u00A0"}</p>
+      <p className="text-destructive">{commentError ?? "\u00A0"}</p>
       <InlineSaveActions
         onCancel={handleCancel}
         onSave={handleSubmit}

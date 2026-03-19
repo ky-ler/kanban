@@ -1,57 +1,58 @@
 import type { ActivityLogDto } from "@/api/gen/model";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import {
-  Plus,
-  Pencil,
-  ArrowRight,
-  Trash2,
-  UserCircle,
-  Tag,
-  AlertCircle,
-  Calendar,
-} from "lucide-react";
+  IconPlus,
+  IconPencil,
+  IconArrowRight,
+  IconTrash,
+  IconUserCircle,
+  IconTag,
+  IconAlertCircle,
+  IconCalendar,
+} from "@tabler/icons-react";
 
 const activityConfig: Record<
   string,
   { icon: React.ElementType; label: string; color: string }
 > = {
   TASK_CREATED: {
-    icon: Plus,
+    icon: IconPlus,
     label: "created this task",
     color: "text-chart-1",
   },
   TASK_UPDATED: {
-    icon: Pencil,
+    icon: IconPencil,
     label: "updated the task",
     color: "text-chart-2",
   },
   TASK_MOVED: {
-    icon: ArrowRight,
+    icon: IconArrowRight,
     label: "moved the task",
     color: "text-chart-3",
   },
   TASK_DELETED: {
-    icon: Trash2,
+    icon: IconTrash,
     label: "deleted the task",
     color: "text-destructive",
   },
   ASSIGNEE_CHANGED: {
-    icon: UserCircle,
+    icon: IconUserCircle,
     label: "changed assignee",
     color: "text-chart-5",
   },
   LABELS_CHANGED: {
-    icon: Tag,
+    icon: IconTag,
     label: "changed labels",
     color: "text-chart-4",
   },
   PRIORITY_CHANGED: {
-    icon: AlertCircle,
+    icon: IconAlertCircle,
     label: "changed priority",
     color: "text-chart-1",
   },
   DUE_DATE_CHANGED: {
-    icon: Calendar,
+    icon: IconCalendar,
     label: "changed due date",
     color: "text-chart-2",
   },
@@ -125,7 +126,7 @@ function formatActivityDetails(
 
 export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
   const config = activityConfig[activity.type] ?? {
-    icon: Pencil,
+    icon: IconPencil,
     label: activity.type.toLowerCase().replace(/_/g, " "),
     color: "text-muted-foreground",
   };
@@ -140,23 +141,23 @@ export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
 
   return (
     <div className="flex gap-3 py-2">
-      <div
-        className={`bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.color}`}
-      >
-        <Icon className="h-4 w-4" />
-      </div>
+      <Avatar>
+        <AvatarFallback className={config.color}>
+          <Icon className="size-4" />
+        </AvatarFallback>
+      </Avatar>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center text-xs">
+        <div className="flex items-center">
           <span className="truncate font-medium">{activity.user.username}</span>
           &nbsp;
           <span className="text-muted-foreground">{config.label}</span>
         </div>
         {formattedDetails && (
-          <p className="text-muted-foreground mt-0.5 text-xs wrap-anywhere whitespace-normal">
+          <p className="text-muted-foreground mt-0.5 wrap-anywhere whitespace-normal">
             {formattedDetails}
           </p>
         )}
-        <p className="text-muted-foreground/70 mt-0.5 text-xs">{timeAgo}</p>
+        <p className="text-muted-foreground/70 mt-0.5">{timeAgo}</p>
       </div>
     </div>
   );

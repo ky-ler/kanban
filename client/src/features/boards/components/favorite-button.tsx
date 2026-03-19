@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Star } from "lucide-react";
+import { IconStar } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -14,7 +14,15 @@ import { handleMutationAuthError } from "@/features/auth/route-auth";
 interface FavoriteButtonProps {
   boardId: string;
   isFavorite: boolean;
-  size?: "xs" | "sm" | "default" | "lg" | "icon" | "icon-xs" | "icon-sm" | "icon-lg";
+  size?:
+    | "xs"
+    | "sm"
+    | "default"
+    | "lg"
+    | "icon"
+    | "icon-xs"
+    | "icon-sm"
+    | "icon-lg";
   variant?: "default" | "ghost" | "outline";
   showLabel?: boolean;
   className?: string;
@@ -129,7 +137,7 @@ export function FavoriteButton({
       className={cn("shrink-0", className)}
       aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
     >
-      <Star
+      <IconStar
         className={cn(
           "h-4 w-4",
           isFavorite && "fill-yellow-400 text-yellow-400",

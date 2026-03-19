@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { getSaveShortcutHint } from "@/lib/keyboard-shortcuts";
 import { cn } from "@/lib/utils";
-import { Check, X } from "lucide-react";
+import { IconCheck, IconX } from "@tabler/icons-react";
 
 interface InlineSaveActionsProps {
   onSave: () => void;
@@ -34,16 +34,14 @@ export function InlineSaveActions({
         onClick={onCancel}
         disabled={cancelDisabled}
       >
-        <X className="mr-1 h-3 w-3" />
+        <IconX className="mr-1 h-3 w-3" />
         Cancel
       </Button>
       <Button size="sm" onClick={onSave} disabled={saveDisabled}>
-        <Check className="mr-1 h-3 w-3" />
+        <IconCheck className="mr-1 h-3 w-3" />
         {isSaving ? savingText : saveText}
       </Button>
-      <span className="text-muted-foreground ml-auto text-xs">
-        {saveShortcutHint}
-      </span>
+      <span className="text-muted-foreground ml-auto">{saveShortcutHint}</span>
     </div>
   );
 }

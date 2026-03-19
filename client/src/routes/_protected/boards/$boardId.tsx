@@ -1,22 +1,30 @@
-import { useState, useEffect } from "react";
-import { LoadingSpinner } from "@/components/loading-spinner";
-import { Button } from "@/components/ui/button";
-import { EditableTitleText } from "@/components/editable-title-text";
+import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createFileRoute,
   Link,
   Outlet,
   useNavigate,
 } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
-  Archive,
-  ChevronRight,
-  EllipsisVertical,
-  Info,
-  Users,
-} from "lucide-react";
-import { FavoriteButton } from "@/features/boards/components/favorite-button";
-import { Alert } from "@/components/ui/alert";
+  IconArchive,
+  IconChevronRight,
+  IconDotsVertical,
+  IconInfoCircle,
+  IconRestore,
+  IconTrash,
+  IconUsers,
+} from "@tabler/icons-react";
+import { LoadingSpinner } from "@/components/loading-spinner";
+import { Button } from "@/components/ui/button";
+import { EditableTitleText } from "@/components/editable-title-text";
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import { BoardWebSocketBanner } from "@/features/boards/components/board-websocket-banner";
 import {
   AlertDialog,
@@ -27,11 +35,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -46,8 +54,6 @@ import { MarkdownView } from "@/components/rich-text/markdown-view";
 import { InlineSaveActions } from "@/components/inline-save-actions";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetArchivedBoardsForUserQueryKey,
   getGetBoardQueryKey,
@@ -68,11 +74,14 @@ import {
 import { TaskFilterBar } from "@/features/boards/components/task-filter-bar";
 import {
   filterTasks,
-  parseFiltersFromSearch,
   filtersToSearchParams,
+  parseFiltersFromSearch,
   type TaskFilters,
 } from "@/features/boards/utils/filter-tasks";
 import { BoardWebSocketProvider } from "@/features/boards/context/board-websocket-context";
+import { BoardArchiveModal } from "@/features/boards/components/board-archive-modal";
+import { useDeleteBoard } from "@/features/boards/hooks/use-delete-board";
+import { FavoriteButton } from "@/features/boards/components/favorite-button";
 
 function BoardRoute() {
   const { boardId } = Route.useParams();
@@ -90,6 +99,10 @@ export const Route = createFileRoute("/_protected/boards/$boardId")({
     priority: search.priority as string | undefined,
     labels: search.labels as string | undefined,
     due: search.due as string | undefined,
+    archive:
+      search.archive === "tasks" || search.archive === "columns"
+        ? search.archive
+        : undefined,
   }),
   loader: async ({
     context: { queryClient },
@@ -113,6 +126,12 @@ type EditingField = "name" | null;
 function BoardComponent() {
   const { boardId } = Route.useParams();
   const search = Route.useSearch();
+  const currentArchive =
+    search.archive === "columns"
+      ? "columns"
+      : search.archive === "tasks"
+        ? "tasks"
+        : undefined;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const auth = useAuth0Context();
@@ -122,6 +141,8 @@ function BoardComponent() {
   const [editValue, setEditValue] = useState("");
   const [editingField, setEditingField] = useState<EditingField>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [archiveBoardConfirmOpen, setArchiveBoardConfirmOpen] = useState(false);
+  const [deleteBoardOpen, setDeleteBoardOpen] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionEditValue, setDescriptionEditValue] = useState("");
 
@@ -129,30 +150,54 @@ function BoardComponent() {
     setSearchInput(filters.query ?? "");
   }, [filters.query]);
 
+  const updateRouteSearch = useCallback(
+    (nextFilters: TaskFilters, archive: "tasks" | "columns" | undefined) => {
+      navigate({
+        to: ".",
+        search: {
+          ...filtersToSearchParams(nextFilters),
+          archive,
+        },
+        replace: true,
+      });
+    },
+    [navigate],
+  );
+
   const handleFiltersChange = (newFilters: TaskFilters) => {
-    const searchParams = filtersToSearchParams(newFilters);
-    navigate({
-      to: ".",
-      search: searchParams,
-      replace: true,
-    });
+    updateRouteSearch(newFilters, currentArchive);
   };
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput !== (filters.query ?? "")) {
-        navigate({
-          to: ".",
-          search: filtersToSearchParams({
+        updateRouteSearch(
+          {
             ...filters,
             query: searchInput || undefined,
-          }),
-          replace: true,
-        });
+          },
+          currentArchive,
+        );
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchInput, filters, navigate]);
+  }, [currentArchive, filters, searchInput, updateRouteSearch]);
+
+  useEffect(() => {
+    if (!board?.data.isArchived || !search.archive) {
+      return;
+    }
+
+    updateRouteSearch(filters, undefined);
+  }, [board?.data.isArchived, filters, search.archive, updateRouteSearch]);
+
+  const openArchiveModal = (archive: "tasks" | "columns") => {
+    updateRouteSearch(filters, archive);
+  };
+
+  const closeArchiveModal = () => {
+    updateRouteSearch(filters, undefined);
+  };
 
   const currentUserId = auth?.user?.sub;
   const currentUserRole = board?.data.collaborators.find(
@@ -160,6 +205,7 @@ function BoardComponent() {
   )?.role;
   const isAdmin = currentUserRole === CollaboratorDtoRole.ADMIN;
   const isBoardOwner = board?.data.createdBy.id === currentUserId;
+  const isBoardArchived = board?.data.isArchived ?? false;
   const canEditBoardMeta = isAdmin || isBoardOwner;
 
   const updateBoardMutation = useUpdateBoard({
@@ -170,6 +216,9 @@ function BoardComponent() {
         });
         queryClient.invalidateQueries({
           queryKey: getGetBoardsForUserQueryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getGetArchivedBoardsForUserQueryKey(),
         });
         setEditingField(null);
       },
@@ -182,27 +231,41 @@ function BoardComponent() {
     },
   });
 
-  const { mutate: archiveBoard, isPending: isArchiving } =
+  const { mutate: updateBoardArchive, isPending: isUpdatingBoardArchive } =
     useUpdateBoardArchive({
       mutation: {
-        onSuccess: () => {
-          toast.success("Board archived");
+        onSuccess: (_data, variables) => {
+          queryClient.invalidateQueries({
+            queryKey: getGetBoardQueryKey(boardId),
+          });
           queryClient.invalidateQueries({
             queryKey: getGetBoardsForUserQueryKey(),
           });
           queryClient.invalidateQueries({
             queryKey: getGetArchivedBoardsForUserQueryKey(),
           });
-          navigate({ to: "/boards" });
+
+          if (variables.data.isArchived) {
+            toast.success("Board archived");
+            navigate({
+              to: "/boards",
+              search: { archive: undefined },
+            });
+            return;
+          }
+
+          toast.success("Board restored");
         },
         onError: (error) => {
           if (handleMutationAuthError(error)) {
             return;
           }
-          toast.error("Failed to archive board");
+          toast.error("Failed to update board");
         },
       },
     });
+
+  const deleteBoardMutation = useDeleteBoard();
 
   const saveName = (value: string) => {
     if (!board) return;
@@ -227,6 +290,28 @@ function BoardComponent() {
     });
   };
 
+  const handleDeleteBoard = async () => {
+    try {
+      await deleteBoardMutation.mutateAsync(boardId);
+      toast.success("Board deleted");
+      queryClient.invalidateQueries({
+        queryKey: getGetBoardsForUserQueryKey(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: getGetArchivedBoardsForUserQueryKey(),
+      });
+      navigate({
+        to: "/boards",
+        search: { archive: undefined },
+      });
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        return;
+      }
+      toast.error("Failed to delete board");
+    }
+  };
+
   if (!board || isLoading) {
     return <LoadingSpinner />;
   }
@@ -239,24 +324,32 @@ function BoardComponent() {
     );
   }
 
-  const filteredTasks = filterTasks(board.data.tasks ?? [], filters);
+  const activeColumns = (board.data.columns ?? []).filter(
+    (column) => !column.isArchived,
+  );
+  const activeColumnIds = new Set(activeColumns.map((column) => column.id));
+  const filteredTasks = filterTasks(board.data.tasks ?? [], filters).filter(
+    (task) => !task.isArchived && activeColumnIds.has(task.columnId),
+  );
+  const archiveModalOpen =
+    !isBoardArchived &&
+    (search.archive === "tasks" || search.archive === "columns");
 
   return (
     <>
       <BoardWebSocketBanner />
 
-      {/* Board Header */}
-      <div className="border-b bg-background/50">
+      <div className="bg-background/50 border-b">
         <div className="flex items-center gap-2 px-4 py-2">
-          {/* Breadcrumb + Title */}
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <Link
               to="/boards"
-              className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              search={{ archive: undefined }}
+              className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
             >
               Boards
             </Link>
-            <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
+            <IconChevronRight className="text-muted-foreground size-3 shrink-0" />
             <div className="min-w-0 flex-1">
               <EditableTitleText
                 variant="board"
@@ -276,18 +369,19 @@ function BoardComponent() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex shrink-0 items-center gap-1">
-            <div className="hidden md:block">
-              <TaskFilterBar
-                boardId={boardId}
-                collaborators={board.data.collaborators ?? []}
-                filters={filters}
-                onFiltersChange={handleFiltersChange}
-                searchValue={searchInput}
-                onSearchChange={setSearchInput}
-              />
-            </div>
+            {!isBoardArchived ? (
+              <div className="hidden md:block">
+                <TaskFilterBar
+                  boardId={boardId}
+                  collaborators={board.data.collaborators ?? []}
+                  filters={filters}
+                  onFiltersChange={handleFiltersChange}
+                  searchValue={searchInput}
+                  onSearchChange={setSearchInput}
+                />
+              </div>
+            ) : null}
             <FavoriteButton
               boardId={boardId}
               isFavorite={board.data.isFavorite}
@@ -303,87 +397,190 @@ function BoardComponent() {
                   priority: undefined,
                   labels: undefined,
                   due: undefined,
+                  archive: undefined,
                 }}
               >
-                <Users className="size-3.5" />
+                <IconUsers className="size-3.5" />
                 <span className="sr-only">Collaborators</span>
               </Link>
             </Button>
-            <AlertDialog>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <EllipsisVertical className="size-3.5" />
-                    <span className="sr-only">Board actions</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-auto">
-                  <DropdownMenuItem onSelect={() => setAboutOpen(true)}>
-                    <Info className="size-3.5" />
-                    About This Board
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <IconDotsVertical className="size-3.5" />
+                  <span className="sr-only">Board actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto">
+                <DropdownMenuItem onSelect={() => setAboutOpen(true)}>
+                  <IconInfoCircle className="size-3.5" />
+                  About This Board
+                </DropdownMenuItem>
+                {!isBoardArchived ? (
+                  <DropdownMenuItem onSelect={() => openArchiveModal("tasks")}>
+                    <IconArchive className="size-3.5" />
+                    Archived Items
                   </DropdownMenuItem>
-                  {isBoardOwner && (
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem variant="destructive">
-                        <Archive className="size-3.5" />
-                        Archive Board
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Archive this board?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will archive the board and all its tasks. You can
-                    restore it from the Archive page.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    disabled={isArchiving}
+                ) : null}
+                {!isBoardArchived && isBoardOwner ? (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => setArchiveBoardConfirmOpen(true)}
+                  >
+                    <IconArchive className="size-3.5" />
+                    Archive Board
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {isBoardArchived ? (
+          <div className="px-4 pb-3">
+            <Alert>
+              <IconArchive />
+              <AlertTitle>This board is closed</AlertTitle>
+              <AlertDescription>
+                Unarchive the board to continue working on columns and tasks.
+              </AlertDescription>
+              {isBoardOwner ? (
+                <AlertAction className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUpdatingBoardArchive}
                     onClick={() =>
-                      archiveBoard({
+                      updateBoardArchive({
                         boardId,
                         data: {
-                          isArchived: true,
-                          confirmArchiveTasks: true,
+                          isArchived: false,
+                          confirmArchiveTasks: false,
                         },
                       })
                     }
                   >
-                    Archive
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <IconRestore data-icon="inline-start" />
+                    Unarchive
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteBoardOpen(true)}
+                  >
+                    <IconTrash data-icon="inline-start" />
+                    Delete
+                  </Button>
+                </AlertAction>
+              ) : null}
+            </Alert>
           </div>
-        </div>
-
-        {/* Mobile Filter Bar */}
-        <div className="px-4 pb-2 md:hidden">
-          <TaskFilterBar
-            boardId={boardId}
-            collaborators={board.data.collaborators ?? []}
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            searchValue={searchInput}
-            onSearchChange={setSearchInput}
-          />
-        </div>
+        ) : (
+          <div className="px-4 pb-2 md:hidden">
+            <TaskFilterBar
+              boardId={boardId}
+              collaborators={board.data.collaborators ?? []}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              searchValue={searchInput}
+              onSearchChange={setSearchInput}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Kanban Board */}
-      <KanbanBoard
-        columns={board.data.columns ?? []}
-        tasks={filteredTasks}
-        boardId={boardId}
-      />
+      {isBoardArchived ? (
+        <div className="text-muted-foreground px-4 py-8 text-sm">
+          This board is archived. Unarchive it to reopen the board.
+        </div>
+      ) : (
+        <KanbanBoard
+          columns={activeColumns}
+          tasks={filteredTasks}
+          boardId={boardId}
+        />
+      )}
+
       <Outlet />
 
-      {/* About This Board Dialog */}
+      <BoardArchiveModal
+        open={archiveModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeArchiveModal();
+          }
+        }}
+        boardId={boardId}
+        tab={currentArchive === "columns" ? "columns" : "tasks"}
+        onTabChange={openArchiveModal}
+        columns={board.data.columns ?? []}
+        tasks={board.data.tasks ?? []}
+      />
+
+      <Dialog
+        open={archiveBoardConfirmOpen}
+        onOpenChange={setArchiveBoardConfirmOpen}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Archive this board?</DialogTitle>
+            <DialogDescription>
+              This will archive the board and all its tasks. You can restore it
+              from the archived boards modal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setArchiveBoardConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isUpdatingBoardArchive}
+              onClick={() => {
+                setArchiveBoardConfirmOpen(false);
+                updateBoardArchive({
+                  boardId,
+                  data: {
+                    isArchived: true,
+                    confirmArchiveTasks: true,
+                  },
+                });
+              }}
+            >
+              Archive
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteBoardOpen} onOpenChange={setDeleteBoardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this board permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete &quot;{board.data.name}&quot; permanently. This cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteBoardMutation.isPending}
+              onClick={handleDeleteBoard}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog
         open={aboutOpen}
         onOpenChange={(open) => {
@@ -406,7 +603,6 @@ function BoardComponent() {
                   if (!target.closest('[contenteditable="true"]')) return;
                   if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
                     e.preventDefault();
-                    if (!board) return;
                     const payload = {
                       name: board.data.name,
                       description: descriptionEditValue.trim() || undefined,
@@ -442,7 +638,6 @@ function BoardComponent() {
                 />
                 <InlineSaveActions
                   onSave={() => {
-                    if (!board) return;
                     const payload = {
                       name: board.data.name,
                       description: descriptionEditValue.trim() || undefined,
@@ -471,22 +666,22 @@ function BoardComponent() {
                 role="button"
                 tabIndex={0}
                 className={cn(
-                  "rounded-lg border border-transparent px-3 py-2 text-xs transition-colors",
-                  "cursor-pointer bg-muted/30 hover:border-border hover:bg-muted/50",
+                  "rounded-lg border border-transparent px-3 py-2 transition-colors",
+                  "bg-muted/30 hover:border-border hover:bg-muted/50 cursor-pointer",
                 )}
                 onClick={() => {
-                  setDescriptionEditValue(board?.data.description ?? "");
+                  setDescriptionEditValue(board.data.description ?? "");
                   setIsEditingDescription(true);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
-                    setDescriptionEditValue(board?.data.description ?? "");
+                    setDescriptionEditValue(board.data.description ?? "");
                     setIsEditingDescription(true);
                   }
                 }}
               >
                 <MarkdownView
-                  value={board?.data.description ?? ""}
+                  value={board.data.description ?? ""}
                   emptyState={
                     <p className="text-muted-foreground italic">
                       Click to add a description...
@@ -495,9 +690,9 @@ function BoardComponent() {
                 />
               </div>
             ) : (
-              <div className="px-3 py-2 text-xs">
+              <div className="px-3 py-2">
                 <MarkdownView
-                  value={board?.data.description ?? ""}
+                  value={board.data.description ?? ""}
                   emptyState={
                     <p className="text-muted-foreground italic">
                       No description

@@ -4,16 +4,25 @@ import type { ColumnDto, TaskSummaryDto } from "@/api/gen/model";
 import { KanbanColumn } from "./kanban-column";
 import { cn } from "@/lib/utils";
 
+interface TaskDropPreview {
+  overTaskId: string;
+  placement: "before" | "after";
+}
+
 interface SortableColumnProps {
   column: ColumnDto;
   tasks: TaskSummaryDto[];
   boardId: string;
+  dropIndicator?: "before" | "after" | null;
+  taskDropPreview?: TaskDropPreview | null;
 }
 
 export const SortableColumn = ({
   column,
   tasks,
   boardId,
+  dropIndicator = null,
+  taskDropPreview = null,
 }: SortableColumnProps) => {
   const {
     attributes,
@@ -43,13 +52,21 @@ export const SortableColumn = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(isDragging && "z-10 opacity-50")}
+      className={cn(
+        "relative shrink-0",
+        isDragging && "opacity-40",
+        dropIndicator &&
+          "after:bg-primary/90 after:absolute after:inset-y-6 after:w-1 after:rounded-full after:shadow-[0_0_0_4px_var(--color-background)] after:content-['']",
+        dropIndicator === "before" && "after:-left-2",
+        dropIndicator === "after" && "after:-right-2",
+      )}
     >
       <KanbanColumn
         column={column}
         tasks={tasks}
         boardId={boardId}
         dragHandleProps={{ ...attributes, ...listeners }}
+        taskDropPreview={taskDropPreview}
       />
     </div>
   );

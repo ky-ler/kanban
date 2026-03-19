@@ -98,20 +98,20 @@ import {
   type LexicalEditor,
 } from "lexical";
 import {
-  Bold,
-  ChevronDown,
-  CircleHelp,
-  Code,
-  Italic,
-  Link2,
-  ExternalLink,
-  List,
-  MoreHorizontal,
-  Pencil,
-  Strikethrough,
-  Trash2,
-  TextQuote,
-} from "lucide-react";
+  IconBold,
+  IconChevronDown,
+  IconHelpCircle,
+  IconCode,
+  IconItalic,
+  IconLink,
+  IconExternalLink,
+  IconList,
+  IconDots,
+  IconPencil,
+  IconStrikethrough,
+  IconTrash,
+  IconQuote,
+} from "@tabler/icons-react";
 import {
   useCallback,
   useEffect,
@@ -408,7 +408,7 @@ function ToolbarButton({
           {children}
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="bottom" className="flex items-center gap-2 text-xs">
+      <TooltipContent side="bottom" className="flex items-center gap-2">
         <span>{label}</span>
         {shortcut ? (
           <span className="font-mono tracking-normal opacity-90">
@@ -433,7 +433,7 @@ function EditorHelpDialog() {
               className="h-8 w-8"
               aria-label="Editor help"
             >
-              <CircleHelp className="h-4 w-4" />
+              <IconHelpCircle className="h-4 w-4" />
             </Button>
           </DialogTrigger>
         </TooltipTrigger>
@@ -459,7 +459,7 @@ function EditorHelpDialog() {
                   className="flex items-center justify-between gap-3 text-sm"
                 >
                   <span>{item.action}</span>
-                  <kbd className="bg-muted border-border rounded-md border px-2 py-0.5 font-mono text-xs">
+                  <kbd className="bg-muted border-border rounded-md border px-2 py-0.5 font-mono">
                     {formatShortcutLabel(item.shortcut)}
                   </kbd>
                 </div>
@@ -476,7 +476,7 @@ function EditorHelpDialog() {
                   className="flex items-center justify-between gap-3 text-sm"
                 >
                   <span>{item.label}</span>
-                  <code className="bg-muted border-border rounded-md border px-2 py-0.5 font-mono text-xs">
+                  <code className="bg-muted border-border rounded-md border px-2 py-0.5 font-mono">
                     {item.syntax}
                   </code>
                 </div>
@@ -1022,8 +1022,8 @@ function ToolbarPlugin({
                   className="h-8 gap-1 px-2"
                   aria-label="Text style"
                 >
-                  <span className="text-xs">{activeTextStyleLabel}</span>
-                  <ChevronDown className="h-3 w-3" />
+                  <span className="">{activeTextStyleLabel}</span>
+                  <IconChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
@@ -1041,7 +1041,7 @@ function ToolbarPlugin({
               <span className="text-sm font-medium">Normal text</span>
               <DropdownMenuShortcut
                 className={cn(
-                  "rounded-md border px-1.5 py-0.5 font-mono text-xs leading-none tracking-normal",
+                  "rounded-md border px-1.5 py-0.5 font-mono leading-none tracking-normal",
                   activeTextStyle === "paragraph"
                     ? "border-accent-foreground/30 text-accent-foreground/90"
                     : "border-border bg-muted/50 text-muted-foreground",
@@ -1074,7 +1074,7 @@ function ToolbarPlugin({
                   </span>
                   <DropdownMenuShortcut
                     className={cn(
-                      "rounded-md border px-1.5 py-0.5 font-mono text-xs leading-none tracking-normal",
+                      "rounded-md border px-1.5 py-0.5 font-mono leading-none tracking-normal",
                       isActive
                         ? "border-accent-foreground/30 text-accent-foreground/90"
                         : "border-border bg-muted/50 text-muted-foreground",
@@ -1094,7 +1094,7 @@ function ToolbarPlugin({
           active={activeFormats.bold}
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}
         >
-          <Bold className="h-4 w-4" />
+          <IconBold className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           label="Italic"
@@ -1102,7 +1102,7 @@ function ToolbarPlugin({
           active={activeFormats.italic}
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic")}
         >
-          <Italic className="h-4 w-4" />
+          <IconItalic className="h-4 w-4" />
         </ToolbarButton>
 
         <DropdownMenu>
@@ -1120,8 +1120,8 @@ function ToolbarPlugin({
                   )}
                   aria-label="List formatting"
                 >
-                  <List className="h-4 w-4" />
-                  <ChevronDown className="h-3 w-3" />
+                  <IconList className="h-4 w-4" />
+                  <IconChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
@@ -1168,7 +1168,7 @@ function ToolbarPlugin({
           }}
           onClick={openLinkEditor}
         >
-          <Link2 className="h-4 w-4" />
+          <IconLink className="h-4 w-4" />
         </ToolbarButton>
 
         <DropdownMenu>
@@ -1188,8 +1188,8 @@ function ToolbarPlugin({
                   )}
                   aria-label="More formatting"
                 >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <ChevronDown className="h-3 w-3" />
+                  <IconDots className="h-4 w-4" />
+                  <IconChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
@@ -1205,7 +1205,7 @@ function ToolbarPlugin({
                   "bg-accent text-accent-foreground focus:bg-accent focus:text-accent-foreground",
               )}
             >
-              <Strikethrough className="mr-2 h-4 w-4" />
+              <IconStrikethrough className="mr-2 h-4 w-4" />
               Strikethrough
               <DropdownMenuShortcut>
                 {formatShortcutLabel("Mod+Shift+S")}
@@ -1220,7 +1220,7 @@ function ToolbarPlugin({
                   "bg-accent text-accent-foreground focus:bg-accent focus:text-accent-foreground",
               )}
             >
-              <Code className="mr-2 h-4 w-4" />
+              <IconCode className="mr-2 h-4 w-4" />
               Inline code
               <DropdownMenuShortcut>
                 {formatShortcutLabel("Mod+Shift+M")}
@@ -1233,7 +1233,7 @@ function ToolbarPlugin({
                   "bg-accent text-accent-foreground focus:bg-accent focus:text-accent-foreground",
               )}
             >
-              <TextQuote className="mr-2 h-4 w-4" />
+              <IconQuote className="mr-2 h-4 w-4" />
               Quote
               <DropdownMenuShortcut>
                 {formatShortcutLabel("Mod+Shift+.")}
@@ -1287,7 +1287,7 @@ function ToolbarPlugin({
                     });
                   }}
                 >
-                  <Pencil className="h-4 w-4" />
+                  <IconPencil className="h-4 w-4" />
                   Edit link
                 </Button>
               </TooltipTrigger>
@@ -1302,7 +1302,7 @@ function ToolbarPlugin({
                   onClick={openLinkInNewTab}
                   aria-label="Open link in new tab"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <IconExternalLink className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Open in new tab</TooltipContent>
@@ -1316,7 +1316,7 @@ function ToolbarPlugin({
                   onClick={removeLink}
                   aria-label="Remove link"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <IconTrash className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Remove link</TooltipContent>

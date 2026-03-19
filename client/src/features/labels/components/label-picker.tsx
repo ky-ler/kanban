@@ -1,13 +1,10 @@
 import { useState } from "react";
+import { Popover as PopoverPrimitive } from "radix-ui";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, X } from "lucide-react";
+import { IconPlus, IconTrash, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import {
   LABEL_COLORS,
@@ -142,13 +139,13 @@ export function LabelPicker({
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={handleOpenChange}>
+    <PopoverPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
+          variant="outline"
           role="combobox"
           aria-expanded={isOpen}
-          className="bg-muted/30 hover:bg-muted/50 hover:border-border aria-expanded:bg-muted/50 aria-expanded:border-border h-auto min-h-[44px] w-full justify-start rounded-md border border-transparent px-3 py-3 font-normal shadow-none transition-colors"
+          className="h-auto min-h-[44px] w-full justify-start px-3 py-3 font-normal"
         >
           {selectedLabels.length > 0 ? (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -165,18 +162,22 @@ export function LabelPicker({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-2" align="start">
+      <PopoverPrimitive.Content
+        className="bg-popover text-popover-foreground ring-foreground/10 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 z-50 w-64 rounded-lg p-2 text-sm shadow-md ring-1 outline-hidden"
+        align="start"
+        sideOffset={4}
+      >
         {isCreating ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium">Create Label</span>
+              <span className="font-medium">Create Label</span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
                 onClick={() => setIsCreating(false)}
               >
-                <X className="h-4 w-4" />
+                <IconX className="h-4 w-4" />
               </Button>
             </div>
             <Input
@@ -198,10 +199,8 @@ export function LabelPicker({
               aria-invalid={Boolean(createLabelError)}
             />
             <div className="flex items-center justify-between gap-2">
-              <p className="text-destructive text-xs">
-                {createLabelError ?? "\u00A0"}
-              </p>
-              <span className="text-muted-foreground text-xs">
+              <p className="text-destructive">{createLabelError ?? "\u00A0"}</p>
+              <span className="text-muted-foreground">
                 {newLabelName.trim().length}/{createLabelBodyNameMax}
               </span>
             </div>
@@ -252,7 +251,7 @@ export function LabelPicker({
                       <div
                         role="button"
                         tabIndex={0}
-                        className="focus-visible:ring-ring flex flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs outline-none focus-visible:ring-2"
+                        className="focus-visible:ring-ring flex flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none focus-visible:ring-2"
                         onClick={() => toggleLabel(label.id)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
@@ -268,20 +267,21 @@ export function LabelPicker({
                         />
                         <LabelBadge label={label} size="sm" />
                       </div>
-                      <button
-                        type="button"
-                        className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md p-1.5 transition-colors"
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive size-7"
                         onClick={(e) => handleDeleteLabel(e, label.id)}
                         title="Delete label"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                        <IconTrash className="size-3.5" />
+                      </Button>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-muted-foreground py-2 text-center text-xs">
+              <p className="text-muted-foreground py-2 text-center">
                 No labels yet
               </p>
             )}
@@ -291,12 +291,12 @@ export function LabelPicker({
               className="w-full"
               onClick={() => setIsCreating(true)}
             >
-              <Plus className="mr-1 h-4 w-4" />
+              <IconPlus className="mr-1 h-4 w-4" />
               Create label
             </Button>
           </div>
         )}
-      </PopoverContent>
-    </Popover>
+      </PopoverPrimitive.Content>
+    </PopoverPrimitive.Root>
   );
 }

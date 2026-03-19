@@ -22,7 +22,7 @@ import {
   FieldLabel,
   FieldSet,
 } from "@/components/ui/field";
-import { Plus } from "lucide-react";
+import { IconPlus } from "@tabler/icons-react";
 import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface AddColumnButtonProps {
@@ -79,7 +79,7 @@ export const AddColumnButton = ({ boardId }: AddColumnButtonProps) => {
           variant="outline"
           className="h-fit w-3xs flex-col gap-2 rounded-lg border-dashed py-6"
         >
-          <Plus className="size-6" />
+          <IconPlus className="size-6" />
           <span>Add Column</span>
         </Button>
       </DialogTrigger>

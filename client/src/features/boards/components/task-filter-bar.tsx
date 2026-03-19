@@ -5,23 +5,28 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import {
-  Filter,
-  X,
-  User,
-  Calendar,
-  Tag,
-  AlertCircle,
-  Search,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { TaskFilters } from "../utils/filter-tasks";
 import { hasActiveFilters } from "../utils/filter-tasks";
 import type { CollaboratorDto } from "@/api/gen/model";
 import { useGetLabelsByBoard } from "@/api/gen/endpoints/label-controller/label-controller";
 import { LabelBadge } from "@/features/labels/components/label-badge";
+import {
+  IconSearch,
+  IconFilter,
+  IconUser,
+  IconAlertCircle,
+  IconTag,
+  IconCalendar,
+  IconX,
+} from "@tabler/icons-react";
 
 const PRIORITIES = [
   { value: "LOW", label: "Low" },
@@ -90,16 +95,18 @@ export function TaskFilterBar({
   return (
     <div className="flex items-center gap-2">
       {/* Search Input */}
-      <div className="relative">
-        <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
-        <Input
+      <InputGroup className="w-36 sm:w-48">
+        <InputGroupAddon>
+          <IconSearch className="size-4" />
+        </InputGroupAddon>
+        <InputGroupInput
           type="search"
           placeholder="Search tasks..."
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-36 pl-8 sm:w-48"
+          className="text-xs"
         />
-      </div>
+      </InputGroup>
 
       {/* Filters Dropdown */}
       <Popover>
@@ -112,13 +119,10 @@ export function TaskFilterBar({
               activeFilterCount > 0 && "border-primary bg-primary/5",
             )}
           >
-            <Filter className="h-3.5 w-3.5" />
+            <IconFilter className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-1 h-4 px-1 text-xs leading-none"
-              >
+              <Badge variant="secondary" className="ml-1 h-4 px-1 leading-none">
                 {activeFilterCount}
               </Badge>
             )}
@@ -128,15 +132,15 @@ export function TaskFilterBar({
           <div className="max-h-80 overflow-y-auto p-2">
             {/* Assignee Section */}
             <div className="mb-1">
-              <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold tracking-wide uppercase">
-                <User className="h-3.5 w-3.5" />
+              <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 font-semibold tracking-wide uppercase">
+                <IconUser className="h-3.5 w-3.5" />
                 Assignee
               </div>
               <div className="space-y-0.5">
                 <button
                   type="button"
                   className={cn(
-                    "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
+                    "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5",
                     !filters.assignee && "bg-accent",
                   )}
                   onClick={() => updateFilter("assignee", undefined)}
@@ -151,7 +155,7 @@ export function TaskFilterBar({
                 <button
                   type="button"
                   className={cn(
-                    "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
+                    "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5",
                     filters.assignee === "unassigned" && "bg-accent",
                   )}
                   onClick={() => updateFilter("assignee", "unassigned")}
@@ -168,7 +172,7 @@ export function TaskFilterBar({
                     key={collab.user?.id}
                     type="button"
                     className={cn(
-                      "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
+                      "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5",
                       filters.assignee === collab.user?.id && "bg-accent",
                     )}
                     onClick={() => updateFilter("assignee", collab.user?.id)}
@@ -184,12 +188,12 @@ export function TaskFilterBar({
               </div>
             </div>
 
-            <div className="bg-border my-1 h-px" />
+            <Separator className="my-1" />
 
             {/* Priority Section */}
             <div className="mb-1">
-              <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold tracking-wide uppercase">
-                <AlertCircle className="h-3.5 w-3.5" />
+              <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 font-semibold tracking-wide uppercase">
+                <IconAlertCircle className="h-3.5 w-3.5" />
                 Priority
               </div>
               <div className="space-y-0.5">
@@ -202,7 +206,7 @@ export function TaskFilterBar({
                       key={priority.value}
                       type="button"
                       className={cn(
-                        "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
+                        "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5",
                         isSelected && "bg-accent/50",
                       )}
                       onClick={() =>
@@ -224,10 +228,10 @@ export function TaskFilterBar({
             {/* Labels Section */}
             {labels.length > 0 && (
               <>
-                <div className="bg-border my-1 h-px" />
+                <Separator className="my-1" />
                 <div className="mb-1">
-                  <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold tracking-wide uppercase">
-                    <Tag className="h-3.5 w-3.5" />
+                  <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 font-semibold tracking-wide uppercase">
+                    <IconTag className="h-3.5 w-3.5" />
                     Labels
                   </div>
                   <div className="space-y-0.5">
@@ -238,7 +242,7 @@ export function TaskFilterBar({
                           key={label.id}
                           type="button"
                           className={cn(
-                            "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
+                            "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5",
                             isSelected && "bg-accent/50",
                           )}
                           onClick={() =>
@@ -259,12 +263,12 @@ export function TaskFilterBar({
               </>
             )}
 
-            <div className="bg-border my-1 h-px" />
+            <Separator className="my-1" />
 
             {/* Due Date Section */}
             <div className="mb-1">
-              <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold tracking-wide uppercase">
-                <Calendar className="h-3.5 w-3.5" />
+              <div className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 font-semibold tracking-wide uppercase">
+                <IconCalendar className="h-3.5 w-3.5" />
                 Due Date
               </div>
               <div className="space-y-0.5">
@@ -275,7 +279,7 @@ export function TaskFilterBar({
                       key={option.label}
                       type="button"
                       className={cn(
-                        "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs",
+                        "hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5",
                         isSelected && "bg-accent",
                       )}
                       onClick={() => updateFilter("due", option.value)}
@@ -303,14 +307,14 @@ export function TaskFilterBar({
           {/* Clear All - pinned to bottom */}
           {(hasActiveFilters(filters) || searchValue) && (
             <>
-              <div className="bg-border h-px" />
+              <Separator />
               <div className="p-2">
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-foreground hover:bg-accent flex w-full items-center justify-center gap-1.5 rounded-sm px-2 py-1.5 text-xs"
+                  className="text-muted-foreground hover:text-foreground hover:bg-accent flex w-full items-center justify-center gap-1.5 rounded-sm px-2 py-1.5"
                   onClick={clearAllFilters}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <IconX className="h-3.5 w-3.5" />
                   Clear all filters
                 </button>
               </div>

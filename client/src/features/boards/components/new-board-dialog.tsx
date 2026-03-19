@@ -44,7 +44,6 @@ export const NewBoardDialog = ({
 }: NewBoardDialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
 
-  // Use external state if provided, otherwise internal
   const isOpen = open ?? internalOpen;
   const setIsOpen = onOpenChange ?? setInternalOpen;
 
@@ -65,6 +64,7 @@ export const NewBoardDialog = ({
             priority: undefined,
             labels: undefined,
             due: undefined,
+            archive: undefined,
           },
         });
         setIsOpen(false);

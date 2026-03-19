@@ -9,12 +9,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemTitle,
+} from "@/components/ui/item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { router } from "@/lib/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { User, UserMinus, Shield, Users, Link2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  IconUser,
+  IconUserMinus,
+  IconShield,
+  IconUsers,
+  IconLink,
+} from "@tabler/icons-react";
 import { InvitesTab } from "@/features/boards/components/invites-tab";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { toast } from "sonner";
@@ -113,6 +125,7 @@ function CollaboratorsComponent() {
           priority: undefined,
           labels: undefined,
           due: undefined,
+          archive: undefined,
         },
       });
     }
@@ -121,11 +134,11 @@ function CollaboratorsComponent() {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case CollaboratorDtoRole.ADMIN:
-        return <Shield className="h-3 w-3" />;
+        return <IconShield className="h-3 w-3" />;
       case CollaboratorDtoRole.MEMBER:
-        return <Users className="h-3 w-3" />;
+        return <IconUsers className="h-3 w-3" />;
       default:
-        return <User className="h-3 w-3" />;
+        return <IconUser className="h-3 w-3" />;
     }
   };
 
@@ -175,7 +188,7 @@ function CollaboratorsComponent() {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <IconUsers className="h-5 w-5" />
             Manage Team
           </DialogTitle>
           <DialogDescription>
@@ -187,11 +200,11 @@ function CollaboratorsComponent() {
           {isCurrentUserAdmin && (
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="collaborators">
-                <User className="mr-2 h-4 w-4" />
+                <IconUser className="mr-2 h-4 w-4" />
                 Collaborators
               </TabsTrigger>
               <TabsTrigger value="invites">
-                <Link2 className="mr-2 h-4 w-4" />
+                <IconLink className="mr-2 h-4 w-4" />
                 Invites
               </TabsTrigger>
             </TabsList>
@@ -200,23 +213,18 @@ function CollaboratorsComponent() {
           <TabsContent value="collaborators" className="mt-4">
             <div className="max-h-80 space-y-3 overflow-y-auto">
               {sortedCollaborators.map((collaborator) => (
-                <Item
-                  key={collaborator.user?.id}
-                  variant="outline"
-                >
-                  <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-                    {collaborator.user?.profileImageUrl ? (
-                      <img
-                        src={collaborator.user.profileImageUrl}
-                        alt={collaborator.user.username}
-                        className="rounded-full object-cover"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <User className="text-primary h-5 w-5" />
-                    )}
-                  </div>
+                <Item key={collaborator.user?.id} variant="outline">
+                  <Avatar size="lg">
+                    <AvatarImage
+                      src={collaborator.user?.profileImageUrl ?? undefined}
+                      alt={collaborator.user?.username}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                    <AvatarFallback>
+                      <IconUser className="size-5" />
+                    </AvatarFallback>
+                  </Avatar>
                   <ItemContent>
                     <ItemTitle>{collaborator.user?.username}</ItemTitle>
                     <Badge
@@ -242,7 +250,7 @@ function CollaboratorsComponent() {
                               disabled={removeCollaboratorMutation.isPending}
                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
-                              <UserMinus className="h-4 w-4" />
+                              <IconUserMinus className="h-4 w-4" />
                               {removeCollaboratorMutation.isPending
                                 ? "Removing..."
                                 : "Remove"}
@@ -251,7 +259,8 @@ function CollaboratorsComponent() {
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>
-                                Are you sure you want to remove this collaborator?
+                                Are you sure you want to remove this
+                                collaborator?
                               </AlertDialogTitle>
                               <AlertDialogDescription>
                                 This action cannot be undone.
@@ -262,7 +271,9 @@ function CollaboratorsComponent() {
                               <Button
                                 variant="destructive"
                                 onClick={() =>
-                                  handleRemoveCollaborator(collaborator.user!.id)
+                                  handleRemoveCollaborator(
+                                    collaborator.user!.id,
+                                  )
                                 }
                                 disabled={removeCollaboratorMutation.isPending}
                               >

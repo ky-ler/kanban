@@ -8,7 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Kanban, AlertCircle, LogIn, UserPlus } from "lucide-react";
+import {
+  IconLayoutKanban,
+  IconAlertCircle,
+  IconLogin,
+  IconUserPlus,
+} from "@tabler/icons-react";
 import {
   getAuthLoginSearch,
   getCurrentAppPath,
@@ -59,6 +64,7 @@ function InvitePage() {
             priority: undefined,
             labels: undefined,
             due: undefined,
+            archive: undefined,
           },
         });
       },
@@ -98,7 +104,7 @@ function InvitePage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
-              <AlertCircle className="text-destructive h-6 w-6" />
+              <IconAlertCircle className="text-destructive h-6 w-6" />
             </div>
             <CardTitle>Invite Not Found</CardTitle>
             <CardDescription>
@@ -145,7 +151,7 @@ function InvitePage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
-              <AlertCircle className="text-destructive h-6 w-6" />
+              <IconAlertCircle className="text-destructive h-6 w-6" />
             </div>
             <CardTitle>{error.title}</CardTitle>
             <CardDescription>{error.description}</CardDescription>
@@ -166,7 +172,7 @@ function InvitePage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
-            <Kanban className="text-primary h-6 w-6" />
+            <IconLayoutKanban className="text-primary h-6 w-6" />
           </div>
           <CardTitle>You've been invited!</CardTitle>
           <CardDescription>
@@ -175,7 +181,7 @@ function InvitePage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <Alert>
-            <Kanban className="h-4 w-4" />
+            <IconLayoutKanban className="h-4 w-4" />
             <AlertTitle>Board</AlertTitle>
             <AlertDescription className="font-medium">
               {preview.boardName}
@@ -193,18 +199,18 @@ function InvitePage() {
                 "Joining..."
               ) : (
                 <>
-                  <UserPlus className="mr-2 h-4 w-4" />
+                  <IconUserPlus className="mr-2 h-4 w-4" />
                   Join Board
                 </>
               )}
             </Button>
           ) : (
             <div className="space-y-4">
-              <p className="text-muted-foreground text-center text-xs">
+              <p className="text-muted-foreground text-center">
                 Sign in to join this board
               </p>
               <Button onClick={handleSignIn} className="w-full" size="lg">
-                <LogIn className="mr-2 h-4 w-4" />
+                <IconLogin className="mr-2 h-4 w-4" />
                 Sign In to Join
               </Button>
             </div>

@@ -18,13 +18,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
-import { Copy, Link2, Trash2, Clock, Users, Check } from "lucide-react";
+  IconCopy,
+  IconLink,
+  IconTrash,
+  IconClock,
+  IconUsers,
+  IconCheck,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
   useCreateInvite,
@@ -167,16 +169,14 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Link2 className="h-4 w-4" />
+            <IconLink className="h-4 w-4" />
             Create New Invite
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs">
-                Expires after
-              </label>
+              <label className="text-muted-foreground">Expires after</label>
               <Select
                 value={expiration}
                 onValueChange={(v) =>
@@ -196,7 +196,7 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-muted-foreground text-xs">Max uses</label>
+              <label className="text-muted-foreground">Max uses</label>
               <Select
                 value={maxUses}
                 onValueChange={(v) =>
@@ -230,7 +230,7 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
 
       {/* Invites List */}
       <div className="space-y-3">
-        <h4 className="text-muted-foreground text-xs font-medium">
+        <h4 className="text-muted-foreground font-medium">
           Active Invites ({invites.length})
         </h4>
         {isLoading ? (
@@ -256,30 +256,29 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
                 >
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <code className="bg-muted rounded-md px-2 py-1 font-mono text-xs">
+                      <code className="bg-muted rounded-md px-2 py-1 font-mono">
                         {invite.code}
                       </code>
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => copyInviteLink(invite.code)}
-                          className="h-8 w-8 p-0"
                         >
                           {copiedCode === invite.code ? (
-                            <Check className="h-4 w-4 text-primary" />
+                            <IconCheck className="text-primary h-4 w-4" />
                           ) : (
-                            <Copy className="h-4 w-4" />
+                            <IconCopy className="h-4 w-4" />
                           )}
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <IconTrash className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -308,9 +307,9 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
                         </AlertDialog>
                       </div>
                     </div>
-                    <div className="text-muted-foreground flex items-center gap-4 text-xs">
+                    <div className="text-muted-foreground flex items-center gap-4">
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
+                        <IconClock className="h-3 w-3" />
                         {expired ? (
                           <span className="text-destructive">Expired</span>
                         ) : (
@@ -318,7 +317,7 @@ export function InvitesTab({ boardId }: InvitesTabProps) {
                         )}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
+                        <IconUsers className="h-3 w-3" />
                         {maxedOut ? (
                           <span className="text-destructive">
                             Max uses reached

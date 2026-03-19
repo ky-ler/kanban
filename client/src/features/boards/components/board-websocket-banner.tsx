@@ -1,8 +1,4 @@
-import {
-  Alert,
-  AlertAction,
-  AlertDescription,
-} from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -11,7 +7,7 @@ import {
 } from "@/features/auth/auth-navigation";
 import { useBoardWebSocket } from "@/features/boards/context/board-websocket-context";
 import { router } from "@/lib/router";
-import { AlertCircle, WifiOff } from "lucide-react";
+import { IconAlertCircle, IconWifiOff } from "@tabler/icons-react";
 
 export function BoardWebSocketBanner() {
   const context = useBoardWebSocket();
@@ -55,7 +51,7 @@ export function BoardWebSocketBanner() {
     }
 
     if (context.failureReason === "access") {
-      void router.navigate({ to: "/boards" });
+      void router.navigate({ to: "/boards", search: { archive: undefined } });
       return;
     }
 
@@ -69,9 +65,9 @@ export function BoardWebSocketBanner() {
     >
       {isTerminalError ? (
         context.failureReason === "access" ? (
-          <WifiOff className="size-4 shrink-0" />
+          <IconWifiOff className="size-4 shrink-0" />
         ) : (
-          <AlertCircle className="size-4 shrink-0" />
+          <IconAlertCircle className="size-4 shrink-0" />
         )
       ) : (
         <Spinner className="size-4 shrink-0" />
@@ -83,7 +79,7 @@ export function BoardWebSocketBanner() {
             type="button"
             size="sm"
             variant={isTerminalError ? "destructive" : "secondary"}
-            className="h-7 shrink-0 px-2.5 text-xs"
+            className="h-7 shrink-0 px-2.5"
             onClick={handleAction}
           >
             {buttonLabel}

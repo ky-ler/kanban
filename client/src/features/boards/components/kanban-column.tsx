@@ -14,14 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Archive,
-  ArchiveRestore,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from "lucide-react";
+  IconArchive,
+  IconRestore,
+  IconDots,
+  IconPencil,
+  IconPlus,
+  IconX,
+} from "@tabler/icons-react";
 import { SortableTaskItem } from "@/features/tasks/components/sortable-task-item";
 import {
   DropdownMenu,
@@ -29,10 +28,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useEffect, useRef, useState } from "react";
 import { ColumnEditDialog } from "./column-edit-dialog";
-import { ColumnDeleteDialog } from "./column-delete-dialog";
-import { useCreateTask } from "@/api/gen/endpoints/task-controller/task-controller";
+import {
+  useCreateTask,
+  useUpdateTaskStatus,
+} from "@/api/gen/endpoints/task-controller/task-controller";
 import { createTaskBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
 import { useUpdateColumnArchive } from "@/api/gen/endpoints/column-controller/column-controller";
 import { updateColumnArchiveBody } from "@/api/gen/endpoints/column-controller/column-controller.zod";
@@ -40,12 +51,19 @@ import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { handleMutationAuthError } from "@/features/auth/route-auth";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface TaskDropPreview {
+  overTaskId: string;
+  placement: "before" | "after";
+}
 
 interface KanbanColumnProps {
   column: ColumnDto;
   tasks: TaskSummaryDto[];
   boardId: string;
   dragHandleProps?: Record<string, unknown>;
+  taskDropPreview?: TaskDropPreview | null;
 }
 
 export const KanbanColumn = ({
@@ -53,9 +71,11 @@ export const KanbanColumn = ({
   tasks,
   boardId,
   dragHandleProps,
+  taskDropPreview = null,
 }: KanbanColumnProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [isArchivingAllTasks, setIsArchivingAllTasks] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -87,6 +107,16 @@ export const KanbanColumn = ({
           return;
         }
         toast.error("Failed to update column archive status");
+      },
+    },
+  });
+  const updateTaskStatusMutation = useUpdateTaskStatus({
+    mutation: {
+      onError: (error) => {
+        if (handleMutationAuthError(error)) {
+          return;
+        }
+        toast.error("Failed to update task status");
       },
     },
   });
@@ -130,21 +160,10 @@ export const KanbanColumn = ({
     }
   };
 
-  const handleToggleArchive = async () => {
-    const shouldArchive = !column.isArchived;
-    const hasUnarchivedTasks = tasks.some((task) => !task.isArchived);
-
-    let confirmArchiveTasks = false;
-    if (shouldArchive && hasUnarchivedTasks) {
-      const confirmed = window.confirm(
-        "Archive this column and all active tasks in it?",
-      );
-      if (!confirmed) {
-        return;
-      }
-      confirmArchiveTasks = true;
-    }
-
+  const submitArchiveChange = async (
+    shouldArchive: boolean,
+    confirmArchiveTasks: boolean,
+  ) => {
     const payload = { isArchived: shouldArchive, confirmArchiveTasks };
     const validationResult = updateColumnArchiveBody.safeParse(payload);
     if (!validationResult.success) {
@@ -163,6 +182,7 @@ export const KanbanColumn = ({
         columnId: column.id,
         data: payload,
       });
+      setArchiveConfirmOpen(false);
       toast.success(shouldArchive ? "Column archived" : "Column unarchived", {
         id: toastId,
       });
@@ -172,6 +192,77 @@ export const KanbanColumn = ({
         return;
       }
       toast.error("Failed to update column archive status", { id: toastId });
+    }
+  };
+
+  const handleToggleArchive = () => {
+    if (column.isArchived) {
+      void submitArchiveChange(false, false);
+      return;
+    }
+    setArchiveConfirmOpen(true);
+  };
+
+  const handleArchiveAllTasks = async () => {
+    if (tasks.length === 0) {
+      return;
+    }
+
+    setIsArchivingAllTasks(true);
+    const toastId = toast.loading("Archiving tasks...");
+    try {
+      const results = await Promise.allSettled(
+        tasks.map((task) =>
+          updateTaskStatusMutation.mutateAsync({
+            taskId: task.id,
+            data: { isArchived: true },
+          }),
+        ),
+      );
+
+      for (const result of results) {
+        if (
+          result.status === "rejected" &&
+          handleMutationAuthError(result.reason)
+        ) {
+          toast.dismiss(toastId);
+          return;
+        }
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: getGetBoardQueryKey(boardId),
+      });
+
+      const archivedCount = results.filter(
+        (result) => result.status === "fulfilled",
+      ).length;
+      const failedCount = results.length - archivedCount;
+
+      if (failedCount === 0) {
+        toast.success(
+          archivedCount === 1
+            ? "1 task archived"
+            : `${archivedCount} tasks archived`,
+          { id: toastId },
+        );
+        return;
+      }
+
+      toast.error(
+        archivedCount === 0
+          ? "Failed to archive tasks"
+          : `Archived ${archivedCount} task${archivedCount === 1 ? "" : "s"}, ${failedCount} failed`,
+        { id: toastId },
+      );
+    } catch (error) {
+      if (handleMutationAuthError(error)) {
+        toast.dismiss(toastId);
+        return;
+      }
+      toast.error("Failed to archive tasks", { id: toastId });
+    } finally {
+      setIsArchivingAllTasks(false);
     }
   };
 
@@ -189,17 +280,17 @@ export const KanbanColumn = ({
     <>
       <Card
         ref={setNodeRef}
-        className="flex max-h-[65vh] w-3xs max-w-3xs flex-col gap-2 py-2 transition-colors"
+        className="flex max-h-[75vh] w-3xs max-w-3xs flex-col gap-2 py-2 transition-colors md:max-h-[80vh]"
       >
         {dragHandleProps && (
           <CardHeader
-            className="flex flex-shrink-0 touch-none flex-row items-center justify-between space-y-0 rounded-md px-4 active:cursor-grabbing"
+            className="flex flex-shrink-0 touch-none flex-row items-center justify-between space-y-0 px-4 active:cursor-grabbing"
             {...dragHandleProps}
           >
             <CardTitle className="text-base">
               {column.name}
               {column.isArchived ? (
-                <span className="text-muted-foreground ml-2 text-xs font-normal">
+                <span className="text-destructive ml-2 font-normal">
                   Archived
                 </span>
               ) : null}
@@ -207,32 +298,36 @@ export const KanbanColumn = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-8">
-                  <MoreHorizontal className="size-4" />
+                  <IconDots className="size-4" />
                   <span className="sr-only">Column options</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={handleToggleArchive}
-                  disabled={updateColumnArchiveMutation.isPending}
+                  disabled={
+                    updateColumnArchiveMutation.isPending || isArchivingAllTasks
+                  }
                 >
                   {column.isArchived ? (
-                    <ArchiveRestore className="mr-2 size-4" />
+                    <IconRestore className="mr-2 size-4" />
                   ) : (
-                    <Archive className="mr-2 size-4" />
+                    <IconArchive className="mr-2 size-4" />
                   )}
                   {column.isArchived ? "Unarchive" : "Archive"}
                 </DropdownMenuItem>
+                {!column.isArchived ? (
+                  <DropdownMenuItem
+                    onClick={() => void handleArchiveAllTasks()}
+                    disabled={tasks.length === 0 || isArchivingAllTasks}
+                  >
+                    <IconArchive className="mr-2 size-4" />
+                    Archive all tasks
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                  <Pencil className="mr-2 size-4" />
+                  <IconPencil className="mr-2 size-4" />
                   Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setIsDeleteOpen(true)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 size-4" />
-                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -240,7 +335,7 @@ export const KanbanColumn = ({
         )}
         {tasks.length > 0 && (
           <CardContent className="flex min-h-0 flex-1 overflow-hidden px-0">
-            <div className="flex-1 overflow-y-auto">
+            <ScrollArea className="flex-1">
               <SortableContext
                 items={taskIds}
                 strategy={verticalListSortingStrategy}
@@ -251,11 +346,16 @@ export const KanbanColumn = ({
                       key={task.id}
                       task={task}
                       boardId={boardId}
+                      dropIndicator={
+                        taskDropPreview?.overTaskId === task.id
+                          ? taskDropPreview.placement
+                          : null
+                      }
                     />
                   ))}
                 </div>
               </SortableContext>
-            </div>
+            </ScrollArea>
           </CardContent>
         )}
         <CardFooter className="flex-shrink-0 flex-col items-stretch gap-2 px-2">
@@ -294,7 +394,7 @@ export const KanbanColumn = ({
                     setTitle("");
                   }}
                 >
-                  <X className="size-4" />
+                  <IconX className="size-4" />
                 </Button>
               </div>
             </>
@@ -305,7 +405,7 @@ export const KanbanColumn = ({
               onClick={() => setIsAdding(true)}
               disabled={column.isArchived}
             >
-              <Plus className="size-4" />
+              <IconPlus className="size-4" />
               {column.isArchived ? "Archived column" : "New task"}
             </Button>
           )}
@@ -319,13 +419,29 @@ export const KanbanColumn = ({
         boardId={boardId}
       />
 
-      <ColumnDeleteDialog
-        open={isDeleteOpen}
-        onOpenChange={setIsDeleteOpen}
-        column={column}
-        boardId={boardId}
-        taskCount={tasks.length}
-      />
+      <AlertDialog
+        open={archiveConfirmOpen}
+        onOpenChange={setArchiveConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this column?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will archive the column and all active tasks in it. You can
+              restore it from Archived Items.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={updateColumnArchiveMutation.isPending}
+              onClick={() => void submitArchiveChange(true, true)}
+            >
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

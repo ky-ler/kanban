@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Edit } from "lucide-react";
+import { IconEdit } from "@tabler/icons-react";
 import {
   getGetBoardQueryKey,
   getGetBoardQueryOptions,
@@ -112,6 +112,7 @@ function EditBoardComponent() {
           priority: undefined,
           labels: undefined,
           due: undefined,
+          archive: undefined,
         },
       });
     }
@@ -127,7 +128,7 @@ function EditBoardComponent() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Edit className="h-5 w-5" />
+            <IconEdit className="h-5 w-5" />
             Edit Board
           </DialogTitle>
           <DialogDescription>

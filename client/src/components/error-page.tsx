@@ -51,7 +51,9 @@ export function ErrorPage({ error, reset }: ErrorPageProps) {
           You no longer have permission to view this resource.
         </p>
         <Button type="button" asChild>
-          <Link to="/boards">Back to boards</Link>
+          <Link to="/boards" search={{ archive: undefined }}>
+            Back to boards
+          </Link>
         </Button>
       </div>
     );

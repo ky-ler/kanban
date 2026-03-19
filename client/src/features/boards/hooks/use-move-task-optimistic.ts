@@ -51,12 +51,24 @@ export const useMoveTaskOptimistic = (boardId: string) => {
         (old) => {
           if (!old) return old;
 
+          const columns = old.data.columns || [];
+          const activeColumnIds = new Set(
+            columns
+              .filter((column) => !column.isArchived)
+              .map((column) => column.id),
+          );
           const tasks = old.data.tasks || [];
-          const task = tasks.find((t) => t.id === taskId);
+          const activeTasks = tasks.filter(
+            (task) => !task.isArchived && activeColumnIds.has(task.columnId),
+          );
+          const archivedTasks = tasks.filter(
+            (task) => task.isArchived || !activeColumnIds.has(task.columnId),
+          );
+          const task = activeTasks.find((t) => t.id === taskId);
           if (!task) return old;
 
           // Remove the task from its current position
-          const otherTasks = tasks.filter((t) => t.id !== taskId);
+          const otherTasks = activeTasks.filter((t) => t.id !== taskId);
 
           // Get the tasks in the target column, sorted by position
           const targetColumnTasks = otherTasks
@@ -96,9 +108,11 @@ export const useMoveTaskOptimistic = (boardId: string) => {
           const nonTargetTasks = otherTasks.filter(
             (t) => t.columnId !== newColumnId,
           );
-          const finalTasks = [...nonTargetTasks, ...updatedTargetTasks].sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0),
-          );
+          const finalTasks = [
+            ...archivedTasks,
+            ...nonTargetTasks,
+            ...updatedTargetTasks,
+          ];
 
           return {
             ...old,

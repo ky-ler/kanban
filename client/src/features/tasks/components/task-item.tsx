@@ -7,13 +7,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  User,
-  Calendar,
-  AlignLeft,
-  MessageSquare,
-  Archive,
-} from "lucide-react";
+  IconUser,
+  IconCalendar,
+  IconAlignLeft,
+  IconMessage,
+  IconArchive,
+} from "@tabler/icons-react";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useUpdateTaskStatus } from "@/api/gen/endpoints/task-controller/task-controller";
 import { updateTaskStatusBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
@@ -117,7 +118,7 @@ export const TaskItem = ({
   };
 
   return (
-    <Item size="sm" variant="outline" className="items-baseline gap-2">
+    <Item size="sm" variant="outline" className="bg-card items-baseline gap-2">
       <Checkbox
         aria-label={task.isCompleted ? "Mark incomplete" : "Mark complete"}
         checked={task.isCompleted}
@@ -135,6 +136,7 @@ export const TaskItem = ({
           priority: undefined,
           labels: undefined,
           due: undefined,
+          archive: undefined,
         }}
         className="min-w-0 flex-1 rounded-sm"
         aria-label={`Open task ${task.title}`}
@@ -143,7 +145,7 @@ export const TaskItem = ({
           <ItemTitle
             title={task.title}
             className={cn(
-              "w-full text-sm leading-snug wrap-anywhere whitespace-normal",
+              "w-full leading-snug wrap-anywhere whitespace-normal",
               task.isCompleted && "text-muted-foreground line-through",
             )}
           >
@@ -152,21 +154,15 @@ export const TaskItem = ({
           {hasTopMeta && (
             <div className="flex flex-wrap items-center gap-1.5">
               {task.isArchived && (
-                <Badge
-                  variant="outline"
-                  className="h-5 px-2 text-xs leading-none"
-                >
-                  <Archive className="mr-1 h-3 w-3" />
+                <Badge variant="outline" className="h-5 px-2 leading-none">
+                  <IconArchive className="mr-1 h-3 w-3" />
                   Archived
                 </Badge>
               )}
               {priority && (
                 <Badge
                   variant="outline"
-                  className={cn(
-                    "h-5 px-2 text-xs leading-none",
-                    priority.className,
-                  )}
+                  className={cn("h-5 px-2 leading-none", priority.className)}
                 >
                   {priority.label}
                 </Badge>
@@ -180,7 +176,7 @@ export const TaskItem = ({
                       <LabelBadge key={label.id} label={label} size="md" />
                     ))}
                   {task.labels.length > 3 && (
-                    <span className="text-muted-foreground text-xs leading-none">
+                    <span className="text-muted-foreground leading-none">
                       +{task.labels.length - 3}
                     </span>
                   )}
@@ -193,13 +189,11 @@ export const TaskItem = ({
               {task.dueDate && (
                 <span
                   className={cn(
-                    "flex items-center gap-1 text-xs leading-none",
-                    overdue
-                      ? "text-destructive"
-                      : "text-muted-foreground",
+                    "flex items-center gap-1 leading-none",
+                    overdue ? "text-destructive" : "text-muted-foreground",
                   )}
                 >
-                  <Calendar className="h-3.5 w-3.5" />
+                  <IconCalendar className="h-3.5 w-3.5" />
                   {formatDueDate(task.dueDate)}
                 </span>
               )}
@@ -207,7 +201,7 @@ export const TaskItem = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="text-muted-foreground inline-flex items-center">
-                      <AlignLeft className="h-3.5 w-3.5" />
+                      <IconAlignLeft className="h-3.5 w-3.5" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
@@ -218,8 +212,8 @@ export const TaskItem = ({
               {hasComments && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs leading-none">
-                      <MessageSquare className="h-3.5 w-3.5" />
+                    <span className="text-muted-foreground inline-flex items-center gap-1 leading-none">
+                      <IconMessage className="h-3.5 w-3.5" />
                       {commentCount}
                     </span>
                   </TooltipTrigger>
@@ -230,23 +224,17 @@ export const TaskItem = ({
               )}
               {task.assignedTo ? (
                 <div className="ml-auto">
-                  {task.assignedTo.profileImageUrl ? (
-                    <img
-                      src={task.assignedTo.profileImageUrl}
+                  <Avatar size="sm" title={task.assignedTo.username}>
+                    <AvatarImage
+                      src={task.assignedTo.profileImageUrl ?? undefined}
                       alt={task.assignedTo.username}
-                      title={task.assignedTo.username}
-                      className="size-6 rounded-full object-cover"
                       loading="lazy"
                       referrerPolicy="no-referrer"
                     />
-                  ) : (
-                    <div
-                      className="bg-muted flex size-6 items-center justify-center rounded-full"
-                      title={task.assignedTo.username}
-                    >
-                      <User className="text-muted-foreground h-3.5 w-3.5" />
-                    </div>
-                  )}
+                    <AvatarFallback>
+                      <IconUser className="size-3" />
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
               ) : null}
             </div>
