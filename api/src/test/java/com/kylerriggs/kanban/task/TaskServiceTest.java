@@ -61,6 +61,7 @@ class TaskServiceTest {
     @Mock private TaskMapper taskMapper;
     @Mock private UserLookupService userLookupService;
     @Mock private TaskValidationService taskValidationService;
+    @Mock private TaskArchiveService taskArchiveService;
     @Mock private BoardEventPublisher eventPublisher;
     @Mock private ActivityLogService activityLogService;
     @Mock private ObjectMapper objectMapper;
@@ -204,9 +205,10 @@ class TaskServiceTest {
             when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(COLUMN_ID, BOARD_ID))
                     .thenReturn(column);
-            when(taskRepository.findMaxPositionByColumnId(Objects.requireNonNull(COLUMN_ID)))
+            when(taskRepository.findMaxPositionByColumnIdAndIsArchivedFalse(
+                            Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.empty());
             when(taskMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(task);
             when(taskRepository.save(any(Task.class))).thenReturn(task);
@@ -267,7 +269,7 @@ class TaskServiceTest {
             when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(COLUMN_ID, BOARD_ID))
                     .thenThrow(new ResourceNotFoundException("Column not found: " + COLUMN_ID));
 
             // When & Then
@@ -282,7 +284,7 @@ class TaskServiceTest {
             when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(COLUMN_ID, BOARD_ID))
                     .thenThrow(new BadRequestException("Column does not belong to this board"));
 
             // When & Then
@@ -309,7 +311,7 @@ class TaskServiceTest {
             when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(COLUMN_ID, BOARD_ID))
                     .thenReturn(column);
 
             BadRequestException exception =
@@ -340,7 +342,7 @@ class TaskServiceTest {
             when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(COLUMN_ID, BOARD_ID))
                     .thenReturn(column);
             when(taskValidationService.validateAssigneeInBoard("nonCollaboratorId", board))
                     .thenThrow(
@@ -371,11 +373,12 @@ class TaskServiceTest {
             when(userLookupService.getRequiredCurrentUser()).thenReturn(user);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(taskValidationService.validateColumnInBoard(COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(COLUMN_ID, BOARD_ID))
                     .thenReturn(column);
             when(taskValidationService.validateAssigneeInBoard(ASSIGNEE_ID, board))
                     .thenReturn(assignee);
-            when(taskRepository.findMaxPositionByColumnId(Objects.requireNonNull(COLUMN_ID)))
+            when(taskRepository.findMaxPositionByColumnIdAndIsArchivedFalse(
+                            Objects.requireNonNull(COLUMN_ID)))
                     .thenReturn(Optional.empty());
             when(taskMapper.toEntity(any(), any(), any(), eq(assignee), any())).thenReturn(task);
             when(taskRepository.save(any(Task.class))).thenReturn(task);
@@ -488,7 +491,7 @@ class TaskServiceTest {
 
             when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenReturn(newColumn);
             when(taskMapper.toDto(task)).thenReturn(taskDto);
 
@@ -497,7 +500,7 @@ class TaskServiceTest {
 
             // Then
             assertEquals(newColumn, task.getColumn());
-            verify(taskValidationService).validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID);
+            verify(taskValidationService).validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID);
         }
 
         @Test
@@ -518,7 +521,7 @@ class TaskServiceTest {
 
             when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenThrow(new BadRequestException("Column does not belong to this board"));
 
             // When & Then
@@ -619,6 +622,7 @@ class TaskServiceTest {
         @Test
         void deleteTask_WhenTaskExists_DeletesTask() {
             // Given
+            task.setArchived(true);
             when(taskRepository.findById(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
 
@@ -659,7 +663,7 @@ class TaskServiceTest {
             // Given — no afterTaskId or beforeTaskId, same column
             MoveTaskRequest request = new MoveTaskRequest(null, null, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findMaxPositionByColumnId(COLUMN_ID))
+            when(taskRepository.findMaxPositionByColumnIdAndIsArchivedFalse(COLUMN_ID))
                     .thenReturn(Optional.of(1_000_000L));
 
             // When
@@ -677,7 +681,7 @@ class TaskServiceTest {
             // Given — place after a task at position 2_000_000
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(2_000_000L));
 
             // When
@@ -695,7 +699,7 @@ class TaskServiceTest {
             task.setPosition(3_000_000L);
             MoveTaskRequest request = new MoveTaskRequest(null, BEFORE_TASK_ID, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(2_000_000L));
 
             // When
@@ -712,9 +716,9 @@ class TaskServiceTest {
             // Given — place between tasks at 1_000_000 and 3_000_000
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, BEFORE_TASK_ID, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(1_000_000L));
-            when(taskRepository.findPositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(3_000_000L));
 
             // When
@@ -730,9 +734,9 @@ class TaskServiceTest {
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, NEW_COLUMN_ID);
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenReturn(newColumn);
-            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, NEW_COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(AFTER_TASK_ID, NEW_COLUMN_ID))
                     .thenReturn(Optional.of(1_000_000L));
 
             // When
@@ -752,9 +756,9 @@ class TaskServiceTest {
             MoveTaskRequest request = new MoveTaskRequest(null, null, NEW_COLUMN_ID);
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenReturn(newColumn);
-            when(taskRepository.findMaxPositionByColumnId(NEW_COLUMN_ID))
+            when(taskRepository.findMaxPositionByColumnIdAndIsArchivedFalse(NEW_COLUMN_ID))
                     .thenReturn(Optional.empty());
 
             // When
@@ -785,7 +789,7 @@ class TaskServiceTest {
                     new MoveTaskRequest(null, null, Objects.requireNonNull(NEW_COLUMN_ID));
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenThrow(new ResourceNotFoundException("Column not found: " + NEW_COLUMN_ID));
 
             // When & Then
@@ -801,7 +805,7 @@ class TaskServiceTest {
                     new MoveTaskRequest(null, null, Objects.requireNonNull(NEW_COLUMN_ID));
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenThrow(new BadRequestException("Column does not belong to this board"));
 
             // When & Then
@@ -815,7 +819,7 @@ class TaskServiceTest {
             // Given
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.empty());
 
             // When & Then
@@ -829,9 +833,9 @@ class TaskServiceTest {
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, null, NEW_COLUMN_ID);
             when(taskRepository.findByIdWithLock(Objects.requireNonNull(TASK_ID)))
                     .thenReturn(Optional.of(task));
-            when(taskValidationService.validateColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
+            when(taskValidationService.validateActiveColumnInBoard(NEW_COLUMN_ID, BOARD_ID))
                     .thenReturn(newColumn);
-            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, NEW_COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(AFTER_TASK_ID, NEW_COLUMN_ID))
                     .thenReturn(Optional.empty());
 
             assertThrows(
@@ -876,9 +880,9 @@ class TaskServiceTest {
         void moveTask_WhenAfterPositionIsNotBeforePosition_ThrowsBadRequestException() {
             MoveTaskRequest request = new MoveTaskRequest(AFTER_TASK_ID, BEFORE_TASK_ID, null);
             when(taskRepository.findByIdWithLock(TASK_ID)).thenReturn(Optional.of(task));
-            when(taskRepository.findPositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(AFTER_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(3_000_000L));
-            when(taskRepository.findPositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
+            when(taskRepository.findActivePositionByIdAndColumnId(BEFORE_TASK_ID, COLUMN_ID))
                     .thenReturn(Optional.of(1_000_000L));
 
             assertThrows(
@@ -924,10 +928,18 @@ class TaskServiceTest {
         void updateTaskStatus_WhenArchivedChanged_UpdatesTaskAndLogsActivity() {
             when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(taskMapper.toDto(task)).thenReturn(taskDto);
+            doAnswer(
+                            invocation -> {
+                                Task archivedTask = invocation.getArgument(0);
+                                archivedTask.setArchived(true);
+                                return null;
+                            })
+                    .when(taskArchiveService)
+                    .archiveTask(task);
 
             taskService.updateTaskStatus(TASK_ID, new TaskStatusRequest(null, true));
 
-            assertTrue(task.isArchived());
+            verify(taskArchiveService).archiveTask(task);
             verify(activityLogService).logActivity(task, ActivityType.TASK_ARCHIVED, null);
         }
     }

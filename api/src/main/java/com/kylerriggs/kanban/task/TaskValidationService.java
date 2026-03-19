@@ -44,6 +44,16 @@ public class TaskValidationService {
         return column;
     }
 
+    /** Validates and returns an active column that belongs to the given board. */
+    public Column validateActiveColumnInBoard(UUID columnId, UUID boardId) {
+        Column column = validateColumnInBoard(columnId, boardId);
+        if (column.isArchived()) {
+            throw new BadRequestException("Column is archived. Unarchive it before using it.");
+        }
+
+        return column;
+    }
+
     /** Validates that the assignee is a collaborator on the board and returns the User. */
     public User validateAssigneeInBoard(String assigneeId, Board board) {
         board.getCollaborators().stream()

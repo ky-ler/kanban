@@ -62,6 +62,12 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     Optional<Long> findPositionByIdAndColumnId(
             @Param("taskId") UUID taskId, @Param("columnId") UUID columnId);
 
+    @Query(
+            "SELECT t.position FROM Task t WHERE t.id = :taskId AND t.column.id = :columnId AND"
+                    + " t.isArchived = false")
+    Optional<Long> findActivePositionByIdAndColumnId(
+            @Param("taskId") UUID taskId, @Param("columnId") UUID columnId);
+
     /**
      * Finds the maximum position value among tasks in the specified column.
      *
@@ -71,6 +77,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("SELECT MAX(t.position) FROM Task t WHERE t.column.id = :columnId")
     Optional<Long> findMaxPositionByColumnId(@Param("columnId") UUID columnId);
 
+    @Query(
+            "SELECT MAX(t.position) FROM Task t WHERE t.column.id = :columnId AND t.isArchived = false")
+    Optional<Long> findMaxPositionByColumnIdAndIsArchivedFalse(@Param("columnId") UUID columnId);
+
     /**
      * Finds all task IDs and positions in a column, ordered by position. Used for rebalancing.
      *
@@ -79,6 +89,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      */
     @Query("SELECT t FROM Task t WHERE t.column.id = :columnId ORDER BY t.position")
     List<Task> findByColumnIdOrderByPosition(@Param("columnId") UUID columnId);
+
+    @Query(
+            "SELECT t FROM Task t WHERE t.column.id = :columnId AND t.isArchived = false ORDER BY"
+                    + " t.position")
+    List<Task> findByColumnIdAndIsArchivedFalseOrderByPosition(@Param("columnId") UUID columnId);
 
     /**
      * Updates a single task's position.
@@ -113,9 +128,13 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      */
     List<Task> findByBoardId(UUID boardId);
 
+    long countByColumnIdAndIsArchivedTrue(UUID columnId);
+
     long countByBoardIdAndIsArchivedFalse(UUID boardId);
 
     long countByColumnIdAndIsArchivedFalse(UUID columnId);
+
+    void deleteByColumnId(UUID columnId);
 
     @Modifying
     @Query(

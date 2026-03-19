@@ -47,6 +47,7 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final UserLookupService userLookupService;
     private final TaskValidationService taskValidationService;
+    private final TaskArchiveService taskArchiveService;
     private final BoardEventPublisher eventPublisher;
     private final ActivityLogService activityLogService;
     private final ObjectMapper objectMapper;
@@ -91,8 +92,12 @@ public class TaskService {
                                         new ResourceNotFoundException(
                                                 "Board not found: " + createTaskRequest.boardId()));
 
+        if (board.isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before creating tasks.");
+        }
+
         Column column =
-                taskValidationService.validateColumnInBoard(
+                taskValidationService.validateActiveColumnInBoard(
                         createTaskRequest.columnId(), board.getId());
 
         String requestAssigneeId = createTaskRequest.assigneeId();
@@ -103,13 +108,16 @@ public class TaskService {
         Priority requestPriority = parsePriority(createTaskRequest.priority());
 
         // Get the next position for this column (append to end with GAP spacing)
-        Long maxPosition = taskRepository.findMaxPositionByColumnId(column.getId()).orElse(0L);
+        Long maxPosition =
+                taskRepository
+                        .findMaxPositionByColumnIdAndIsArchivedFalse(column.getId())
+                        .orElse(0L);
         long newPosition = maxPosition + GAP;
 
         Task newTask = taskMapper.toEntity(createTaskRequest, board, createdBy, assignedTo, column);
         newTask.setPosition(newPosition);
         newTask.setCompleted(createTaskRequest.isCompleted());
-        newTask.setArchived(createTaskRequest.isArchived());
+        newTask.setArchived(false);
         newTask.setPriority(requestPriority);
 
         // Handle labels
@@ -121,6 +129,10 @@ public class TaskService {
 
         // Save task directly to ensure ID is generated before broadcasting
         Task savedTask = taskRepository.save(newTask);
+
+        if (createTaskRequest.isArchived()) {
+            taskArchiveService.archiveTask(savedTask);
+        }
 
         // Atomically update board's dateModified to avoid optimistic locking conflicts
         boardRepository.touchDateModified(board.getId(), Instant.now());
@@ -160,6 +172,10 @@ public class TaskService {
             throw new BadRequestException("Task does not belong to this board");
         }
 
+        if (board.isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before updating tasks.");
+        }
+
         // Capture old values for activity logging
         String oldTitle = taskToUpdate.getTitle();
         String oldDescription = taskToUpdate.getDescription();
@@ -184,13 +200,24 @@ public class TaskService {
         taskToUpdate.setDueDate(updateTaskRequest.dueDate());
 
         taskToUpdate.setCompleted(updateTaskRequest.isCompleted());
-        taskToUpdate.setArchived(updateTaskRequest.isArchived());
 
         if (!taskToUpdate.getColumn().getId().equals(updateTaskRequest.columnId())) {
+            if (taskToUpdate.isArchived() || updateTaskRequest.isArchived()) {
+                throw new BadRequestException(
+                        "Archived tasks cannot be moved. Restore the task first.");
+            }
             Column newColumn =
-                    taskValidationService.validateColumnInBoard(
+                    taskValidationService.validateActiveColumnInBoard(
                             updateTaskRequest.columnId(), board.getId());
             taskToUpdate.setColumn(newColumn);
+        }
+
+        if (oldArchived != updateTaskRequest.isArchived()) {
+            if (updateTaskRequest.isArchived()) {
+                taskArchiveService.archiveTask(taskToUpdate);
+            } else {
+                taskArchiveService.restoreTask(taskToUpdate);
+            }
         }
 
         String requestAssigneeId = updateTaskRequest.assigneeId();
@@ -335,6 +362,10 @@ public class TaskService {
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
+        if (taskToUpdate.getBoard().isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before updating tasks.");
+        }
+
         boolean oldCompleted = taskToUpdate.isCompleted();
         boolean oldArchived = taskToUpdate.isArchived();
 
@@ -342,7 +373,11 @@ public class TaskService {
             taskToUpdate.setCompleted(statusRequest.isCompleted());
         }
         if (statusRequest.isArchived() != null) {
-            taskToUpdate.setArchived(statusRequest.isArchived());
+            if (statusRequest.isArchived()) {
+                taskArchiveService.archiveTask(taskToUpdate);
+            } else {
+                taskArchiveService.restoreTask(taskToUpdate);
+            }
         }
 
         if (oldCompleted == taskToUpdate.isCompleted()
@@ -398,6 +433,10 @@ public class TaskService {
         Board board = taskToDelete.getBoard();
         UUID boardId = board.getId();
 
+        if (!taskToDelete.isArchived()) {
+            throw new BadRequestException("Task must be archived before it can be deleted.");
+        }
+
         // Log activity before deleting (include task title in details)
         Map<String, Object> details = new HashMap<>();
         details.put("taskTitle", taskToDelete.getTitle());
@@ -443,12 +482,27 @@ public class TaskService {
         UUID oldColumnId = taskToMove.getColumn().getId();
         String oldColumnName = taskToMove.getColumn().getName();
 
+        if (board.isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before moving tasks.");
+        }
+
+        if (taskToMove.isArchived()) {
+            throw new BadRequestException(
+                    "Archived tasks cannot be moved. Restore the task first.");
+        }
+
+        if (taskToMove.getColumn().isArchived()) {
+            throw new BadRequestException(
+                    "Column is archived. Restore the column before moving tasks.");
+        }
+
         // Determine the target column
         UUID targetColumnId = (newColumnId != null) ? newColumnId : oldColumnId;
         Column targetColumn = taskToMove.getColumn();
 
         if (newColumnId != null && !oldColumnId.equals(newColumnId)) {
-            targetColumn = taskValidationService.validateColumnInBoard(newColumnId, board.getId());
+            targetColumn =
+                    taskValidationService.validateActiveColumnInBoard(newColumnId, board.getId());
             taskToMove.setColumn(targetColumn);
         }
 
@@ -505,7 +559,7 @@ public class TaskService {
         if (afterTaskId != null) {
             afterPos =
                     taskRepository
-                            .findPositionByIdAndColumnId(afterTaskId, columnId)
+                            .findActivePositionByIdAndColumnId(afterTaskId, columnId)
                             .orElseThrow(
                                     () ->
                                             new ResourceNotFoundException(
@@ -516,7 +570,7 @@ public class TaskService {
         if (beforeTaskId != null) {
             beforePos =
                     taskRepository
-                            .findPositionByIdAndColumnId(beforeTaskId, columnId)
+                            .findActivePositionByIdAndColumnId(beforeTaskId, columnId)
                             .orElseThrow(
                                     () ->
                                             new ResourceNotFoundException(
@@ -537,7 +591,7 @@ public class TaskService {
                 // Recompute after rebalance
                 beforePos =
                         taskRepository
-                                .findPositionByIdAndColumnId(beforeTaskId, columnId)
+                                .findActivePositionByIdAndColumnId(beforeTaskId, columnId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
@@ -561,7 +615,7 @@ public class TaskService {
                 // Recompute positions after rebalance
                 afterPos =
                         taskRepository
-                                .findPositionByIdAndColumnId(afterTaskId, columnId)
+                                .findActivePositionByIdAndColumnId(afterTaskId, columnId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
@@ -569,7 +623,7 @@ public class TaskService {
                                                                 + afterTaskId));
                 beforePos =
                         taskRepository
-                                .findPositionByIdAndColumnId(beforeTaskId, columnId)
+                                .findActivePositionByIdAndColumnId(beforeTaskId, columnId)
                                 .orElseThrow(
                                         () ->
                                                 new ResourceNotFoundException(
@@ -590,7 +644,8 @@ public class TaskService {
         }
 
         // Case: empty column or no neighbors specified — place at the end
-        Long maxPos = taskRepository.findMaxPositionByColumnId(columnId).orElse(0L);
+        Long maxPos =
+                taskRepository.findMaxPositionByColumnIdAndIsArchivedFalse(columnId).orElse(0L);
         return maxPos + GAP;
     }
 
@@ -599,7 +654,7 @@ public class TaskService {
      * indexing spacing. Excludes the task currently being moved to avoid constraint violations.
      */
     private void rebalanceColumn(UUID columnId, UUID movingTaskId) {
-        List<Task> tasks = taskRepository.findByColumnIdOrderByPosition(columnId);
+        List<Task> tasks = taskRepository.findByColumnIdAndIsArchivedFalseOrderByPosition(columnId);
         long pos = GAP;
         for (Task t : tasks) {
             if (!t.getId().equals(movingTaskId)) {

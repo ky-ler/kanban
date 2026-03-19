@@ -48,6 +48,8 @@ public class Task extends BaseEntity {
     @jakarta.persistence.Column(name = "position", nullable = false)
     private Long position;
 
+    private Long restorePosition;
+
     @Builder.Default private boolean isCompleted = false;
 
     @Builder.Default private boolean isArchived = false;
