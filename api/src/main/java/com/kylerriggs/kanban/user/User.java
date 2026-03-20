@@ -23,7 +23,7 @@ import java.util.Set;
 public class User extends BaseEntity {
     @Id private String id;
 
-    @Column(nullable = false, length = 15, unique = true)
+    @Column(nullable = false)
     private String username;
 
     @Column(nullable = false, unique = true)
