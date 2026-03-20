@@ -14,6 +14,7 @@ import com.kylerriggs.kanban.invite.dto.InvitePreviewDto;
 import com.kylerriggs.kanban.user.UserSynchronizer;
 import com.kylerriggs.kanban.user.UserSynchronizerFilter;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,6 +23,7 @@ import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -43,6 +45,11 @@ import java.util.Map;
 class SecurityConfigWebMvcTest {
 
     @Autowired private MockMvc mockMvc;
+
+    @BeforeEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @MockitoBean private JwtDecoder jwtDecoder;
     @MockitoBean private JpaMetamodelMappingContext jpaMetamodelMappingContext;
