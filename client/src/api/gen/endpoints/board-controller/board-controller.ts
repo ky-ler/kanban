@@ -569,6 +569,95 @@ export const useUpdateBoard = <TError = unknown, TContext = unknown>(
 
   return useMutation(mutationOptions, queryClient);
 };
+export type deleteBoardResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type deleteBoardResponseSuccess = deleteBoardResponse200 & {
+  headers: Headers;
+};
+export type deleteBoardResponse = deleteBoardResponseSuccess;
+
+export const getDeleteBoardUrl = (boardId: string) => {
+  return `/boards/${boardId}`;
+};
+
+export const deleteBoard = async (
+  boardId: string,
+  options?: RequestInit,
+): Promise<deleteBoardResponse> => {
+  return apiClient<deleteBoardResponse>(getDeleteBoardUrl(boardId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteBoardMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBoard>>,
+    TError,
+    { boardId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteBoard>>,
+  TError,
+  { boardId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteBoard"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteBoard>>,
+    { boardId: string }
+  > = (props) => {
+    const { boardId } = props ?? {};
+
+    return deleteBoard(boardId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteBoardMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteBoard>>
+>;
+
+export type DeleteBoardMutationError = unknown;
+
+export const useDeleteBoard = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof deleteBoard>>,
+      TError,
+      { boardId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof deleteBoard>>,
+  TError,
+  { boardId: string },
+  TContext
+> => {
+  const mutationOptions = getDeleteBoardMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type updateCollaboratorRoleResponse200 = {
   data: void;
   status: 200;

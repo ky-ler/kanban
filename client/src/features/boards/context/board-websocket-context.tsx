@@ -88,10 +88,7 @@ export function BoardWebSocketProvider({
   const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
-  const shouldLogDebug =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1");
+  const shouldLogDebug = import.meta.env.DEV;
   const [connection, setConnection] = useState<{
     status: ConnectionStatus;
     retryAttempt: number;
@@ -349,11 +346,15 @@ export function BoardWebSocketProvider({
                   try {
                     listener(event);
                   } catch (error) {
-                    console.error("Error in board event listener:", error);
+                    if (shouldLogDebug) {
+                      console.error("Error in board event listener:", error);
+                    }
                   }
                 });
               } catch (error) {
-                console.error("[WebSocket] Error parsing message:", error);
+                if (shouldLogDebug) {
+                  console.error("[WebSocket] Error parsing message:", error);
+                }
               }
             },
             {
@@ -366,7 +367,9 @@ export function BoardWebSocketProvider({
             frame.headers.message ?? frame.body ?? "Unknown STOMP error";
           const failureReason = classifyFailureReason(message);
 
-          console.error("[WebSocket] STOMP error:", message);
+          if (shouldLogDebug) {
+            console.error("[WebSocket] STOMP error:", message);
+          }
 
           if (failureReason === "access") {
             handleAccessDenied();
@@ -433,7 +436,9 @@ export function BoardWebSocketProvider({
       clientRef.current = client;
       client.activate();
     } catch (error) {
-      console.error("[WebSocket] Connection error:", error);
+      if (shouldLogDebug) {
+        console.error("[WebSocket] Connection error:", error);
+      }
 
       if (
         !isMountedRef.current ||

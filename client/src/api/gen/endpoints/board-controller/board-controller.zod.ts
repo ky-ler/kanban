@@ -183,6 +183,10 @@ export const updateBoardResponse = zod.object({
   isFavorite: zod.boolean(),
 });
 
+export const deleteBoardParams = zod.object({
+  boardId: zod.string().uuid(),
+});
+
 export const updateCollaboratorRoleParams = zod.object({
   boardId: zod.string().uuid(),
   userId: zod.string(),
