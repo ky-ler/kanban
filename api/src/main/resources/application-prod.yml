@@ -11,6 +11,17 @@ springdoc:
   api-docs:
     enabled: false
 
+management:
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
+      probes:
+        enabled: true
+
 logging:
   level:
     root: WARN
