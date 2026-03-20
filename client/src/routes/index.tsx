@@ -13,7 +13,7 @@ import {
 
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context }) => {
-    if (!context.auth.isLoading && context.auth.isAuthenticated) {
+    if (!context.auth?.isLoading && context.auth?.isAuthenticated) {
       throw redirect({ to: "/boards", search: { archive: undefined } });
     }
   },

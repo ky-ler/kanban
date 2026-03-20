@@ -6,7 +6,7 @@ export const Route = createFileRoute("/_protected")({
       return;
     }
 
-    if (!context.auth.isLoading && !context.auth.isAuthenticated) {
+    if (!context.auth?.isLoading && !context.auth?.isAuthenticated) {
       throw redirect({
         to: "/auth/login",
         search: {

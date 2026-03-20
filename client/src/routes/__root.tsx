@@ -32,7 +32,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   const { auth } = Route.useRouteContext();
 
-  if (!auth.isAuthenticated && !auth.isLoading) {
+  if (!auth?.isAuthenticated && !auth?.isLoading) {
     return (
       <TooltipProvider>
         <Outlet />
