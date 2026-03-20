@@ -59,6 +59,7 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
     private final UserSynchronizerFilter userSynchronizerFilter;
+    private final RateLimitFilter rateLimitFilter;
 
     @Value("${springdoc.api-docs.enabled:true}")
     private boolean apiDocsEnabled;
@@ -101,7 +102,7 @@ public class SecurityConfig {
                                 auth.jwt(Customizer.withDefaults())
                                         .authenticationEntryPoint(restAuthenticationEntryPoint))
                 .addFilterAfter(userSynchronizerFilter, BearerTokenAuthenticationFilter.class)
-                .addFilterAfter(new RateLimitFilter(), UserSynchronizerFilter.class);
+                .addFilterAfter(rateLimitFilter, UserSynchronizerFilter.class);
 
         return http.build();
     }
