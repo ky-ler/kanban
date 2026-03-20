@@ -37,8 +37,7 @@ import java.util.Map;
     RestAuthenticationEntryPoint.class,
     RestAccessDeniedHandler.class,
     ErrorResponseFactory.class,
-    UserSynchronizerFilter.class,
-    RateLimitFilter.class
+    UserSynchronizerFilter.class
 })
 class SecurityConfigWebMvcTest {
 
