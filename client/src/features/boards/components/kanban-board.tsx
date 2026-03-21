@@ -3,7 +3,7 @@ import {
   DndContext,
   type DragEndEvent,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -82,7 +82,7 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
   const moveColumnMutation = useMoveColumnOptimistic(boardId);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
       },
