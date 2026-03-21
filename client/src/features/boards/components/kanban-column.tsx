@@ -302,7 +302,7 @@ export const KanbanColumn = ({
                   <span className="sr-only">Column options</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-auto">
                 <DropdownMenuItem
                   onClick={handleToggleArchive}
                   disabled={
