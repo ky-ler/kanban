@@ -125,11 +125,7 @@ function BoardsComponent() {
   const isArchiveModalOpen = search.archive === "boards";
 
   if (isLoading || !boards) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <LoadingSpinner title="Loading boards..." />
-      </div>
-    );
+    return <LoadingSpinner title="Loading boards..." />;
   }
 
   if (error) {

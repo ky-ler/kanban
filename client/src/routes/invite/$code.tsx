@@ -88,16 +88,10 @@ function InvitePage() {
     acceptInviteMutation.mutate({ code });
   };
 
-  // Loading states
   if (isLoading || previewLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner className="min-h-screen" />;
   }
 
-  // Error or not found
   if (previewError || !preview) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -121,7 +115,6 @@ function InvitePage() {
     );
   }
 
-  // Invalid invite (expired, maxed out, revoked)
   if (!preview.valid) {
     const errorMessages: Record<
       string,
@@ -166,7 +159,6 @@ function InvitePage() {
     );
   }
 
-  // Valid invite
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">

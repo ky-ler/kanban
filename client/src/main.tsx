@@ -17,11 +17,7 @@ function InnerApp() {
   const auth = useAuth0Context();
 
   if (auth.isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner className="min-h-screen" />;
   }
 
   return <RouterProvider router={router} context={{ auth }} />;

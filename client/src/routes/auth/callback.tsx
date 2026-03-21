@@ -6,9 +6,5 @@ export const Route = createFileRoute("/auth/callback")({
 });
 
 function AuthCallbackRoute() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <LoadingSpinner />
-    </div>
-  );
+  return <LoadingSpinner className="min-h-screen" />;
 }

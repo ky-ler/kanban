@@ -1,15 +1,26 @@
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
-export function LoadingSpinner({ title }: { title?: string }) {
+export function LoadingSpinner({
+  title,
+  className,
+}: {
+  title?: string;
+  className?: string;
+}) {
   return (
-    <Item variant="muted">
+    <Item
+      className={cn("flex flex-1 items-center justify-center gap-2", className)}
+    >
       <ItemMedia>
         <Spinner />
       </ItemMedia>
-      <ItemContent>
-        <ItemTitle className="line-clamp-1">{title ?? "Loading..."}</ItemTitle>
-      </ItemContent>
+      {title && (
+        <ItemContent className="flex-none justify-end">
+          <ItemTitle className="line-clamp-1">{title}</ItemTitle>
+        </ItemContent>
+      )}
     </Item>
   );
 }

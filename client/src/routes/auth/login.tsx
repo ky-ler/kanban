@@ -42,9 +42,5 @@ function AuthLoginRoute() {
     });
   }, [auth, redirectTarget, shouldForceLogin]);
 
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <LoadingSpinner />
-    </div>
-  );
+  return <LoadingSpinner className="min-h-screen" />;
 }

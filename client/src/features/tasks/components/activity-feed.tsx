@@ -143,11 +143,7 @@ export function ActivityFeed({
   };
 
   if (commentsLoading || activityLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner className="py-8" />;
   }
 
   if (commentsError || activityError) {
