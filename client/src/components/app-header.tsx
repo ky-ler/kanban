@@ -21,16 +21,23 @@ import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { NewBoardDialog } from "@/features/boards/components/new-board-dialog";
 import { cn } from "@/lib/utils";
 
+type NavLink = {
+  to: string;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  search?: Record<string, string | undefined>;
+};
+
 const navLinks = [
   {
     to: "/boards",
     label: "Boards",
-    icon: IconLayoutKanban,
+    // icon: IconLayoutKanban,
     search: {
       archive: undefined,
     },
   },
-] as const;
+] as NavLink[];
 
 export function AppHeader() {
   const auth = useAuth0Context();
@@ -70,7 +77,7 @@ export function AppHeader() {
                   className={cn(isActive && "bg-muted text-foreground")}
                 >
                   <Link to={link.to} search={link.search}>
-                    <link.icon className="size-3.5" />
+                    {link.icon && <link.icon className="size-3.5" />}
                     <span className="hidden sm:inline">{link.label}</span>
                   </Link>
                 </Button>
