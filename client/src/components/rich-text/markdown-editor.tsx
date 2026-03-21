@@ -1029,7 +1029,14 @@ function ToolbarPlugin({
             </TooltipTrigger>
             <TooltipContent side="bottom">Text style & headings</TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="start" className="min-w-64 p-1.5">
+          <DropdownMenuContent
+            align="start"
+            className="min-w-64 p-1.5"
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              editor.focus();
+            }}
+          >
             <DropdownMenuItem
               onSelect={() => applyTextStyle("paragraph")}
               className={cn(
@@ -1127,7 +1134,14 @@ function ToolbarPlugin({
             </TooltipTrigger>
             <TooltipContent side="bottom">Lists</TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="start" className="min-w-56 p-1.5">
+          <DropdownMenuContent
+            align="start"
+            className="min-w-56 p-1.5"
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              editor.focus();
+            }}
+          >
             <DropdownMenuItem
               onSelect={() =>
                 editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)
@@ -1195,7 +1209,14 @@ function ToolbarPlugin({
             </TooltipTrigger>
             <TooltipContent side="bottom">More formatting</TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="start" className="min-w-56 p-1.5">
+          <DropdownMenuContent
+            align="start"
+            className="min-w-56 p-1.5"
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              editor.focus();
+            }}
+          >
             <DropdownMenuItem
               onSelect={() =>
                 editor.dispatchCommand(FORMAT_TEXT_COMMAND, "strikethrough")
