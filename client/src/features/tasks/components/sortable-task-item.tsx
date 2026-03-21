@@ -46,7 +46,7 @@ export const SortableTaskItem = ({
       {...attributes}
       {...listeners}
       className={cn(
-        "relative touch-none",
+        "relative touch-none [-webkit-touch-callout:none]",
         isDragging && "z-10 opacity-50",
         dropIndicator &&
           "before:bg-primary/90 before:absolute before:inset-x-0 before:h-1 before:rounded-full before:shadow-[0_0_0_4px_var(--color-background)] before:content-['']",
