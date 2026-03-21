@@ -46,9 +46,4 @@ jobs:
           script: |
             cd ~/kanban
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
-            for i in $(seq 1 30); do
-              curl -sf https://localhost/actuator/health --insecure && exit 0
-              sleep 2
-            done
-            exit 1
+            docker compose -f docker-compose.prod.yml up -d --wait
