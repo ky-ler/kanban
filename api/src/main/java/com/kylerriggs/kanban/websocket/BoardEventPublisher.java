@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.websocket;
 
 import com.kylerriggs.kanban.websocket.dto.BoardEvent;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +28,12 @@ public class BoardEventPublisher {
      * Publishes a board event that will be broadcast via WebSocket after the current transaction
      * commits.
      *
-     * @param type The event type (TASK_CREATED, TASK_UPDATED, etc.)
+     * @param type The event type
      * @param boardId The board ID to broadcast to
      * @param entityId The ID of the entity that changed (can be null)
      */
-    public void publish(@NonNull String type, @NonNull UUID boardId, @Nullable UUID entityId) {
+    public void publish(
+            @NonNull BoardEventType type, @NonNull UUID boardId, @Nullable UUID entityId) {
         log.debug("Publishing event: type={}, boardId={}, entityId={}", type, boardId, entityId);
         BoardEvent event = new BoardEvent(type, boardId, entityId, null);
         eventPublisher.publishEvent(new BoardEventWrapper(event));

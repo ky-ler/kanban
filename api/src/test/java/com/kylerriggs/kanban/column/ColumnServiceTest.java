@@ -1,11 +1,17 @@
 package com.kylerriggs.kanban.column;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
@@ -20,6 +26,7 @@ import com.kylerriggs.kanban.task.TaskArchiveService;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -104,7 +111,7 @@ class ColumnServiceTest {
             assertEquals(3, result.position());
             verify(columnRepository, never()).incrementActivePositionsFrom(any(), anyInt());
             verify(boardRepository).save(Objects.requireNonNull(board));
-            verify(eventPublisher).publish(eq("COLUMN_CREATED"), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq(BoardEventType.COLUMN_CREATED), eq(BOARD_ID), any());
         }
 
         @Test
@@ -168,7 +175,7 @@ class ColumnServiceTest {
             // Then
             assertEquals("Renamed Column", result.name());
             verify(boardRepository).save(Objects.requireNonNull(board));
-            verify(eventPublisher).publish(eq("COLUMN_UPDATED"), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq(BoardEventType.COLUMN_UPDATED), eq(BOARD_ID), any());
         }
 
         @Test
@@ -219,7 +226,7 @@ class ColumnServiceTest {
             verify(taskArchiveService).archiveTasks(java.util.List.of());
             verify(columnRepository).decrementActivePositionsAfter(BOARD_ID, 0);
             verify(boardRepository).touchDateModified(eq(BOARD_ID), any());
-            verify(eventPublisher).publish("COLUMN_UPDATED", BOARD_ID, COLUMN_ID);
+            verify(eventPublisher).publish(BoardEventType.COLUMN_UPDATED, BOARD_ID, COLUMN_ID);
         }
 
         @Test
@@ -257,7 +264,7 @@ class ColumnServiceTest {
             verify(taskRepository).deleteByColumnId(COLUMN_ID);
             verify(columnRepository).delete(Objects.requireNonNull(column));
             verify(boardRepository).save(Objects.requireNonNull(board));
-            verify(eventPublisher).publish(eq("COLUMN_DELETED"), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq(BoardEventType.COLUMN_DELETED), eq(BOARD_ID), any());
         }
 
         @Test
@@ -321,7 +328,7 @@ class ColumnServiceTest {
             assertEquals(3, column.getPosition());
             verify(columnRepository).decrementActivePositionsInRange(BOARD_ID, 1, 3);
             verify(boardRepository).save(Objects.requireNonNull(board));
-            verify(eventPublisher).publish(eq("COLUMN_MOVED"), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(eq(BoardEventType.COLUMN_MOVED), eq(BOARD_ID), any());
         }
 
         @Test

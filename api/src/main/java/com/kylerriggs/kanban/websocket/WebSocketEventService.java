@@ -11,10 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-/**
- * Service for broadcasting board events via WebSocket. Replaces SseService to avoid connection leak
- * issues with long-lived connections.
- */
+/** Service for broadcasting board events via WebSocket. */
 @Service
 @RequiredArgsConstructor
 @Slf4j

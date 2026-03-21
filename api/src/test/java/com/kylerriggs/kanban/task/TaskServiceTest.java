@@ -1,10 +1,16 @@
 package com.kylerriggs.kanban.task;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylerriggs.kanban.activity.ActivityLogService;
@@ -26,6 +32,7 @@ import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -222,7 +229,7 @@ class TaskServiceTest {
             verify(taskRepository).save(any(Task.class));
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
-            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
         @Test
@@ -430,7 +437,7 @@ class TaskServiceTest {
             assertEquals("Updated Description", task.getDescription());
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
-            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
         @Test
@@ -633,7 +640,7 @@ class TaskServiceTest {
             verify(taskRepository).delete(Objects.requireNonNull(task));
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
-            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
         @Test
@@ -673,7 +680,7 @@ class TaskServiceTest {
             assertEquals(2_000_000L, task.getPosition());
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
-            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
         @Test
@@ -747,7 +754,7 @@ class TaskServiceTest {
             assertEquals(2_000_000L, task.getPosition());
             verify(boardRepository)
                     .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
-            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
         @Test
@@ -920,7 +927,7 @@ class TaskServiceTest {
             assertNotNull(result);
             assertTrue(task.isCompleted());
             verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
-            verify(eventPublisher).publish("TASK_UPDATED", BOARD_ID, TASK_ID);
+            verify(eventPublisher).publish(BoardEventType.TASK_UPDATED, BOARD_ID, TASK_ID);
             verify(activityLogService).logActivity(task, ActivityType.TASK_COMPLETED, null);
         }
 

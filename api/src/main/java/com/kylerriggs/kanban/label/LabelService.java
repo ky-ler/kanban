@@ -10,6 +10,7 @@ import com.kylerriggs.kanban.label.dto.LabelSummaryDto;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,7 +61,7 @@ public class LabelService {
         boardRepository.save(board);
 
         eventPublisher.publish(
-                "LABEL_CREATED",
+                BoardEventType.LABEL_CREATED,
                 Objects.requireNonNull(board.getId(), "Board id is required"),
                 Objects.requireNonNull(savedLabel.getId(), "Label id is required"));
 
@@ -93,7 +94,7 @@ public class LabelService {
         boardRepository.save(board);
 
         eventPublisher.publish(
-                "LABEL_UPDATED",
+                BoardEventType.LABEL_UPDATED,
                 Objects.requireNonNull(board.getId(), "Board id is required"),
                 labelId);
 
@@ -128,7 +129,9 @@ public class LabelService {
         boardRepository.save(board);
 
         eventPublisher.publish(
-                "LABEL_DELETED", Objects.requireNonNull(boardId, "Board id is required"), labelId);
+                BoardEventType.LABEL_DELETED,
+                Objects.requireNonNull(boardId, "Board id is required"),
+                labelId);
     }
 
     /**
@@ -193,7 +196,7 @@ public class LabelService {
         boardRepository.save(board);
 
         eventPublisher.publish(
-                "TASK_UPDATED",
+                BoardEventType.TASK_UPDATED,
                 Objects.requireNonNull(board.getId(), "Board id is required"),
                 taskId);
     }
@@ -227,7 +230,7 @@ public class LabelService {
         boardRepository.save(board);
 
         eventPublisher.publish(
-                "TASK_UPDATED",
+                BoardEventType.TASK_UPDATED,
                 Objects.requireNonNull(board.getId(), "Board id is required"),
                 taskId);
     }

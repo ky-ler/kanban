@@ -78,7 +78,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     Optional<Long> findMaxPositionByColumnId(@Param("columnId") UUID columnId);
 
     @Query(
-            "SELECT MAX(t.position) FROM Task t WHERE t.column.id = :columnId AND t.isArchived = false")
+            "SELECT MAX(t.position) FROM Task t WHERE t.column.id = :columnId AND t.isArchived ="
+                    + " false")
     Optional<Long> findMaxPositionByColumnIdAndIsArchivedFalse(@Param("columnId") UUID columnId);
 
     /**

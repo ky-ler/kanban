@@ -3,6 +3,7 @@ package com.kylerriggs.kanban.websocket;
 import static org.mockito.Mockito.verify;
 
 import com.kylerriggs.kanban.websocket.dto.BoardEvent;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +25,8 @@ class WebSocketEventServiceTest {
     @Test
     void broadcast_SendsEventToTopid() {
         UUID boardId = UUID.randomUUID();
-        BoardEvent event = new BoardEvent("TEST", boardId, UUID.randomUUID(), null);
+        BoardEvent event =
+                new BoardEvent(BoardEventType.TASK_CREATED, boardId, UUID.randomUUID(), null);
 
         webSocketEventService.broadcast(Objects.requireNonNull(boardId), event);
 

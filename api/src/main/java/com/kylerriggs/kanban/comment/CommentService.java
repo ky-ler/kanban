@@ -8,6 +8,7 @@ import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,7 +61,8 @@ public class CommentService {
 
         Comment saved = commentRepository.save(comment);
 
-        eventPublisher.publish("COMMENT_ADDED", task.getBoard().getId(), saved.getId());
+        eventPublisher.publish(
+                BoardEventType.COMMENT_ADDED, task.getBoard().getId(), saved.getId());
 
         return commentMapper.toDto(saved);
     }
@@ -94,7 +96,9 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
 
         eventPublisher.publish(
-                "COMMENT_UPDATED", comment.getTask().getBoard().getId(), saved.getId());
+                BoardEventType.COMMENT_UPDATED,
+                comment.getTask().getBoard().getId(),
+                saved.getId());
 
         return commentMapper.toDto(saved);
     }
@@ -121,7 +125,7 @@ public class CommentService {
 
         commentRepository.delete(comment);
 
-        eventPublisher.publish("COMMENT_DELETED", commentBoardId, commentId);
+        eventPublisher.publish(BoardEventType.COMMENT_DELETED, commentBoardId, commentId);
     }
 
     private Task requireTaskInBoard(UUID boardId, UUID taskId) {

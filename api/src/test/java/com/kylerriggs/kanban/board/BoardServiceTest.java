@@ -1,12 +1,19 @@
 package com.kylerriggs.kanban.board;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.kylerriggs.kanban.board.dto.BoardArchiveRequest;
 import com.kylerriggs.kanban.board.dto.BoardDto;
@@ -31,6 +38,7 @@ import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.UserService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -42,7 +50,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class BoardServiceTest {
@@ -326,7 +338,7 @@ class BoardServiceTest {
             assertEquals("Updated Board", board.getName());
             assertEquals("Updated Description", board.getDescription());
             verify(boardRepository).save(Objects.requireNonNull(board));
-            verify(eventPublisher).publish(anyString(), eq(BOARD_ID), any());
+            verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
         @Test
@@ -376,7 +388,7 @@ class BoardServiceTest {
             assertNotNull(result);
             assertTrue(board.isArchived());
             verify(taskArchiveService).archiveTasks(List.of(activeTask));
-            verify(eventPublisher).publish("BOARD_UPDATED", BOARD_ID, BOARD_ID);
+            verify(eventPublisher).publish(BoardEventType.BOARD_UPDATED, BOARD_ID, BOARD_ID);
         }
 
         @Test

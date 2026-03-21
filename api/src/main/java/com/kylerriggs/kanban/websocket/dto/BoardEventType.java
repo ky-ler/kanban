@@ -1,0 +1,20 @@
+package com.kylerriggs.kanban.websocket.dto;
+
+public enum BoardEventType {
+    TASK_CREATED,
+    TASK_UPDATED,
+    TASK_MOVED,
+    TASK_DELETED,
+    BOARD_UPDATED,
+    COLUMN_CREATED,
+    COLUMN_UPDATED,
+    COLUMN_DELETED,
+    COLUMN_MOVED,
+    LABEL_CREATED,
+    LABEL_UPDATED,
+    LABEL_DELETED,
+    COMMENT_ADDED,
+    COMMENT_UPDATED,
+    COMMENT_DELETED,
+    ACTIVITY_LOGGED,
+}

@@ -7,6 +7,7 @@ import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -62,7 +63,8 @@ public class ActivityLogService {
         activityLogRepository.save(activityLog);
 
         // Broadcast activity event after transaction commits
-        eventPublisher.publish("ACTIVITY_LOGGED", task.getBoard().getId(), task.getId());
+        eventPublisher.publish(
+                BoardEventType.ACTIVITY_LOGGED, task.getBoard().getId(), task.getId());
     }
 
     /**

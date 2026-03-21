@@ -20,6 +20,7 @@ import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.UserService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -193,7 +194,7 @@ public class BoardService {
         boardRepository.save(boardToUpdate);
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("BOARD_UPDATED", boardId, boardId);
+        eventPublisher.publish(BoardEventType.BOARD_UPDATED, boardId, boardId);
 
         List<UUID> taskIds = boardToUpdate.getTasks().stream().map(task -> task.getId()).toList();
         Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
@@ -255,7 +256,7 @@ public class BoardService {
                     .forEach(taskArchiveService::restoreTask);
         }
 
-        eventPublisher.publish("BOARD_UPDATED", boardId, boardId);
+        eventPublisher.publish(BoardEventType.BOARD_UPDATED, boardId, boardId);
 
         Board refreshedBoard =
                 boardRepository

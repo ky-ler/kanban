@@ -17,6 +17,7 @@ import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -139,7 +140,9 @@ public class TaskService {
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish(
-                "TASK_CREATED", Objects.requireNonNull(board.getId()), savedTask.getId());
+                BoardEventType.TASK_CREATED,
+                Objects.requireNonNull(board.getId()),
+                savedTask.getId());
 
         // Log activity
         activityLogService.logActivity(savedTask, ActivityType.TASK_CREATED, null);
@@ -247,7 +250,8 @@ public class TaskService {
         boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_UPDATED", Objects.requireNonNull(board.getId()), taskId);
+        eventPublisher.publish(
+                BoardEventType.TASK_UPDATED, Objects.requireNonNull(board.getId()), taskId);
 
         // Log activity for changes
         logTaskUpdateActivities(
@@ -387,7 +391,7 @@ public class TaskService {
 
         UUID boardId = taskToUpdate.getBoard().getId();
         boardRepository.touchDateModified(boardId, Instant.now());
-        eventPublisher.publish("TASK_UPDATED", boardId, taskId);
+        eventPublisher.publish(BoardEventType.TASK_UPDATED, boardId, taskId);
 
         if (oldCompleted != taskToUpdate.isCompleted()) {
             ActivityType completionEvent =
@@ -449,7 +453,8 @@ public class TaskService {
         boardRepository.touchDateModified(boardId, Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_DELETED", Objects.requireNonNull(boardId), taskId);
+        eventPublisher.publish(
+                BoardEventType.TASK_DELETED, Objects.requireNonNull(boardId), taskId);
     }
 
     /**
@@ -479,8 +484,9 @@ public class TaskService {
 
         Board board = taskToMove.getBoard();
         Long oldPosition = taskToMove.getPosition();
-        UUID oldColumnId = taskToMove.getColumn().getId();
-        String oldColumnName = taskToMove.getColumn().getName();
+        Column oldColumn = taskToMove.getColumn();
+        UUID oldColumnId = oldColumn.getId();
+        String oldColumnName = oldColumn.getName();
 
         if (board.isArchived()) {
             throw new BadRequestException("Board is archived. Unarchive it before moving tasks.");
@@ -498,10 +504,9 @@ public class TaskService {
 
         // Determine the target column
         UUID targetColumnId = (newColumnId != null) ? newColumnId : oldColumnId;
-        Column targetColumn = taskToMove.getColumn();
 
         if (newColumnId != null && !oldColumnId.equals(newColumnId)) {
-            targetColumn =
+            Column targetColumn =
                     taskValidationService.validateActiveColumnInBoard(newColumnId, board.getId());
             taskToMove.setColumn(targetColumn);
         }
@@ -520,7 +525,8 @@ public class TaskService {
         boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
-        eventPublisher.publish("TASK_MOVED", Objects.requireNonNull(board.getId()), taskId);
+        eventPublisher.publish(
+                BoardEventType.TASK_MOVED, Objects.requireNonNull(board.getId()), taskId);
 
         // Log activity for move
         Map<String, Object> details = new HashMap<>();

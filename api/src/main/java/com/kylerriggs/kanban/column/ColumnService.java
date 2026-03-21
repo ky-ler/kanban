@@ -12,6 +12,7 @@ import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.TaskArchiveService;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -76,7 +77,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_CREATED", boardId, column.getId());
+        eventPublisher.publish(BoardEventType.COLUMN_CREATED, boardId, column.getId());
 
         return columnMapper.toDto(column);
     }
@@ -115,7 +116,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_UPDATED", board.getId(), columnId);
+        eventPublisher.publish(BoardEventType.COLUMN_UPDATED, board.getId(), columnId);
 
         return columnMapper.toDto(column);
     }
@@ -155,7 +156,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_DELETED", boardId, columnId);
+        eventPublisher.publish(BoardEventType.COLUMN_DELETED, boardId, columnId);
     }
 
     /**
@@ -218,7 +219,7 @@ public class ColumnService {
         boardRepository.save(board);
 
         // Broadcast event via WebSocket
-        eventPublisher.publish("COLUMN_MOVED", boardId, columnId);
+        eventPublisher.publish(BoardEventType.COLUMN_MOVED, boardId, columnId);
     }
 
     @Transactional
@@ -282,7 +283,7 @@ public class ColumnService {
         columnRepository.save(column);
 
         boardRepository.touchDateModified(boardId, Instant.now());
-        eventPublisher.publish("COLUMN_UPDATED", boardId, columnId);
+        eventPublisher.publish(BoardEventType.COLUMN_UPDATED, boardId, columnId);
 
         return columnMapper.toDto(column);
     }
