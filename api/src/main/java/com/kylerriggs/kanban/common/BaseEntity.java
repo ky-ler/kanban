@@ -5,7 +5,11 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Version;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -32,6 +36,6 @@ public abstract class BaseEntity {
 
     @Version
     @Column(name = "version")
-    @Builder.Default
+    @lombok.Builder.Default
     private Long version = 0L;
 }

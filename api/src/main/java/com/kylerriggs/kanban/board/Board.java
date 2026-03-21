@@ -5,10 +5,23 @@ import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.user.User;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import org.springframework.data.annotation.CreatedBy;
@@ -36,7 +49,7 @@ public class Board extends BaseEntity {
     @jakarta.persistence.Column(columnDefinition = "TEXT", length = 2048)
     private String description;
 
-    @Builder.Default private boolean isArchived = false;
+    @lombok.Builder.Default private boolean isArchived = false;
 
     @CreatedBy
     @ManyToOne(optional = false)
@@ -45,15 +58,15 @@ public class Board extends BaseEntity {
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<Task> tasks = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<BoardUser> collaborators = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<Column> columns = new LinkedHashSet<>();
 }

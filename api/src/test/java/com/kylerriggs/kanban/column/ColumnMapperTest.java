@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.column;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.kylerriggs.kanban.column.dto.ColumnDto;
 

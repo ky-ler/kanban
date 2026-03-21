@@ -5,9 +5,16 @@ import com.kylerriggs.kanban.board.BoardUser;
 import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.task.Task;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
@@ -33,18 +40,18 @@ public class User extends BaseEntity {
     private String profileImageUrl;
 
     @OneToMany(mappedBy = "createdBy")
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<Board> boardsCreated = new HashSet<>();
 
     @OneToMany(mappedBy = "createdBy")
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<Task> tasksCreated = new HashSet<>();
 
     @OneToMany(mappedBy = "assignedTo")
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<Task> tasksAssigned = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<BoardUser> boardMemberships = new HashSet<>();
 }

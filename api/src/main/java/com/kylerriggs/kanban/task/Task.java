@@ -6,10 +6,25 @@ import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.label.Label;
 import com.kylerriggs.kanban.user.User;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import org.springframework.data.annotation.CreatedBy;
@@ -32,7 +47,6 @@ import java.util.UUID;
                     name = "uk_task_column_position",
                     columnNames = {"column_id", "position"})
         })
-// @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Task extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -50,9 +64,9 @@ public class Task extends BaseEntity {
 
     private Long restorePosition;
 
-    @Builder.Default private boolean isCompleted = false;
+    @lombok.Builder.Default private boolean isCompleted = false;
 
-    @Builder.Default private boolean isArchived = false;
+    @lombok.Builder.Default private boolean isArchived = false;
 
     @Enumerated(EnumType.STRING)
     @jakarta.persistence.Column(length = 10)
@@ -82,6 +96,6 @@ public class Task extends BaseEntity {
             name = "task_labels",
             joinColumns = @JoinColumn(name = "task_id"),
             inverseJoinColumns = @JoinColumn(name = "label_id"))
-    @Builder.Default
+    @lombok.Builder.Default
     private Set<Label> labels = new LinkedHashSet<>();
 }

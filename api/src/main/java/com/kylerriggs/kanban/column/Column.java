@@ -1,11 +1,23 @@
 package com.kylerriggs.kanban.column;
 
 import com.kylerriggs.kanban.board.Board;
+import com.kylerriggs.kanban.common.BaseEntity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
@@ -13,10 +25,10 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder(toBuilder = true)
 @Entity
 @Table(name = "columns")
-public class Column {
+public class Column extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -30,7 +42,7 @@ public class Column {
 
     private Integer restorePosition;
 
-    @Builder.Default
+    @lombok.Builder.Default
     @jakarta.persistence.Column(nullable = false)
     private boolean isArchived = false;
 

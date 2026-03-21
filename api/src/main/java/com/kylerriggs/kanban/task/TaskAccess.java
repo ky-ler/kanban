@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-@Component("taskAccess")
+@Component
 @AllArgsConstructor
 @Slf4j
 public class TaskAccess extends BaseAccess {
