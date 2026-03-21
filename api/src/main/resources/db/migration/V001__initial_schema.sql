@@ -1,13 +1,11 @@
 CREATE TABLE users (
     id VARCHAR(255) PRIMARY KEY,
-    username VARCHAR(15) NOT NULL,
+    username VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     profile_image_url VARCHAR(255) NOT NULL,
-    default_board_id UUID,
     date_created TIMESTAMP NOT NULL,
     date_modified TIMESTAMP NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_users_username UNIQUE (username),
     CONSTRAINT uk_users_email UNIQUE (email)
 );
 
@@ -27,7 +25,12 @@ CREATE TABLE columns (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     position INTEGER NOT NULL,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    restore_position INTEGER,
     board_id UUID NOT NULL,
+    date_created TIMESTAMP NOT NULL,
+    date_modified TIMESTAMP NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT fk_column_board FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
 );
 
@@ -35,7 +38,8 @@ CREATE TABLE tasks (
     id UUID PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
-    position INTEGER NOT NULL,
+    position BIGINT NOT NULL,
+    restore_position BIGINT,
     is_completed BOOLEAN NOT NULL DEFAULT FALSE,
     is_archived BOOLEAN NOT NULL DEFAULT FALSE,
     priority VARCHAR(10),
@@ -77,6 +81,7 @@ CREATE TABLE board_users (
     board_id UUID NOT NULL,
     user_id VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL,
+    is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
     date_created TIMESTAMP NOT NULL,
     date_modified TIMESTAMP NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
@@ -98,8 +103,6 @@ CREATE TABLE activity_logs (
     CONSTRAINT fk_activity_log_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE INDEX idx_activity_logs_task_id ON activity_logs(task_id);
-
 CREATE TABLE comments (
     id UUID PRIMARY KEY,
     content TEXT NOT NULL,
@@ -111,8 +114,6 @@ CREATE TABLE comments (
     CONSTRAINT fk_comment_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
     CONSTRAINT fk_comment_author FOREIGN KEY (author_id) REFERENCES users(id)
 );
-
-CREATE INDEX idx_comments_task_id ON comments(task_id);
 
 CREATE TABLE board_invites (
     id UUID PRIMARY KEY,
@@ -131,5 +132,11 @@ CREATE TABLE board_invites (
     CONSTRAINT fk_invite_creator FOREIGN KEY (created_by_id) REFERENCES users(id)
 );
 
-ALTER TABLE users
-    ADD CONSTRAINT fk_user_default_board FOREIGN KEY (default_board_id) REFERENCES boards(id) ON DELETE SET NULL;
+-- Indexes
+CREATE INDEX idx_activity_logs_task_id ON activity_logs(task_id);
+CREATE INDEX idx_comments_task_id ON comments(task_id);
+CREATE INDEX idx_tasks_board_id ON tasks(board_id);
+CREATE INDEX idx_tasks_column_id ON tasks(column_id);
+CREATE INDEX idx_columns_board_id ON columns(board_id);
+CREATE INDEX idx_board_users_user_id ON board_users(user_id);
+CREATE INDEX idx_board_users_favorite ON board_users(user_id, is_favorite) WHERE is_favorite = TRUE;

@@ -1,2 +1,0 @@
-ALTER TABLE users DROP CONSTRAINT uk_users_username;
-ALTER TABLE users ALTER COLUMN username TYPE VARCHAR(255);
