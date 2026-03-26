@@ -61,7 +61,7 @@ function Index() {
         </h1>
         <p className="text-muted-foreground mx-auto mt-4 max-w-lg text-sm">
           A real-time kanban board to help you and your team stay on top of
-          tasks — from backlog to done.
+          tasks.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Button size="lg" onClick={signUp}>
