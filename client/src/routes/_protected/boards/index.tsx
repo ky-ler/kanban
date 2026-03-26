@@ -202,8 +202,8 @@ function BoardsComponent() {
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Boards</h1>
             <p className="text-muted-foreground">
-              {nonFavoriteBoards.length} board
-              {nonFavoriteBoards.length !== 1 ? "s" : ""}
+              {boards.data.length} board
+              {boards.data.length !== 1 ? "s" : ""}
             </p>
           </div>
           <Button
