@@ -13,7 +13,6 @@ import {
   IconCircleCheck,
   IconLayoutKanban,
   IconPlus,
-  IconStar,
 } from "@tabler/icons-react";
 import { NewBoardDialog } from "@/features/boards/components/new-board-dialog";
 import { FavoriteButton } from "@/features/boards/components/favorite-button";
@@ -225,12 +224,9 @@ function BoardsComponent() {
         {/* Favorites Section */}
         {favoriteBoards.length > 0 && (
           <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <IconStar className="size-3.5 fill-yellow-400 text-yellow-400" />
-              <h2 className="text-muted-foreground font-medium tracking-wider uppercase">
-                Favorites
-              </h2>
-            </div>
+            <h2 className="text-muted-foreground font-medium tracking-wider uppercase">
+              Favorites
+            </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {favoriteBoards.map((board: BoardSummary) => (
                 <BoardCard key={board.id} board={board} />
