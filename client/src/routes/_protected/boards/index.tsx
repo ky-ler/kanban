@@ -193,7 +193,7 @@ function BoardsComponent() {
   }
 
   const favoriteBoards = boards.data.filter((b) => b.isFavorite);
-  const allBoards = boards.data.filter((b) => !b.isFavorite);
+  const nonFavoriteBoards = boards.data.filter((b) => !b.isFavorite);
 
   return (
     <>
@@ -203,7 +203,8 @@ function BoardsComponent() {
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Boards</h1>
             <p className="text-muted-foreground">
-              {allBoards.length} board{allBoards.length !== 1 ? "s" : ""}
+              {nonFavoriteBoards.length} board
+              {nonFavoriteBoards.length !== 1 ? "s" : ""}
             </p>
           </div>
           <Button
@@ -239,18 +240,18 @@ function BoardsComponent() {
         )}
 
         {/* All Boards */}
-        <section className="space-y-3">
-          {favoriteBoards.length > 0 && (
+        {nonFavoriteBoards.length > 0 && (
+          <section className="space-y-3">
             <h2 className="text-muted-foreground font-medium tracking-wider uppercase">
               All Boards
             </h2>
-          )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {allBoards.map((board: BoardSummary) => (
-              <BoardCard key={board.id} board={board} />
-            ))}
-          </div>
-        </section>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {nonFavoriteBoards.map((board: BoardSummary) => (
+                <BoardCard key={board.id} board={board} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <ArchivedBoardsModal
