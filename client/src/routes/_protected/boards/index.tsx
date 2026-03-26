@@ -193,7 +193,7 @@ function BoardsComponent() {
   }
 
   const favoriteBoards = boards.data.filter((b) => b.isFavorite);
-  const allBoards = boards.data;
+  const allBoards = boards.data.filter((b) => !b.isFavorite);
 
   return (
     <>
