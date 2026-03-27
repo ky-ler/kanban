@@ -139,3 +139,11 @@
     cursor: pointer;
   }
 }
+
+@layer components {
+  /* Lexical nested indentation can introduce wrapper li nodes; hide only wrapper markers. */
+  .md-editor-listitem:has(> ul:first-child),
+  .md-editor-listitem:has(> ol:first-child) {
+    list-style-type: none;
+  }
+}

@@ -69,6 +69,7 @@ import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import {
   $createHeadingNode,
   $createQuoteNode,
@@ -1452,9 +1453,9 @@ export function MarkdownEditor({
           strikethrough: "line-through",
         },
         list: {
-          ul: "ml-5 list-disc",
-          ol: "ml-5 list-decimal",
-          listitem: "my-1",
+          ul: "md-editor-list ml-5 list-disc",
+          ol: "md-editor-list ml-5 list-decimal",
+          listitem: "md-editor-listitem my-1",
         },
       },
       onError: (error: Error) => {
@@ -1496,6 +1497,7 @@ export function MarkdownEditor({
           <HistoryPlugin />
           {autoFocus ? <AutoFocusPlugin /> : null}
           <ListPlugin />
+          <TabIndentationPlugin />
           <LinkPlugin />
           <EditorShortcutsPlugin />
           <MarkdownShortcutPlugin transformers={MARKDOWN_TRANSFORMERS} />
