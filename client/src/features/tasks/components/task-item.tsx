@@ -32,25 +32,7 @@ import {
 import type { TaskSummaryDto } from "@/api/gen/model";
 import { cn } from "@/lib/utils";
 import { LabelBadge } from "@/features/labels/components/label-badge";
-
-const priorityConfig: Record<string, { label: string; className: string }> = {
-  LOW: {
-    label: "Low",
-    className: "bg-secondary text-secondary-foreground",
-  },
-  MEDIUM: {
-    label: "Med",
-    className: "bg-accent/20 text-accent-foreground",
-  },
-  HIGH: {
-    label: "High",
-    className: "bg-chart-5/15 text-chart-5",
-  },
-  URGENT: {
-    label: "Urgent",
-    className: "bg-destructive/15 text-destructive",
-  },
-};
+import { PrioritySignal } from "./priority-signal";
 
 function isOverdue(dueDate: string): boolean {
   const parsedDueDate = parseISO(dueDate);
@@ -95,14 +77,10 @@ export const TaskItem = ({
       },
     },
   });
-  const priority = task.priority ? priorityConfig[task.priority] : null;
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
   const commentCount = task.commentCount ?? 0;
   const hasDescription = task.hasDescription;
   const hasComments = commentCount > 0;
-  const hasTopMeta = Boolean(
-    task.isArchived || priority || (task.labels && task.labels.length > 0),
-  );
   const hasBottomMeta = Boolean(
     task.dueDate || task.assignedTo || hasDescription || hasComments,
   );
@@ -151,39 +129,30 @@ export const TaskItem = ({
           >
             {task.title}
           </ItemTitle>
-          {hasTopMeta && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {task.isArchived && (
-                <Badge variant="outline" className="h-5 px-2 leading-none">
-                  <IconArchive className="mr-1 h-3 w-3" />
-                  Archived
-                </Badge>
-              )}
-              {priority && (
-                <Badge
-                  variant="outline"
-                  className={cn("h-5 px-2 leading-none", priority.className)}
-                >
-                  {priority.label}
-                </Badge>
-              )}
-              {task.labels && task.labels.length > 0 && (
-                <>
-                  {[...task.labels]
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .slice(0, 3)
-                    .map((label) => (
-                      <LabelBadge key={label.id} label={label} size="md" />
-                    ))}
-                  {task.labels.length > 3 && (
-                    <span className="text-muted-foreground leading-none">
-                      +{task.labels.length - 3}
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {task.isArchived && (
+              <Badge variant="outline" className="h-5 px-2 leading-none">
+                <IconArchive className="mr-1 h-3 w-3" />
+                Archived
+              </Badge>
+            )}
+            <PrioritySignal priority={task.priority} />
+            {task.labels && task.labels.length > 0 && (
+              <>
+                {[...task.labels]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .slice(0, 3)
+                  .map((label) => (
+                    <LabelBadge key={label.id} label={label} size="sm" />
+                  ))}
+                {task.labels.length > 3 && (
+                  <span className="text-muted-foreground leading-none">
+                    +{task.labels.length - 3}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
           {hasBottomMeta && (
             <div className="flex min-h-6 items-end gap-2">
               {task.dueDate && (

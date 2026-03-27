@@ -18,6 +18,7 @@ import { hasActiveFilters } from "../utils/filter-tasks";
 import type { CollaboratorDto } from "@/api/gen/model";
 import { useGetLabelsByBoard } from "@/api/gen/endpoints/label-controller/label-controller";
 import { LabelBadge } from "@/features/labels/components/label-badge";
+import { PRIORITY_OPTIONS } from "@/features/tasks/constants/priorities";
 import {
   IconSearch,
   IconFilter,
@@ -27,13 +28,6 @@ import {
   IconCalendar,
   IconX,
 } from "@tabler/icons-react";
-
-const PRIORITIES = [
-  { value: "LOW", label: "Low" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HIGH", label: "High" },
-  { value: "URGENT", label: "Urgent" },
-];
 
 const DUE_DATE_OPTIONS = [
   { value: undefined, label: "All" },
@@ -197,7 +191,7 @@ export function TaskFilterBar({
                 Priority
               </div>
               <div className="space-y-0.5">
-                {PRIORITIES.map((priority) => {
+                {PRIORITY_OPTIONS.map((priority) => {
                   const isSelected = filters.priorities?.includes(
                     priority.value,
                   );

@@ -79,6 +79,8 @@ import { TaskDescriptionView } from "@/features/tasks/components/task-descriptio
 import { InlineSaveActions } from "@/components/inline-save-actions";
 import { useBoardSubscription } from "@/features/boards/hooks/use-board-subscription";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
+import { PRIORITY_OPTIONS } from "@/features/tasks/constants/priorities";
+import { PriorityAntennaIcon } from "@/features/tasks/components/priority-antenna-icon";
 import {
   handleMutationAuthError,
   rethrowProtectedRouteError,
@@ -491,11 +493,21 @@ function TaskComponent() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">None</SelectItem>
-                        <SelectItem value="LOW">Low</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                        <SelectItem value="URGENT">Urgent</SelectItem>
+                        <SelectItem value="__none__">
+                          <PriorityAntennaIcon priority={null} />
+                          None
+                        </SelectItem>
+                        {PRIORITY_OPTIONS.map((priorityOption) => (
+                          <SelectItem
+                            key={priorityOption.value}
+                            value={priorityOption.value}
+                          >
+                            <PriorityAntennaIcon
+                              priority={priorityOption.value}
+                            />
+                            {priorityOption.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

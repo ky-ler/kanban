@@ -24,6 +24,7 @@ export function LabelBadge({ label, size = "sm", className }: LabelBadgeProps) {
           : "h-6 px-2.5 text-sm leading-none",
         className,
       )}
+      aria-label={label.name}
     >
       {label.name}
     </Badge>
