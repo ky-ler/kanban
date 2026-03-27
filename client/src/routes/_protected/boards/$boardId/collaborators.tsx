@@ -182,6 +182,7 @@ function CollaboratorsComponent() {
   };
 
   // Sort collaborators by role priority (ADMIN first, then MEMBER, then GUEST)
+  // and then by username alphabetically
   const sortedCollaborators =
     board?.data.collaborators.slice().sort((a, b) => {
       const roleDiff = getRolePriority(a.role) - getRolePriority(b.role);
@@ -259,7 +260,7 @@ function CollaboratorsComponent() {
                     </Badge>
                   </ItemContent>
                   {isCurrentUserAdmin &&
-                    collaborator.role !== "ADMIN" &&
+                    collaborator.role !== CollaboratorDtoRole.ADMIN &&
                     collaborator.user?.id !== currentUserId && (
                       <ItemActions>
                         <AlertDialog>
