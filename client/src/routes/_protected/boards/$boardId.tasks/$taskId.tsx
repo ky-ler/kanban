@@ -357,7 +357,20 @@ function TaskComponent() {
       onOpenChange={returnToBoard}
       key={`task-${taskId}`}
     >
-      <DialogContent className="flex h-[80vh] max-h-[700px] flex-col gap-0 p-0 sm:max-w-5xl">
+      <DialogContent
+        className="flex h-[80vh] max-h-[700px] flex-col gap-0 p-0 sm:max-w-5xl"
+        onEscapeKeyDown={(event) => {
+          const activeElement = document.activeElement as HTMLElement | null;
+          const isRichTextFocused = Boolean(
+            activeElement?.closest('[contenteditable="true"]'),
+          );
+
+          if (editingField === "description" && isRichTextFocused) {
+            event.preventDefault();
+            setEditingField(null);
+          }
+        }}
+      >
         <DialogDescription className="sr-only">
           Detailed view and editing options for the task.
         </DialogDescription>
@@ -786,6 +799,7 @@ function EditableDescription({
 
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       onCancel();
     }
   };
