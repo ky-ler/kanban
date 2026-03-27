@@ -112,7 +112,9 @@ export const Route = createFileRoute("/_protected/boards/$boardId")({
     location,
   }) => {
     try {
-      await queryClient.ensureQueryData(getGetBoardQueryOptions(boardId));
+      return await queryClient.ensureQueryData(
+        getGetBoardQueryOptions(boardId),
+      );
     } catch (error) {
       rethrowProtectedRouteError(
         error,
@@ -121,6 +123,17 @@ export const Route = createFileRoute("/_protected/boards/$boardId")({
     }
   },
   component: BoardRoute,
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        name: "description",
+        content: `View and manage your kanban board: ${loaderData?.data.name}.`,
+      },
+      {
+        title: `${loaderData?.data.name} - Kanban`,
+      },
+    ],
+  }),
 });
 
 type EditingField = "name" | null;

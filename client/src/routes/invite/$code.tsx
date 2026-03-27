@@ -21,14 +21,37 @@ import {
 import { handleMutationAuthError } from "@/features/auth/route-auth";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import {
-  usePreviewInvite,
   useAcceptInvite,
+  usePreviewInviteSuspense,
+  getPreviewInviteQueryOptions,
 } from "@/api/gen/endpoints/board-invite-controller/board-invite-controller";
 import { toast } from "sonner";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 export const Route = createFileRoute("/invite/$code")({
+  loader: async ({ context: { queryClient }, params: { code } }) => {
+    try {
+      return await queryClient.ensureQueryData(
+        getPreviewInviteQueryOptions(code),
+      );
+    } catch (error) {
+      // Don't want to throw an error here because we want to show the error message on the page instead of the default error page
+      console.error("Error loading invite preview:", error);
+      return null;
+    }
+  },
   component: InvitePage,
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        name: "description",
+        content: `Join ${loaderData?.data.boardName} on Kanban - a real-time collaborative kanban board application.`,
+      },
+      {
+        title: `Join ${loaderData?.data.boardName} - Kanban`,
+      },
+    ],
+  }),
 });
 
 function InvitePage() {
@@ -43,7 +66,7 @@ function InvitePage() {
     data: previewResponse,
     isLoading: previewLoading,
     error: previewError,
-  } = usePreviewInvite(code);
+  } = usePreviewInviteSuspense(code);
 
   const preview = previewResponse?.data;
 

@@ -1,5 +1,9 @@
 import { lazy, Suspense } from "react";
-import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet,
+} from "@tanstack/react-router";
 import type { RouterContext } from "@/lib/router";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
@@ -23,6 +27,17 @@ const ReactQueryDevtools = import.meta.env.PROD
     );
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  head: () => ({
+    meta: [
+      {
+        name: "description",
+        content: "A real-time, collaborative kanban board application.",
+      },
+      {
+        title: "Kanban",
+      },
+    ],
+  }),
   component: () => <RootComponent />,
   errorComponent: ({ error, reset }) => (
     <ErrorPage error={error} reset={reset} />
@@ -34,28 +49,34 @@ function RootComponent() {
 
   if (!auth?.isAuthenticated && !auth?.isLoading) {
     return (
-      <TooltipProvider>
-        <Outlet />
-        <Toaster position="bottom-center" />
-        <Suspense>
-          <TanStackRouterDevtools position="bottom-right" />
-          <ReactQueryDevtools buttonPosition="bottom-right" />
-        </Suspense>
-      </TooltipProvider>
+      <>
+        <HeadContent />
+        <TooltipProvider>
+          <Outlet />
+          <Toaster position="bottom-center" />
+          <Suspense>
+            <TanStackRouterDevtools position="bottom-right" />
+            <ReactQueryDevtools buttonPosition="bottom-right" />
+          </Suspense>
+        </TooltipProvider>
+      </>
     );
   }
 
   return (
-    <TooltipProvider>
-      <div className="flex min-h-svh flex-col">
-        <AppHeader />
-        <main className="flex flex-1 flex-col">
-          <Outlet />
-        </main>
-      </div>
-      <Toaster position="bottom-center" />
-      <TanStackRouterDevtools position="bottom-right" />
-      <ReactQueryDevtools buttonPosition="bottom-right" />
-    </TooltipProvider>
+    <>
+      <HeadContent />
+      <TooltipProvider>
+        <div className="flex min-h-svh flex-col">
+          <AppHeader />
+          <main className="flex flex-1 flex-col">
+            <Outlet />
+          </main>
+        </div>
+        <Toaster position="bottom-center" />
+        <TanStackRouterDevtools position="bottom-right" />
+        <ReactQueryDevtools buttonPosition="bottom-right" />
+      </TooltipProvider>
+    </>
   );
 }

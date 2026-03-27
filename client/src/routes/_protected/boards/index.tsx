@@ -41,6 +41,17 @@ export const Route = createFileRoute("/_protected/boards/")({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(getGetBoardsForUserQueryOptions()),
   component: BoardsComponent,
+  head: () => ({
+    meta: [
+      {
+        name: "description",
+        content: "View and manage your kanban boards.",
+      },
+      {
+        title: "Boards - Kanban",
+      },
+    ],
+  }),
 });
 
 function BoardCard({ board }: { board: BoardSummary }) {

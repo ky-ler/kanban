@@ -97,7 +97,7 @@ export const Route = createFileRoute(
     location,
   }) => {
     try {
-      await Promise.all([
+      return await Promise.all([
         queryClient.ensureQueryData(getGetBoardQueryOptions(boardId)),
         queryClient.ensureQueryData(getGetTaskQueryOptions(taskId)),
         queryClient.ensureQueryData(
@@ -115,6 +115,17 @@ export const Route = createFileRoute(
     }
   },
   component: TaskComponent,
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        name: "description",
+        content: `View and edit details for task ${loaderData?.[1].data.title}.`,
+      },
+      {
+        title: `Task Details - ${loaderData?.[1].data.title} - Kanban`,
+      },
+    ],
+  }),
 });
 
 type EditingField = "title" | "description" | null;

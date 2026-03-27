@@ -63,7 +63,9 @@ export const Route = createFileRoute(
     location,
   }) => {
     try {
-      await queryClient.ensureQueryData(getGetBoardQueryOptions(boardId));
+      return await queryClient.ensureQueryData(
+        getGetBoardQueryOptions(boardId),
+      );
     } catch (error) {
       rethrowProtectedRouteError(
         error,
@@ -72,6 +74,17 @@ export const Route = createFileRoute(
     }
   },
   component: CollaboratorsComponent,
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        name: "description",
+        content: `Manage collaborators and invites for your board: ${loaderData?.data.name}.`,
+      },
+      {
+        title: `Collaborators - ${loaderData?.data.name} - Kanban`,
+      },
+    ],
+  }),
 });
 
 // TODO: Add ability to add and change roles of collaborators
