@@ -5,7 +5,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   InputGroup,
   InputGroupAddon,
@@ -27,6 +26,7 @@ import {
   IconTag,
   IconCalendar,
   IconX,
+  IconCheck,
 } from "@tabler/icons-react";
 
 const DUE_DATE_OPTIONS = [
@@ -44,6 +44,20 @@ interface TaskFilterBarProps {
   onFiltersChange: (filters: TaskFilters) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
+}
+
+function FilterCheckbox({ checked }: { checked: boolean | undefined }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "border-input flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
+        checked && "border-primary bg-primary text-primary-foreground",
+      )}
+    >
+      {checked && <IconCheck className="size-3" />}
+    </div>
+  );
 }
 
 export function TaskFilterBar({
@@ -139,11 +153,7 @@ export function TaskFilterBar({
                   )}
                   onClick={() => updateFilter("assignee", undefined)}
                 >
-                  <Checkbox
-                    checked={!filters.assignee}
-                    className="pointer-events-none"
-                    tabIndex={-1}
-                  />
+                  <FilterCheckbox checked={!filters.assignee} />
                   All
                 </button>
                 <button
@@ -154,11 +164,7 @@ export function TaskFilterBar({
                   )}
                   onClick={() => updateFilter("assignee", "unassigned")}
                 >
-                  <Checkbox
-                    checked={filters.assignee === "unassigned"}
-                    className="pointer-events-none"
-                    tabIndex={-1}
-                  />
+                  <FilterCheckbox checked={filters.assignee === "unassigned"} />
                   Unassigned
                 </button>
                 {collaborators.map((collab) => (
@@ -171,10 +177,8 @@ export function TaskFilterBar({
                     )}
                     onClick={() => updateFilter("assignee", collab.user?.id)}
                   >
-                    <Checkbox
+                    <FilterCheckbox
                       checked={filters.assignee === collab.user?.id}
-                      className="pointer-events-none"
-                      tabIndex={-1}
                     />
                     <span className="truncate">{collab.user?.username}</span>
                   </button>
@@ -207,11 +211,7 @@ export function TaskFilterBar({
                         toggleArrayFilter("priorities", priority.value)
                       }
                     >
-                      <Checkbox
-                        checked={isSelected}
-                        className="pointer-events-none"
-                        tabIndex={-1}
-                      />
+                      <FilterCheckbox checked={isSelected} />
                       {priority.label}
                     </button>
                   );
@@ -243,11 +243,7 @@ export function TaskFilterBar({
                             toggleArrayFilter("labelIds", label.id)
                           }
                         >
-                          <Checkbox
-                            checked={isSelected}
-                            className="pointer-events-none"
-                            tabIndex={-1}
-                          />
+                          <FilterCheckbox checked={isSelected} />
                           <LabelBadge label={label} size="sm" />
                         </button>
                       );
