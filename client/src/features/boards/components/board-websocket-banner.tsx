@@ -61,25 +61,24 @@ export function BoardWebSocketBanner() {
   return (
     <Alert
       variant={isTerminalError ? "destructive" : "default"}
-      className="mx-4 mt-2"
+      className="mx-auto mt-2 max-w-screen md:max-w-md"
     >
       {isTerminalError ? (
         context.failureReason === "access" ? (
-          <IconWifiOff className="size-4 shrink-0" />
+          <IconWifiOff />
         ) : (
-          <IconAlertCircle className="size-4 shrink-0" />
+          <IconAlertCircle />
         )
       ) : (
-        <Spinner className="size-4 shrink-0" />
+        <Spinner />
       )}
       <AlertDescription>{message}</AlertDescription>
       {isTerminalError && (
         <AlertAction>
           <Button
             type="button"
-            size="sm"
-            variant={isTerminalError ? "destructive" : "secondary"}
-            className="h-7 shrink-0 px-2.5"
+            size="xs"
+            variant={isTerminalError ? "destructive" : "default"}
             onClick={handleAction}
           >
             {buttonLabel}
