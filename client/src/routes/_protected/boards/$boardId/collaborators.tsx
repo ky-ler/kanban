@@ -16,9 +16,8 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { router } from "@/lib/router";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   IconUser,
@@ -89,6 +88,7 @@ export const Route = createFileRoute(
 
 // TODO: Add ability to add and change roles of collaborators
 function CollaboratorsComponent() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { boardId } = Route.useParams();
   const { data: board, isLoading } = useGetBoardSuspense(boardId);
@@ -129,7 +129,7 @@ function CollaboratorsComponent() {
 
   const returnToBoard = (open: boolean) => {
     if (!open) {
-      router.navigate({
+      navigate({
         to: "/boards/$boardId",
         params: { boardId },
         search: {

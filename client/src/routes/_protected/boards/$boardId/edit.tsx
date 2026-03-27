@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { router } from "@/lib/router";
 import { useForm } from "@tanstack/react-form";
 import {
   Field,
@@ -69,6 +68,7 @@ export const Route = createFileRoute("/_protected/boards/$boardId/edit")({
 });
 
 function EditBoardComponent() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { boardId } = Route.useParams();
 
@@ -116,7 +116,7 @@ function EditBoardComponent() {
   const returnToBoard = (open: boolean) => {
     if (!open) {
       form.reset();
-      router.navigate({
+      navigate({
         to: "/boards/$boardId",
         params: { boardId },
         search: {

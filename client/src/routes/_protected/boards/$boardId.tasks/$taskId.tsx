@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { router } from "@/lib/router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Dialog,
   DialogContent,
@@ -147,6 +146,7 @@ const taskTitleSchema = z
   );
 
 function TaskComponent() {
+  const navigate = useNavigate();
   const [editingField, setEditingField] = useState<EditingField>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [isMobileActivityOpen, setIsMobileActivityOpen] = useState(false);
@@ -317,7 +317,7 @@ function TaskComponent() {
 
   const returnToBoard = (open: boolean) => {
     if (!open) {
-      router.navigate({
+      navigate({
         to: "/boards/$boardId",
         params: { boardId },
         search: {

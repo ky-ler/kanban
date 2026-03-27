@@ -2,8 +2,7 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { env } from "@/config/env";
 import { normalizeRedirectTarget } from "@/features/auth/auth-navigation";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
-import { createFileRoute } from "@tanstack/react-router";
-import { router } from "@/lib/router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
 export const Route = createFileRoute("/auth/login")({
@@ -15,6 +14,7 @@ export const Route = createFileRoute("/auth/login")({
 });
 
 function AuthLoginRoute() {
+  const navigate = useNavigate();
   const auth = useAuth0Context();
   const { redirect, force } = Route.useSearch();
   const redirectTarget = normalizeRedirectTarget(redirect);
@@ -29,7 +29,7 @@ function AuthLoginRoute() {
     hasStartedRef.current = true;
 
     if (auth.isAuthenticated && !shouldForceLogin) {
-      void router.navigate({ href: redirectTarget, replace: true });
+      void navigate({ href: redirectTarget, replace: true });
       return;
     }
 
