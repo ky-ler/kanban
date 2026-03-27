@@ -184,8 +184,15 @@ function CollaboratorsComponent() {
   // Sort collaborators by role priority (ADMIN first, then MEMBER, then GUEST)
   const sortedCollaborators =
     board?.data.collaborators.slice().sort((a, b) => {
-      return getRolePriority(a.role) - getRolePriority(b.role);
-    }) || [];
+      const roleDiff = getRolePriority(a.role) - getRolePriority(b.role);
+      if (roleDiff !== 0) {
+        return roleDiff;
+      }
+      const usernameA = a.user?.username ?? "";
+      const usernameB = b.user?.username ?? "";
+
+      return usernameA.localeCompare(usernameB);
+    }) ?? [];
 
   if (!board || isLoading) {
     return <LoadingSpinner />;
