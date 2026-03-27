@@ -1022,7 +1022,7 @@ function ToolbarPlugin({
                   className="h-8 gap-1 px-2"
                   aria-label="Text style"
                 >
-                  <span className="">{activeTextStyleLabel}</span>
+                  <span className="text-sm">{activeTextStyleLabel}</span>
                   <IconChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
