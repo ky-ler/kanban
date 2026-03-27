@@ -3,6 +3,8 @@ import { CSS } from "@dnd-kit/utilities";
 import type { TaskSummaryDto } from "@/api/gen/model";
 import { TaskItem } from "./task-item";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "@tanstack/react-router";
+import type { KeyboardEventHandler } from "react";
 
 interface SortableTaskItemProps {
   task: TaskSummaryDto;
@@ -15,6 +17,7 @@ export const SortableTaskItem = ({
   boardId,
   dropIndicator = null,
 }: SortableTaskItemProps) => {
+  const navigate = useNavigate();
   const {
     attributes,
     listeners,
@@ -39,12 +42,39 @@ export const SortableTaskItem = ({
     transition: isDragging ? undefined : transition,
   };
 
+  const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (event) => {
+    listeners?.onKeyDown?.(event);
+
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    if (event.key !== "Enter" || event.target !== event.currentTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    void navigate({
+      to: "/boards/$boardId/tasks/$taskId",
+      params: { boardId, taskId: task.id },
+      search: {
+        q: undefined,
+        assignee: undefined,
+        priority: undefined,
+        labels: undefined,
+        due: undefined,
+        archive: undefined,
+      },
+    });
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
+      onKeyDown={handleKeyDown}
       className={cn(
         "relative touch-none [-webkit-touch-callout:none]",
         isDragging && "z-10 opacity-50",

@@ -102,6 +102,18 @@ export const TaskItem = ({
         checked={task.isCompleted}
         disabled={updateTaskStatusMutation.isPending}
         onCheckedChange={handleToggleCompleted}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
+            handleToggleCompleted();
+            return;
+          }
+
+          if (event.key === " " || event.key === "Spacebar") {
+            event.stopPropagation();
+          }
+        }}
         onPointerDown={(event) => event.stopPropagation()}
         className="relative top-0.5 disabled:cursor-pointer"
       />

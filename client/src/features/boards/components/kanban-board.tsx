@@ -5,6 +5,7 @@ import {
   DragOverlay,
   MouseSensor,
   KeyboardSensor,
+  KeyboardCode,
   useSensor,
   useSensors,
   closestCenter,
@@ -89,6 +90,11 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: {
+        start: [KeyboardCode.Space],
+        cancel: [KeyboardCode.Esc],
+        end: [KeyboardCode.Space, KeyboardCode.Enter, KeyboardCode.Tab],
+      },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
