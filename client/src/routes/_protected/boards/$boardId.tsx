@@ -427,12 +427,18 @@ function BoardComponent() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto">
-                <DropdownMenuItem onSelect={() => setAboutOpen(true)}>
+                <DropdownMenuItem
+                  onSelect={() => setTimeout(() => setAboutOpen(true), 0)}
+                >
                   <IconInfoCircle className="size-3.5" />
                   About This Board
                 </DropdownMenuItem>
                 {!isBoardArchived ? (
-                  <DropdownMenuItem onSelect={() => openArchiveModal("tasks")}>
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      setTimeout(() => openArchiveModal("tasks"), 0)
+                    }
+                  >
                     <IconHistory className="size-3.5" />
                     Archived Items
                   </DropdownMenuItem>
@@ -442,7 +448,9 @@ function BoardComponent() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       variant="destructive"
-                      onSelect={() => setArchiveBoardConfirmOpen(true)}
+                      onSelect={() =>
+                        setTimeout(() => setArchiveBoardConfirmOpen(true), 0)
+                      }
                     >
                       <IconArchive className="size-3.5" />
                       Archive Board
@@ -611,6 +619,9 @@ function BoardComponent() {
         <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>About This Board</DialogTitle>
+            <DialogDescription className="sr-only">
+              View and edit this board&apos;s details and description.
+            </DialogDescription>
           </DialogHeader>
           <div className="mt-2 min-w-0">
             {canEditBoardMeta && isEditingDescription ? (
