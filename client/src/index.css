@@ -5,8 +5,6 @@
 
 @import "shadcn/tailwind.css";
 
-@import "@fontsource-variable/outfit";
-
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -117,7 +115,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: "Outfit Variable", sans-serif;
+  --font-sans: "Manrope Variable", sans-serif;
   --font-serif: serif;
   --font-mono: monospace;
   --radius-2xl: calc(var(--radius) * 1.8);
