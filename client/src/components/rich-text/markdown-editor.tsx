@@ -1031,7 +1031,7 @@ function ToolbarPlugin({
           </Tooltip>
           <DropdownMenuContent
             align="start"
-            className="min-w-64 p-1.5"
+            className="w-fit min-w-64 p-1.5"
             onCloseAutoFocus={(e) => {
               e.preventDefault();
               editor.focus();
