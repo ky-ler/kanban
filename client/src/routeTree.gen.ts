@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as ProtectedRouteImport } from './routes/_protected/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as InviteCodeImport } from './routes/invite/$code'
+import { Route as AuthLogoutImport } from './routes/auth/logout'
 import { Route as AuthLoginImport } from './routes/auth/login'
 import { Route as AuthCallbackImport } from './routes/auth/callback'
 import { Route as ProtectedBoardsIndexImport } from './routes/_protected/boards/index'
@@ -39,6 +40,12 @@ const IndexRoute = IndexImport.update({
 const InviteCodeRoute = InviteCodeImport.update({
   id: '/invite/$code',
   path: '/invite/$code',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthLogoutRoute = AuthLogoutImport.update({
+  id: '/auth/logout',
+  path: '/auth/logout',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -124,6 +131,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/logout': {
+      id: '/auth/logout'
+      path: '/auth/logout'
+      fullPath: '/auth/logout'
+      preLoaderRoute: typeof AuthLogoutImport
       parentRoute: typeof rootRoute
     }
     '/invite/$code': {
@@ -221,6 +235,7 @@ export interface FileRoutesByFullPath {
   '': typeof ProtectedRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards/archived': typeof ProtectedBoardsArchivedRoute
@@ -235,6 +250,7 @@ export interface FileRoutesByTo {
   '': typeof ProtectedRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards/archived': typeof ProtectedBoardsArchivedRoute
@@ -250,6 +266,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
   '/invite/$code': typeof InviteCodeRoute
   '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/_protected/boards/archived': typeof ProtectedBoardsArchivedRoute
@@ -266,6 +283,7 @@ export interface FileRouteTypes {
     | ''
     | '/auth/callback'
     | '/auth/login'
+    | '/auth/logout'
     | '/invite/$code'
     | '/boards/$boardId'
     | '/boards/archived'
@@ -279,6 +297,7 @@ export interface FileRouteTypes {
     | ''
     | '/auth/callback'
     | '/auth/login'
+    | '/auth/logout'
     | '/invite/$code'
     | '/boards/$boardId'
     | '/boards/archived'
@@ -292,6 +311,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/auth/callback'
     | '/auth/login'
+    | '/auth/logout'
     | '/invite/$code'
     | '/_protected/boards/$boardId'
     | '/_protected/boards/archived'
@@ -307,6 +327,7 @@ export interface RootRouteChildren {
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthLogoutRoute: typeof AuthLogoutRoute
   InviteCodeRoute: typeof InviteCodeRoute
 }
 
@@ -315,6 +336,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthLogoutRoute: AuthLogoutRoute,
   InviteCodeRoute: InviteCodeRoute,
 }
 
@@ -332,6 +354,7 @@ export const routeTree = rootRoute
         "/_protected",
         "/auth/callback",
         "/auth/login",
+        "/auth/logout",
         "/invite/$code"
       ]
     },
@@ -351,6 +374,9 @@ export const routeTree = rootRoute
     },
     "/auth/login": {
       "filePath": "auth/login.tsx"
+    },
+    "/auth/logout": {
+      "filePath": "auth/logout.tsx"
     },
     "/invite/$code": {
       "filePath": "invite/$code.tsx"
