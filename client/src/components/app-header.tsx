@@ -54,7 +54,7 @@ export function AppHeader() {
       <div className="mx-auto flex h-12 items-center gap-4 px-4">
         {/* Logo */}
         <Link
-          to="/boards"
+          to="/"
           search={{ archive: undefined }}
           className="flex shrink-0 items-center gap-2 font-semibold tracking-tight"
         >
@@ -64,7 +64,7 @@ export function AppHeader() {
 
         {/* Nav Links */}
         {auth.isAuthenticated && (
-          <nav className="flex items-center gap-1">
+          <nav className="hidden items-center gap-1 sm:flex">
             {navLinks.map((link) => {
               const isOnBoardsRoute = matchRoute({ to: link.to, fuzzy: true });
               const isActive = isOnBoardsRoute;
