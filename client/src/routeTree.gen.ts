@@ -18,7 +18,6 @@ import { Route as AuthLogoutImport } from './routes/auth/logout'
 import { Route as AuthLoginImport } from './routes/auth/login'
 import { Route as AuthCallbackImport } from './routes/auth/callback'
 import { Route as ProtectedBoardsIndexImport } from './routes/_protected/boards/index'
-import { Route as ProtectedBoardsArchivedImport } from './routes/_protected/boards/archived'
 import { Route as ProtectedBoardsBoardIdImport } from './routes/_protected/boards/$boardId'
 import { Route as ProtectedBoardsBoardIdEditImport } from './routes/_protected/boards/$boardId/edit'
 import { Route as ProtectedBoardsBoardIdCollaboratorsImport } from './routes/_protected/boards/$boardId/collaborators'
@@ -64,12 +63,6 @@ const AuthCallbackRoute = AuthCallbackImport.update({
 const ProtectedBoardsIndexRoute = ProtectedBoardsIndexImport.update({
   id: '/boards/',
   path: '/boards/',
-  getParentRoute: () => ProtectedRouteRoute,
-} as any)
-
-const ProtectedBoardsArchivedRoute = ProtectedBoardsArchivedImport.update({
-  id: '/boards/archived',
-  path: '/boards/archived',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
 
@@ -154,13 +147,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedBoardsBoardIdImport
       parentRoute: typeof ProtectedRouteImport
     }
-    '/_protected/boards/archived': {
-      id: '/_protected/boards/archived'
-      path: '/boards/archived'
-      fullPath: '/boards/archived'
-      preLoaderRoute: typeof ProtectedBoardsArchivedImport
-      parentRoute: typeof ProtectedRouteImport
-    }
     '/_protected/boards/': {
       id: '/_protected/boards/'
       path: '/boards'
@@ -216,13 +202,11 @@ const ProtectedBoardsBoardIdRouteWithChildren =
 
 interface ProtectedRouteRouteChildren {
   ProtectedBoardsBoardIdRoute: typeof ProtectedBoardsBoardIdRouteWithChildren
-  ProtectedBoardsArchivedRoute: typeof ProtectedBoardsArchivedRoute
   ProtectedBoardsIndexRoute: typeof ProtectedBoardsIndexRoute
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedBoardsBoardIdRoute: ProtectedBoardsBoardIdRouteWithChildren,
-  ProtectedBoardsArchivedRoute: ProtectedBoardsArchivedRoute,
   ProtectedBoardsIndexRoute: ProtectedBoardsIndexRoute,
 }
 
@@ -238,7 +222,6 @@ export interface FileRoutesByFullPath {
   '/auth/logout': typeof AuthLogoutRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
-  '/boards/archived': typeof ProtectedBoardsArchivedRoute
   '/boards': typeof ProtectedBoardsIndexRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
@@ -253,7 +236,6 @@ export interface FileRoutesByTo {
   '/auth/logout': typeof AuthLogoutRoute
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
-  '/boards/archived': typeof ProtectedBoardsArchivedRoute
   '/boards': typeof ProtectedBoardsIndexRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
@@ -269,7 +251,6 @@ export interface FileRoutesById {
   '/auth/logout': typeof AuthLogoutRoute
   '/invite/$code': typeof InviteCodeRoute
   '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
-  '/_protected/boards/archived': typeof ProtectedBoardsArchivedRoute
   '/_protected/boards/': typeof ProtectedBoardsIndexRoute
   '/_protected/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/_protected/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
@@ -286,7 +267,6 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/invite/$code'
     | '/boards/$boardId'
-    | '/boards/archived'
     | '/boards'
     | '/boards/$boardId/collaborators'
     | '/boards/$boardId/edit'
@@ -300,7 +280,6 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/invite/$code'
     | '/boards/$boardId'
-    | '/boards/archived'
     | '/boards'
     | '/boards/$boardId/collaborators'
     | '/boards/$boardId/edit'
@@ -314,7 +293,6 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/invite/$code'
     | '/_protected/boards/$boardId'
-    | '/_protected/boards/archived'
     | '/_protected/boards/'
     | '/_protected/boards/$boardId/collaborators'
     | '/_protected/boards/$boardId/edit'
@@ -365,7 +343,6 @@ export const routeTree = rootRoute
       "filePath": "_protected/route.tsx",
       "children": [
         "/_protected/boards/$boardId",
-        "/_protected/boards/archived",
         "/_protected/boards/"
       ]
     },
@@ -389,10 +366,6 @@ export const routeTree = rootRoute
         "/_protected/boards/$boardId/edit",
         "/_protected/boards/$boardId/tasks/$taskId"
       ]
-    },
-    "/_protected/boards/archived": {
-      "filePath": "_protected/boards/archived.tsx",
-      "parent": "/_protected"
     },
     "/_protected/boards/": {
       "filePath": "_protected/boards/index.tsx",
