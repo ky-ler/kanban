@@ -11,6 +11,7 @@ import {
   IconArchive,
   IconChevronRight,
   IconDotsVertical,
+  IconHistory,
   IconInfoCircle,
   IconRestore,
   IconTrash,
@@ -47,6 +48,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
@@ -418,18 +420,21 @@ function BoardComponent() {
                 </DropdownMenuItem>
                 {!isBoardArchived ? (
                   <DropdownMenuItem onSelect={() => openArchiveModal("tasks")}>
-                    <IconArchive className="size-3.5" />
+                    <IconHistory className="size-3.5" />
                     Archived Items
                   </DropdownMenuItem>
                 ) : null}
                 {!isBoardArchived && isBoardOwner ? (
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={() => setArchiveBoardConfirmOpen(true)}
-                  >
-                    <IconArchive className="size-3.5" />
-                    Archive Board
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => setArchiveBoardConfirmOpen(true)}
+                    >
+                      <IconArchive className="size-3.5" />
+                      Archive Board
+                    </DropdownMenuItem>
+                  </>
                 ) : null}
               </DropdownMenuContent>
             </DropdownMenu>

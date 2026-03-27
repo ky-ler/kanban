@@ -20,12 +20,14 @@ import {
   IconPencil,
   IconPlus,
   IconX,
+  IconListCheck,
 } from "@tabler/icons-react";
 import { SortableTaskItem } from "@/features/tasks/components/sortable-task-item";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -303,11 +305,29 @@ export const KanbanColumn = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto">
+                <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                  <IconPencil className="mr-2 size-4" />
+                  Rename
+                </DropdownMenuItem>
+                {!column.isArchived ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => void handleArchiveAllTasks()}
+                      disabled={tasks.length === 0 || isArchivingAllTasks}
+                      variant="destructive"
+                    >
+                      <IconListCheck className="mr-2 size-4" />
+                      Archive all tasks
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
                 <DropdownMenuItem
                   onClick={handleToggleArchive}
                   disabled={
                     updateColumnArchiveMutation.isPending || isArchivingAllTasks
                   }
+                  variant={column.isArchived ? undefined : "destructive"}
                 >
                   {column.isArchived ? (
                     <IconRestore className="mr-2 size-4" />
@@ -315,19 +335,6 @@ export const KanbanColumn = ({
                     <IconArchive className="mr-2 size-4" />
                   )}
                   {column.isArchived ? "Unarchive" : "Archive"}
-                </DropdownMenuItem>
-                {!column.isArchived ? (
-                  <DropdownMenuItem
-                    onClick={() => void handleArchiveAllTasks()}
-                    disabled={tasks.length === 0 || isArchivingAllTasks}
-                  >
-                    <IconArchive className="mr-2 size-4" />
-                    Archive all tasks
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                  <IconPencil className="mr-2 size-4" />
-                  Rename
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
