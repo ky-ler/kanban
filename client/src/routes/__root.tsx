@@ -47,35 +47,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   const { auth } = Route.useRouteContext();
 
-  if (!auth?.isAuthenticated && !auth?.isLoading) {
-    return (
-      <>
-        <HeadContent />
-        <TooltipProvider>
-          <Outlet />
-          <Toaster position="bottom-center" />
-          <Suspense>
-            <TanStackRouterDevtools position="bottom-right" />
-            <ReactQueryDevtools buttonPosition="bottom-right" />
-          </Suspense>
-        </TooltipProvider>
-      </>
-    );
-  }
-
   return (
     <>
       <HeadContent />
       <TooltipProvider>
         <div className="flex min-h-svh flex-col">
-          <AppHeader />
+          {!auth.isAuthenticated && !auth?.isLoading ? null : <AppHeader />}
           <main className="flex flex-1 flex-col">
             <Outlet />
           </main>
         </div>
         <Toaster position="bottom-center" />
-        <TanStackRouterDevtools position="bottom-right" />
-        <ReactQueryDevtools buttonPosition="bottom-right" />
+        <Suspense>
+          <TanStackRouterDevtools position="bottom-right" />
+          <ReactQueryDevtools buttonPosition="bottom-right" />
+        </Suspense>
       </TooltipProvider>
     </>
   );
