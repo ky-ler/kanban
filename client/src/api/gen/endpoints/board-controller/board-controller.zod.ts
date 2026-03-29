@@ -187,6 +187,11 @@ export const deleteBoardParams = zod.object({
   boardId: zod.string().uuid(),
 });
 
+export const transferOwnershipParams = zod.object({
+  boardId: zod.string().uuid(),
+  userId: zod.string(),
+});
+
 export const updateCollaboratorRoleParams = zod.object({
   boardId: zod.string().uuid(),
   userId: zod.string(),

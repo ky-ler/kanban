@@ -658,6 +658,99 @@ export const useDeleteBoard = <TError = unknown, TContext = unknown>(
 
   return useMutation(mutationOptions, queryClient);
 };
+export type transferOwnershipResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type transferOwnershipResponseSuccess = transferOwnershipResponse200 & {
+  headers: Headers;
+};
+export type transferOwnershipResponse = transferOwnershipResponseSuccess;
+
+export const getTransferOwnershipUrl = (boardId: string, userId: string) => {
+  return `/boards/${boardId}/owner/${userId}`;
+};
+
+export const transferOwnership = async (
+  boardId: string,
+  userId: string,
+  options?: RequestInit,
+): Promise<transferOwnershipResponse> => {
+  return apiClient<transferOwnershipResponse>(
+    getTransferOwnershipUrl(boardId, userId),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
+};
+
+export const getTransferOwnershipMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof transferOwnership>>,
+    TError,
+    { boardId: string; userId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof transferOwnership>>,
+  TError,
+  { boardId: string; userId: string },
+  TContext
+> => {
+  const mutationKey = ["transferOwnership"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof transferOwnership>>,
+    { boardId: string; userId: string }
+  > = (props) => {
+    const { boardId, userId } = props ?? {};
+
+    return transferOwnership(boardId, userId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TransferOwnershipMutationResult = NonNullable<
+  Awaited<ReturnType<typeof transferOwnership>>
+>;
+
+export type TransferOwnershipMutationError = unknown;
+
+export const useTransferOwnership = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof transferOwnership>>,
+      TError,
+      { boardId: string; userId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof transferOwnership>>,
+  TError,
+  { boardId: string; userId: string },
+  TContext
+> => {
+  const mutationOptions = getTransferOwnershipMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type updateCollaboratorRoleResponse200 = {
   data: void;
   status: 200;
