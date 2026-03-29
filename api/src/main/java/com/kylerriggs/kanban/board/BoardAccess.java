@@ -67,6 +67,34 @@ public class BoardAccess extends BaseAccess {
     }
 
     /**
+     * Checks if the current user is either an admin collaborator or the creator of the board.
+     *
+     * @param boardId the ID of the board to check
+     * @return true if the user is admin or creator
+     */
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    public boolean isAdminOrCreator(@NonNull UUID boardId) {
+        String requestUserId = currentUserId();
+        boolean requestUserIsAdmin =
+                boardUserRepository.existsByBoardIdAndUserIdAndRole(
+                        boardId, requestUserId, BoardRole.ADMIN);
+        if (requestUserIsAdmin) {
+            return true;
+        }
+
+        boolean requestUserIsCreator =
+                boardRepository.existsByIdAndCreatedById(boardId, requestUserId);
+        if (!requestUserIsCreator) {
+            log.warn(
+                    "Access denied: User {} is neither admin nor creator on board {}",
+                    requestUserId,
+                    boardId);
+            throw new ForbiddenException("Admin or creator privileges required");
+        }
+        return true;
+    }
+
+    /**
      * Retrieves whether the current user is the creator of the specified board.
      *
      * @param boardId the ID of the board to check

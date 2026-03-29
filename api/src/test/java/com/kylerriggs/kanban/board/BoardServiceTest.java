@@ -447,6 +447,7 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenValid_AddsCollaborator() {
             // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardUserRepository.existsByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
@@ -464,6 +465,7 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenAlreadyCollaborator_ThrowsBadRequestException() {
             // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardUserRepository.existsByBoardIdAndUserId(BOARD_ID, OTHER_USER_ID))
                     .thenReturn(true);
 
@@ -478,6 +480,7 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenUserBoardLimitExceeded_ThrowsBoardLimitExceededException() {
             // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             doThrow(new BoardLimitExceededException("limit"))
                     .when(boardLimitPolicy)
                     .assertCanCreateOrCollaborate(OTHER_USER_ID);
@@ -493,6 +496,7 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenBoardNotFound_ThrowsResourceNotFoundException() {
             // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardUserRepository.existsByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
@@ -510,6 +514,7 @@ class BoardServiceTest {
         @Test
         void addCollaborator_WhenUserNotFound_ThrowsResourceNotFoundException() {
             // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardUserRepository.existsByBoardIdAndUserId(
                             Objects.requireNonNull(BOARD_ID), OTHER_USER_ID))
                     .thenReturn(false);
@@ -524,6 +529,36 @@ class BoardServiceTest {
                     () ->
                             boardService.addCollaborator(
                                     Objects.requireNonNull(BOARD_ID), collaboratorRequest));
+        }
+
+        @Test
+        void addCollaborator_WhenAdminAddsAdmin_ThrowsBadRequestException() {
+            // Given
+            User adminUser = new User();
+            adminUser.setId("auth0|admin789");
+            adminUser.setUsername("admin-user");
+            adminUser.setEmail("admin@example.com");
+            board.setCreatedBy(otherUser);
+            BoardUser adminMembership =
+                    BoardUser.builder().board(board).user(adminUser).role(BoardRole.ADMIN).build();
+            board.getCollaborators().add(adminMembership);
+
+            CollaboratorRequest addAdminRequest =
+                    new CollaboratorRequest("auth0|new-admin", BoardRole.ADMIN);
+
+            when(userService.getCurrentUserId()).thenReturn(adminUser.getId());
+            when(boardUserRepository.existsByBoardIdAndUserId(
+                            Objects.requireNonNull(BOARD_ID), "auth0|new-admin"))
+                    .thenReturn(false);
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+
+            // When & Then
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            boardService.addCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), addAdminRequest));
         }
     }
 
@@ -550,6 +585,20 @@ class BoardServiceTest {
             // Then
             assertEquals(1, board.getCollaborators().size());
             verify(boardRepository).save(Objects.requireNonNull(board));
+        }
+
+        @Test
+        void removeCollaborator_WhenTargetIsOwner_ThrowsBadRequestException() {
+            // Given
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+
+            // When & Then
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            boardService.removeCollaborator(
+                                    Objects.requireNonNull(BOARD_ID), USER_ID));
         }
 
         @Test
@@ -638,6 +687,7 @@ class BoardServiceTest {
         @Test
         void updateCollaboratorRole_WhenValid_UpdatesRole() {
             // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
 
@@ -653,6 +703,7 @@ class BoardServiceTest {
         @Test
         void updateCollaboratorRole_WhenDemotingLastAdmin_ThrowsBadRequestException() {
             // Given - user is the only admin
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
 
@@ -672,6 +723,7 @@ class BoardServiceTest {
                     BoardUser.builder().board(board).user(user).role(BoardRole.ADMIN).build();
             board.getCollaborators().add(soleCollaborator);
 
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
 
@@ -691,6 +743,7 @@ class BoardServiceTest {
                     BoardUser.builder().board(board).user(user).role(BoardRole.ADMIN).build();
             board.getCollaborators().add(soleCollaborator);
 
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
 
@@ -705,6 +758,7 @@ class BoardServiceTest {
         @Test
         void updateCollaboratorRole_WhenCollaboratorNotFound_ThrowsResourceNotFoundException() {
             // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
 
@@ -716,6 +770,113 @@ class BoardServiceTest {
                                     Objects.requireNonNull(BOARD_ID),
                                     "nonexistentUser",
                                     BoardRole.ADMIN));
+        }
+
+        @Test
+        void updateCollaboratorRole_WhenAdminTriesToSetAdmin_ThrowsBadRequestException() {
+            // Given
+            User anotherAdminUser = new User();
+            anotherAdminUser.setId("auth0|admin789");
+            anotherAdminUser.setUsername("admin-user");
+            anotherAdminUser.setEmail("admin@example.com");
+
+            BoardUser anotherAdminMembership =
+                    BoardUser.builder()
+                            .board(board)
+                            .user(anotherAdminUser)
+                            .role(BoardRole.ADMIN)
+                            .build();
+            board.getCollaborators().add(anotherAdminMembership);
+
+            when(userService.getCurrentUserId()).thenReturn(anotherAdminUser.getId());
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+
+            // When & Then
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            boardService.updateCollaboratorRole(
+                                    Objects.requireNonNull(BOARD_ID),
+                                    OTHER_USER_ID,
+                                    BoardRole.ADMIN));
+        }
+
+        @Test
+        void
+                updateCollaboratorRole_WhenTargetIsOwnerAndNewRoleNotAdmin_ThrowsBadRequestException() {
+            // Given
+            when(userService.getCurrentUserId()).thenReturn(USER_ID);
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+
+            // When & Then
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            boardService.updateCollaboratorRole(
+                                    Objects.requireNonNull(BOARD_ID), USER_ID, BoardRole.MEMBER));
+        }
+    }
+
+    @Nested
+    class TransferOwnershipTests {
+        private BoardUser otherBoardUser;
+
+        @BeforeEach
+        void setUp() {
+            otherBoardUser =
+                    BoardUser.builder().board(board).user(otherUser).role(BoardRole.MEMBER).build();
+            board.getCollaborators().add(otherBoardUser);
+        }
+
+        @Test
+        void transferOwnership_WhenValid_TransfersOwnerAndDemotesPreviousOwner() {
+            // Given
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+
+            // When
+            boardService.transferOwnership(Objects.requireNonNull(BOARD_ID), OTHER_USER_ID);
+
+            // Then
+            assertEquals(OTHER_USER_ID, board.getCreatedBy().getId());
+            assertEquals(BoardRole.ADMIN, otherBoardUser.getRole());
+            BoardUser previousOwnerMembership =
+                    board.getCollaborators().stream()
+                            .filter(c -> c.getUser().getId().equals(USER_ID))
+                            .findFirst()
+                            .orElseThrow();
+            assertEquals(BoardRole.ADMIN, previousOwnerMembership.getRole());
+            verify(boardRepository).save(Objects.requireNonNull(board));
+        }
+
+        @Test
+        void transferOwnership_WhenTargetAlreadyOwner_ThrowsBadRequestException() {
+            // Given
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+
+            // When & Then
+            assertThrows(
+                    BadRequestException.class,
+                    () ->
+                            boardService.transferOwnership(
+                                    Objects.requireNonNull(BOARD_ID), USER_ID));
+        }
+
+        @Test
+        void transferOwnership_WhenTargetNotCollaborator_ThrowsResourceNotFoundException() {
+            // Given
+            when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
+                    .thenReturn(Optional.of(board));
+
+            // When & Then
+            assertThrows(
+                    ResourceNotFoundException.class,
+                    () ->
+                            boardService.transferOwnership(
+                                    Objects.requireNonNull(BOARD_ID), "auth0|noncollab"));
         }
     }
 

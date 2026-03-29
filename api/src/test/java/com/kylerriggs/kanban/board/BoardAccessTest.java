@@ -248,4 +248,56 @@ class BoardAccessTest {
                 .existsByBoardIdAndUserIdAndRole(
                         Objects.requireNonNull(differentBoardId), USER_ID, BoardRole.ADMIN);
     }
+
+    @Test
+    void isAdminOrCreator_WhenUserIsAdmin_ReturnsTrue() {
+        // Given
+        setupAuthentication(USER_ID);
+        when(boardUserRepository.existsByBoardIdAndUserIdAndRole(
+                        BOARD_ID, USER_ID, BoardRole.ADMIN))
+                .thenReturn(true);
+
+        // When
+        boolean result = boardAccess.isAdminOrCreator(Objects.requireNonNull(BOARD_ID));
+
+        // Then
+        assertTrue(result);
+        verify(boardUserRepository)
+                .existsByBoardIdAndUserIdAndRole(BOARD_ID, USER_ID, BoardRole.ADMIN);
+        verify(boardRepository, never()).existsByIdAndCreatedById(any(), any());
+    }
+
+    @Test
+    void isAdminOrCreator_WhenUserIsCreator_ReturnsTrue() {
+        // Given
+        setupAuthentication(USER_ID);
+        when(boardUserRepository.existsByBoardIdAndUserIdAndRole(
+                        BOARD_ID, USER_ID, BoardRole.ADMIN))
+                .thenReturn(false);
+        when(boardRepository.existsByIdAndCreatedById(BOARD_ID, USER_ID)).thenReturn(true);
+
+        // When
+        boolean result = boardAccess.isAdminOrCreator(Objects.requireNonNull(BOARD_ID));
+
+        // Then
+        assertTrue(result);
+        verify(boardUserRepository)
+                .existsByBoardIdAndUserIdAndRole(BOARD_ID, USER_ID, BoardRole.ADMIN);
+        verify(boardRepository).existsByIdAndCreatedById(BOARD_ID, USER_ID);
+    }
+
+    @Test
+    void isAdminOrCreator_WhenNeitherAdminNorCreator_ThrowsForbiddenException() {
+        // Given
+        setupAuthentication(USER_ID);
+        when(boardUserRepository.existsByBoardIdAndUserIdAndRole(
+                        BOARD_ID, USER_ID, BoardRole.ADMIN))
+                .thenReturn(false);
+        when(boardRepository.existsByIdAndCreatedById(BOARD_ID, USER_ID)).thenReturn(false);
+
+        // When & Then
+        assertThrows(
+                ForbiddenException.class,
+                () -> boardAccess.isAdminOrCreator(Objects.requireNonNull(BOARD_ID)));
+    }
 }

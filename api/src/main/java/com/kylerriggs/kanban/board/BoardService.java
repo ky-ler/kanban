@@ -308,6 +308,7 @@ public class BoardService {
      */
     @Transactional
     public void addCollaborator(@NonNull UUID boardId, CollaboratorRequest collaboratorRequest) {
+        String requestUserId = userService.getCurrentUserId();
         String userId = collaboratorRequest.userId();
         BoardRole role = collaboratorRequest.role();
 
@@ -323,6 +324,11 @@ public class BoardService {
                         .findById(boardId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
+
+        boolean requesterIsCreator = board.getCreatedBy().getId().equals(requestUserId);
+        if (!requesterIsCreator && role == BoardRole.ADMIN) {
+            throw new BadRequestException("Only the board owner can grant admin role.");
+        }
 
         User userToAdd = userLookupService.getRequiredUser(userId);
 
@@ -350,6 +356,11 @@ public class BoardService {
                         .findById(boardId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
+
+        if (board.getCreatedBy().getId().equals(userId)) {
+            throw new BadRequestException(
+                    "Cannot remove the board owner. Transfer ownership first.");
+        }
 
         BoardUser collaboratorToRemove =
                 board.getCollaborators().stream()
@@ -408,11 +419,14 @@ public class BoardService {
     @Transactional
     public void updateCollaboratorRole(
             @NonNull UUID boardId, @NonNull String userId, @NonNull BoardRole newRole) {
+        String requestUserId = userService.getCurrentUserId();
         Board board =
                 boardRepository
                         .findById(boardId)
                         .orElseThrow(
                                 () -> new ResourceNotFoundException("Board not found: " + boardId));
+
+        boolean requesterIsCreator = board.getCreatedBy().getId().equals(requestUserId);
 
         BoardUser collaboratorToUpdate =
                 board.getCollaborators().stream()
@@ -422,6 +436,17 @@ public class BoardService {
                                 () ->
                                         new ResourceNotFoundException(
                                                 "Collaborator not found with ID: " + userId));
+
+        if (board.getCreatedBy().getId().equals(userId) && newRole != BoardRole.ADMIN) {
+            throw new BadRequestException(
+                    "Cannot change the owner's role. Transfer ownership first.");
+        }
+
+        if (!requesterIsCreator
+                && (newRole == BoardRole.ADMIN
+                        || collaboratorToUpdate.getRole() == BoardRole.ADMIN)) {
+            throw new BadRequestException("Only the board owner can grant or revoke admin role.");
+        }
 
         // If this user is the only collaborator, they MUST be an ADMIN.
         if (board.getCollaborators().size() == 1) {
@@ -448,6 +473,54 @@ public class BoardService {
         }
 
         collaboratorToUpdate.setRole(newRole);
+
+        boardRepository.save(board);
+    }
+
+    /**
+     * Transfers ownership of a board to another collaborator. The new owner is set as board creator
+     * and ensured to be an admin. The previous owner is demoted to admin.
+     *
+     * @param boardId the ID of the board
+     * @param newOwnerUserId the ID of the collaborator to become owner
+     * @throws ResourceNotFoundException if the board or target collaborator is not found
+     * @throws BadRequestException if attempting to transfer to current owner
+     */
+    @Transactional
+    public void transferOwnership(@NonNull UUID boardId, @NonNull String newOwnerUserId) {
+        Board board =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Board not found: " + boardId));
+
+        User previousOwner = board.getCreatedBy();
+        if (previousOwner.getId().equals(newOwnerUserId)) {
+            throw new BadRequestException("User is already the board owner.");
+        }
+
+        BoardUser newOwnerMembership =
+                board.getCollaborators().stream()
+                        .filter(c -> c.getUser().getId().equals(newOwnerUserId))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Collaborator not found with ID: "
+                                                        + newOwnerUserId));
+
+        BoardUser previousOwnerMembership =
+                board.getCollaborators().stream()
+                        .filter(c -> c.getUser().getId().equals(previousOwner.getId()))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Current owner is not a collaborator on this board."));
+
+        board.setCreatedBy(newOwnerMembership.getUser());
+        newOwnerMembership.setRole(BoardRole.ADMIN);
+        previousOwnerMembership.setRole(BoardRole.ADMIN);
 
         boardRepository.save(board);
     }

@@ -177,7 +177,8 @@ public class BoardController {
     }
 
     /**
-     * Updates the role of a collaborator on a board. Requires admin privileges on the board.
+     * Updates the role of a collaborator on a board. Admins and creators can update member and
+     * guest roles, but only the creator can grant or revoke admin role.
      *
      * @param boardId the ID of the board
      * @param userId the ID of the user whose role to update
@@ -185,12 +186,28 @@ public class BoardController {
      * @return no content
      */
     @PutMapping("/{boardId}/collaborators/{userId}")
-    @PreAuthorize("@boardAccess.isCreator(#boardId)")
+    @PreAuthorize("@boardAccess.isAdminOrCreator(#boardId)")
     public ResponseEntity<Void> updateCollaboratorRole(
             @NonNull @PathVariable UUID boardId,
             @NonNull @PathVariable String userId,
             @Valid @RequestBody RoleUpdateRequest req) {
         boardService.updateCollaboratorRole(boardId, userId, req.newRole());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Transfers board ownership to another collaborator. Only the current owner can transfer
+     * ownership. The previous owner is demoted to admin.
+     *
+     * @param boardId the ID of the board
+     * @param userId the ID of the collaborator to become the new owner
+     * @return no content
+     */
+    @PutMapping("/{boardId}/owner/{userId}")
+    @PreAuthorize("@boardAccess.isCreator(#boardId)")
+    public ResponseEntity<Void> transferOwnership(
+            @NonNull @PathVariable UUID boardId, @NonNull @PathVariable String userId) {
+        boardService.transferOwnership(boardId, userId);
         return ResponseEntity.ok().build();
     }
 
