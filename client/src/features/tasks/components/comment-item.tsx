@@ -15,6 +15,7 @@ import { InlineSaveActions } from "@/components/inline-save-actions";
 import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
 import { MarkdownView } from "@/components/rich-text/markdown-view";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
+import { DateTooltip } from "@/components/date-tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { IconUser } from "@tabler/icons-react";
@@ -130,7 +131,11 @@ export function CommentItem({
           <span className="truncate font-medium">
             {comment.author.username}
           </span>
-          <span className="text-muted-foreground/70">{timeAgo}</span>
+          <DateTooltip date={new Date(comment.dateCreated)} showTime>
+            <span className="text-muted-foreground/70 cursor-default">
+              {timeAgo}
+            </span>
+          </DateTooltip>
           {wasEdited && (
             <span className="text-muted-foreground/50">(edited)</span>
           )}

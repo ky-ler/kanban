@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DateTooltip } from "@/components/date-tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   IconUser,
@@ -168,15 +169,17 @@ export const TaskItem = ({
           {hasBottomMeta && (
             <div className="flex min-h-6 items-end gap-2">
               {task.dueDate && (
-                <span
-                  className={cn(
-                    "flex items-center gap-1 leading-none",
-                    overdue ? "text-destructive" : "text-muted-foreground",
-                  )}
-                >
-                  <IconCalendar className="h-3.5 w-3.5" />
-                  {formatDueDate(task.dueDate)}
-                </span>
+                <DateTooltip date={parseISO(task.dueDate)}>
+                  <span
+                    className={cn(
+                      "flex cursor-default items-center gap-1 leading-none",
+                      overdue ? "text-destructive" : "text-muted-foreground",
+                    )}
+                  >
+                    <IconCalendar className="h-3.5 w-3.5" />
+                    {formatDueDate(task.dueDate)}
+                  </span>
+                </DateTooltip>
               )}
               {hasDescription && (
                 <Tooltip>
@@ -185,9 +188,7 @@ export const TaskItem = ({
                       <IconAlignLeft className="h-3.5 w-3.5" />
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    This task has a description
-                  </TooltipContent>
+                  <TooltipContent>This task has a description</TooltipContent>
                 </Tooltip>
               )}
               {hasComments && (
@@ -198,7 +199,7 @@ export const TaskItem = ({
                       {commentCount}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
+                  <TooltipContent>
                     {`This task has ${commentCount} ${commentCount === 1 ? "comment" : "comments"}`}
                   </TooltipContent>
                 </Tooltip>

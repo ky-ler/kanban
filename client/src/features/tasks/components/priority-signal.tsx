@@ -29,7 +29,7 @@ export function PrioritySignal({ priority, className }: PrioritySignalProps) {
           <PriorityAntennaIcon priority={priority} />
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top">{label}</TooltipContent>
+      <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   );
 }

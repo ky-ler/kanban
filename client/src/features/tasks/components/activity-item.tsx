@@ -1,5 +1,6 @@
 import type { ActivityLogDto } from "@/api/gen/model";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DateTooltip } from "@/components/date-tooltip";
 import { formatDistanceToNow } from "date-fns";
 import {
   IconPlus,
@@ -135,9 +136,8 @@ export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
   const details = parseDetails(activity.details);
   const formattedDetails = formatActivityDetails(activity.type, details);
 
-  const timeAgo = formatDistanceToNow(new Date(activity.dateCreated), {
-    addSuffix: true,
-  });
+  const date = new Date(activity.dateCreated);
+  const timeAgo = formatDistanceToNow(date, { addSuffix: true });
 
   return (
     <div className="flex gap-3 py-2">
@@ -157,7 +157,11 @@ export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
             {formattedDetails}
           </p>
         )}
-        <p className="text-muted-foreground/70 mt-0.5">{timeAgo}</p>
+        <DateTooltip date={date} showTime>
+          <p className="text-muted-foreground/70 mt-0.5 w-fit cursor-default">
+            {timeAgo}
+          </p>
+        </DateTooltip>
       </div>
     </div>
   );
