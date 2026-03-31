@@ -23,9 +23,18 @@ export default defineConfig({
         query: {
           useQuery: true,
           useSuspenseQuery: true,
-          useInfinite: true,
+          // https://github.com/orval-labs/orval/pull/3106
+          useInfinite: false,
           useInfiniteQueryParam: "page",
           // useMutation: true,
+        },
+        operations: {
+          getTaskActivity: {
+            query: { useInfinite: true },
+          },
+          getBoardActivity: {
+            query: { useInfinite: true },
+          },
         },
       },
     },
