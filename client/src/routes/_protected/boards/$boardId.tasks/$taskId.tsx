@@ -56,8 +56,8 @@ import {
   useUpdateTaskStatus,
 } from "@/api/gen/endpoints/task-controller/task-controller";
 import {
-  updateTaskBody,
-  updateTaskStatusBody,
+  UpdateTaskBody,
+  UpdateTaskStatusBody,
   updateTaskBodyTitleMax,
   updateTaskBodyTitleMin,
 } from "@/api/gen/endpoints/task-controller/task-controller.zod";
@@ -303,7 +303,7 @@ function TaskComponent() {
         break;
     }
 
-    const validationResult = updateTaskBody.safeParse(data);
+    const validationResult = UpdateTaskBody.safeParse(data);
     if (!validationResult.success) {
       toast.error(
         validationResult.error.issues[0]?.message ?? "Invalid task update",
@@ -321,7 +321,7 @@ function TaskComponent() {
     isCompleted?: boolean;
     isArchived?: boolean;
   }) => {
-    const validationResult = updateTaskStatusBody.safeParse(statusPatch);
+    const validationResult = UpdateTaskStatusBody.safeParse(statusPatch);
     if (!validationResult.success) {
       toast.error(
         validationResult.error.issues[0]?.message ?? "Invalid task status",

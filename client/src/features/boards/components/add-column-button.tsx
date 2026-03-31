@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCreateColumn } from "@/api/gen/endpoints/column-controller/column-controller";
-import { createColumnBody } from "@/api/gen/endpoints/column-controller/column-controller.zod";
+import { CreateColumnBody } from "@/api/gen/endpoints/column-controller/column-controller.zod";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +38,7 @@ export const AddColumnButton = ({ boardId }: AddColumnButtonProps) => {
     defaultValues: {
       name: "",
     },
-    validators: { onSubmit: createColumnBody },
+    validators: { onSubmit: CreateColumnBody },
     onSubmit: async ({ value }) => {
       try {
         await createColumnMutation.mutateAsync({

@@ -2,7 +2,7 @@ import { InlineSaveActions } from "@/components/inline-save-actions";
 import { Input } from "@/components/ui/input";
 import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
 import type { MentionUser } from "@/components/rich-text/plugins/mentions-plugin";
-import { createCommentBody } from "@/api/gen/endpoints/comment-controller/comment-controller.zod";
+import { CreateCommentBody } from "@/api/gen/endpoints/comment-controller/comment-controller.zod";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { useState } from "react";
 
@@ -29,7 +29,7 @@ export function CommentInput({
   const isCommentEmpty = plainText.trim().length === 0;
 
   const validateComment = (markdown: string): string | null => {
-    const result = createCommentBody.safeParse({ content: markdown });
+    const result = CreateCommentBody.safeParse({ content: markdown });
     if (result.success) {
       return null;
     }

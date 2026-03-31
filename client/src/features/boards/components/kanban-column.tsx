@@ -46,9 +46,9 @@ import {
   useCreateTask,
   useUpdateTaskStatus,
 } from "@/api/gen/endpoints/task-controller/task-controller";
-import { createTaskBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
+import { CreateTaskBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
 import { useUpdateColumnArchive } from "@/api/gen/endpoints/column-controller/column-controller";
-import { updateColumnArchiveBody } from "@/api/gen/endpoints/column-controller/column-controller.zod";
+import { UpdateColumnArchiveBody } from "@/api/gen/endpoints/column-controller/column-controller.zod";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -134,7 +134,7 @@ export const KanbanColumn = ({
     if (!trimmed) return;
 
     const payload = { boardId, title: trimmed, columnId: column.id };
-    const result = createTaskBody.safeParse(payload);
+    const result = CreateTaskBody.safeParse(payload);
     if (!result.success) {
       toast.error(result.error.issues[0]?.message ?? "Invalid task title");
       return;
@@ -160,7 +160,7 @@ export const KanbanColumn = ({
     confirmArchiveTasks: boolean,
   ) => {
     const payload = { isArchived: shouldArchive, confirmArchiveTasks };
-    const validationResult = updateColumnArchiveBody.safeParse(payload);
+    const validationResult = UpdateColumnArchiveBody.safeParse(payload);
     if (!validationResult.success) {
       toast.error(
         validationResult.error.issues[0]?.message ?? "Invalid archive request",

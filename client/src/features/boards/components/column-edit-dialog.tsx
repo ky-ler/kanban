@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ColumnDto } from "@/api/gen/model";
 import { useUpdateColumn } from "@/api/gen/endpoints/column-controller/column-controller";
-import { updateColumnBody } from "@/api/gen/endpoints/column-controller/column-controller.zod";
+import { UpdateColumnBody } from "@/api/gen/endpoints/column-controller/column-controller.zod";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import {
   Dialog,
@@ -43,7 +43,7 @@ export const ColumnEditDialog = ({
     defaultValues: {
       name: column.name,
     },
-    validators: { onSubmit: updateColumnBody },
+    validators: { onSubmit: UpdateColumnBody },
     onSubmit: async ({ value }) => {
       try {
         await updateColumnMutation.mutateAsync({

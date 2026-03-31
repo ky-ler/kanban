@@ -18,7 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useUpdateTaskStatus } from "@/api/gen/endpoints/task-controller/task-controller";
-import { updateTaskStatusBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
+import { UpdateTaskStatusBody } from "@/api/gen/endpoints/task-controller/task-controller.zod";
 import { Link } from "@tanstack/react-router";
 import {
   addDays,
@@ -88,7 +88,7 @@ export const TaskItem = ({
 
   const handleToggleCompleted = () => {
     const payload = { isCompleted: !task.isCompleted };
-    const validationResult = updateTaskStatusBody.safeParse(payload);
+    const validationResult = UpdateTaskStatusBody.safeParse(payload);
     if (!validationResult.success) {
       return;
     }

@@ -1,5 +1,5 @@
 import type { CommentDto } from "@/api/gen/model";
-import { updateCommentBody } from "@/api/gen/endpoints/comment-controller/comment-controller.zod";
+import { UpdateCommentBody } from "@/api/gen/endpoints/comment-controller/comment-controller.zod";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -52,7 +52,7 @@ export function CommentItem({
   const isCommentEmpty = editPlainText.trim().length === 0;
 
   const validateComment = (markdown: string): string | null => {
-    const result = updateCommentBody.safeParse({ content: markdown });
+    const result = UpdateCommentBody.safeParse({ content: markdown });
     if (result.success) {
       return null;
     }

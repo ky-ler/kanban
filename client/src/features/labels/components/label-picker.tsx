@@ -19,7 +19,7 @@ import {
   useGetLabelsByBoard,
 } from "@/api/gen/endpoints/label-controller/label-controller";
 import {
-  createLabelBody,
+  CreateLabelBody,
   createLabelBodyNameMax,
 } from "@/api/gen/endpoints/label-controller/label-controller.zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -112,7 +112,7 @@ export function LabelPicker({
       color: newLabelColor,
     };
 
-    const result = createLabelBody.safeParse(payload);
+    const result = CreateLabelBody.safeParse(payload);
     if (!result.success) {
       setCreateLabelError(result.error.issues[0]?.message ?? "Invalid label");
       return;

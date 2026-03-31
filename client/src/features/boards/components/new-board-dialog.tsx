@@ -28,7 +28,7 @@ import {
   useCreateBoard,
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import type { BoardRequest } from "@/api/gen/model";
-import { createBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
+import { CreateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 import { handleMutationAuthError } from "@/features/auth/route-auth";
 
 interface NewBoardDialogProps {
@@ -74,7 +74,7 @@ export const NewBoardDialog = ({
 
   const form = useForm({
     defaultValues: { name: "", description: "" } as BoardRequest,
-    validators: { onSubmit: createBoardBody },
+    validators: { onSubmit: CreateBoardBody },
     onSubmit: async ({ value }) => {
       const toastId = toast.loading("Creating board...");
       try {

@@ -30,7 +30,7 @@ import {
   useUpdateBoard,
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import type { BoardRequest } from "@/api/gen/model";
-import { updateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
+import { UpdateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 import {
   handleMutationAuthError,
   rethrowProtectedRouteError,
@@ -91,7 +91,7 @@ function EditBoardComponent() {
       description: board?.data.description ?? "",
       isArchived: board?.data.isArchived ?? false,
     } as BoardRequest,
-    validators: { onSubmit: updateBoardBody },
+    validators: { onSubmit: UpdateBoardBody },
     onSubmit: async ({ value }) => {
       const toastId = toast.loading("Updating board...");
       try {

@@ -66,7 +66,7 @@ import {
   useUpdateBoard,
   useUpdateBoardArchive,
 } from "@/api/gen/endpoints/board-controller/board-controller";
-import { updateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
+import { UpdateBoardBody } from "@/api/gen/endpoints/board-controller/board-controller.zod";
 import { CollaboratorDtoRole } from "@/api/gen/model";
 import { KanbanBoard } from "@/features/boards/components/kanban-board";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
@@ -294,7 +294,7 @@ function BoardComponent() {
       isArchived: board.data.isArchived,
     };
 
-    const validationResult = updateBoardBody.safeParse(payload);
+    const validationResult = UpdateBoardBody.safeParse(payload);
     if (!validationResult.success) {
       toast.error(
         validationResult.error.issues[0]?.message ?? "Invalid board update",
@@ -658,7 +658,7 @@ function BoardComponent() {
                       description: descriptionEditValue.trim() || undefined,
                       isArchived: board.data.isArchived,
                     };
-                    const validationResult = updateBoardBody.safeParse(payload);
+                    const validationResult = UpdateBoardBody.safeParse(payload);
                     if (!validationResult.success) {
                       toast.error(
                         validationResult.error.issues[0]?.message ??
@@ -702,7 +702,7 @@ function BoardComponent() {
                       description: descriptionEditValue.trim() || undefined,
                       isArchived: board.data.isArchived,
                     };
-                    const validationResult = updateBoardBody.safeParse(payload);
+                    const validationResult = UpdateBoardBody.safeParse(payload);
                     if (!validationResult.success) {
                       toast.error(
                         validationResult.error.issues[0]?.message ??
