@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import type {
   ActivityLogDto,
   CommentDto,
   UserSummaryDto,
 } from "@/api/gen/model";
 import {
-  getTaskActivity,
-  getGetTaskActivityQueryKey,
+  useGetTaskActivityInfinite,
+  type GetTaskActivityInfiniteQueryResult,
 } from "@/api/gen/endpoints/activity-log-controller/activity-log-controller";
 import {
   useGetTaskComments,
@@ -81,14 +81,13 @@ export function ActivityFeed({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: [...getGetTaskActivityQueryKey(boardId, taskId), "infinite"],
-    queryFn: ({ signal, pageParam }) =>
-      getTaskActivity(boardId, taskId, { page: pageParam }, { signal }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => {
-      const page = lastPage.data;
-      return page.last ? undefined : (page.number ?? 0) + 1;
+  } = useGetTaskActivityInfinite(boardId, taskId, undefined, {
+    query: {
+      initialPageParam: 0,
+      getNextPageParam: (lastPage: GetTaskActivityInfiniteQueryResult) => {
+        const page = lastPage.data;
+        return page.last ? undefined : (page.number ?? 0) + 1;
+      },
     },
   });
 

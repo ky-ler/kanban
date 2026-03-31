@@ -1,13 +1,12 @@
 import { useEffect, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   getGetBoardQueryOptions,
   useGetBoardSuspense,
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import {
-  getBoardActivity,
-  getGetBoardActivityQueryKey,
+  useGetBoardActivityInfinite,
+  type GetBoardActivityInfiniteQueryResult,
 } from "@/api/gen/endpoints/board-activity-controller/board-activity-controller";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import {
@@ -67,14 +66,13 @@ function BoardActivityComponent() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: [...getGetBoardActivityQueryKey(boardId), "infinite"],
-    queryFn: ({ signal, pageParam }) =>
-      getBoardActivity(boardId, { page: pageParam }, { signal }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => {
-      const page = lastPage.data;
-      return page.last ? undefined : (page.number ?? 0) + 1;
+  } = useGetBoardActivityInfinite(boardId, undefined, {
+    query: {
+      initialPageParam: 0,
+      getNextPageParam: (lastPage: GetBoardActivityInfiniteQueryResult) => {
+        const page = lastPage.data;
+        return page.last ? undefined : (page.number ?? 0) + 1;
+      },
     },
   });
 

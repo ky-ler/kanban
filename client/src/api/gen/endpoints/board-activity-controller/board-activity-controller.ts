@@ -4,15 +4,23 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
@@ -68,12 +76,224 @@ export const getBoardActivity = async (
   );
 };
 
+export const getGetBoardActivityInfiniteQueryKey = (
+  boardId?: string,
+  params?: GetBoardActivityParams,
+) => {
+  return [
+    "infinite",
+    `/boards/${boardId}/activity`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
 export const getGetBoardActivityQueryKey = (
   boardId?: string,
   params?: GetBoardActivityParams,
 ) => {
   return [`/boards/${boardId}/activity`, ...(params ? [params] : [])] as const;
 };
+
+export const getGetBoardActivityInfiniteQueryOptions = <
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    GetBoardActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  params?: GetBoardActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        QueryKey,
+        GetBoardActivityParams["page"]
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetBoardActivityInfiniteQueryKey(boardId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    QueryKey,
+    GetBoardActivityParams["page"]
+  > = ({ signal, pageParam }) =>
+    getBoardActivity(
+      boardId,
+      { ...params, page: pageParam || params?.["page"] },
+      { signal, ...requestOptions },
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!boardId,
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    TError,
+    TData,
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    QueryKey,
+    GetBoardActivityParams["page"]
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GetBoardActivityInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBoardActivity>>
+>;
+export type GetBoardActivityInfiniteQueryError = unknown;
+
+export function useGetBoardActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    GetBoardActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  params: undefined | GetBoardActivityParams,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        QueryKey,
+        GetBoardActivityParams["page"]
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoardActivity>>,
+          TError,
+          Awaited<ReturnType<typeof getBoardActivity>>,
+          QueryKey
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetBoardActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    GetBoardActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  params?: GetBoardActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        QueryKey,
+        GetBoardActivityParams["page"]
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoardActivity>>,
+          TError,
+          Awaited<ReturnType<typeof getBoardActivity>>,
+          QueryKey
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetBoardActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    GetBoardActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  params?: GetBoardActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        QueryKey,
+        GetBoardActivityParams["page"]
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGetBoardActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getBoardActivity>>,
+    GetBoardActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  params?: GetBoardActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getBoardActivity>>,
+        QueryKey,
+        GetBoardActivityParams["page"]
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetBoardActivityInfiniteQueryOptions(
+    boardId,
+    params,
+    options,
+  );
+
+  const query = useInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export const getGetBoardActivityQueryOptions = <
   TData = Awaited<ReturnType<typeof getBoardActivity>>,

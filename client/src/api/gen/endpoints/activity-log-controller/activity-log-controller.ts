@@ -4,15 +4,23 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
@@ -70,6 +78,18 @@ export const getTaskActivity = async (
   );
 };
 
+export const getGetTaskActivityInfiniteQueryKey = (
+  boardId?: string,
+  taskId?: string,
+  params?: GetTaskActivityParams,
+) => {
+  return [
+    "infinite",
+    `/boards/${boardId}/tasks/${taskId}/activity`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
 export const getGetTaskActivityQueryKey = (
   boardId?: string,
   taskId?: string,
@@ -80,6 +100,214 @@ export const getGetTaskActivityQueryKey = (
     ...(params ? [params] : []),
   ] as const;
 };
+
+export const getGetTaskActivityInfiniteQueryOptions = <
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    GetTaskActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  taskId: string,
+  params?: GetTaskActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        QueryKey,
+        GetTaskActivityParams["page"]
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetTaskActivityInfiniteQueryKey(boardId, taskId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    QueryKey,
+    GetTaskActivityParams["page"]
+  > = ({ signal, pageParam }) =>
+    getTaskActivity(
+      boardId,
+      taskId,
+      { ...params, page: pageParam || params?.["page"] },
+      { signal, ...requestOptions },
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(boardId && taskId),
+    ...queryOptions,
+  } as UseInfiniteQueryOptions<
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    TError,
+    TData,
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    QueryKey,
+    GetTaskActivityParams["page"]
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GetTaskActivityInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTaskActivity>>
+>;
+export type GetTaskActivityInfiniteQueryError = unknown;
+
+export function useGetTaskActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    GetTaskActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  taskId: string,
+  params: undefined | GetTaskActivityParams,
+  options: {
+    query: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        QueryKey,
+        GetTaskActivityParams["page"]
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTaskActivity>>,
+          TError,
+          Awaited<ReturnType<typeof getTaskActivity>>,
+          QueryKey
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetTaskActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    GetTaskActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  taskId: string,
+  params?: GetTaskActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        QueryKey,
+        GetTaskActivityParams["page"]
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTaskActivity>>,
+          TError,
+          Awaited<ReturnType<typeof getTaskActivity>>,
+          QueryKey
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetTaskActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    GetTaskActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  taskId: string,
+  params?: GetTaskActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        QueryKey,
+        GetTaskActivityParams["page"]
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGetTaskActivityInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof getTaskActivity>>,
+    GetTaskActivityParams["page"]
+  >,
+  TError = unknown,
+>(
+  boardId: string,
+  taskId: string,
+  params?: GetTaskActivityParams,
+  options?: {
+    query?: Partial<
+      UseInfiniteQueryOptions<
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof getTaskActivity>>,
+        QueryKey,
+        GetTaskActivityParams["page"]
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetTaskActivityInfiniteQueryOptions(
+    boardId,
+    taskId,
+    params,
+    options,
+  );
+
+  const query = useInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as UseInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export const getGetTaskActivityQueryOptions = <
   TData = Awaited<ReturnType<typeof getTaskActivity>>,
