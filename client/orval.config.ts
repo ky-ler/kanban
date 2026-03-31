@@ -24,7 +24,7 @@ export default defineConfig({
           useQuery: true,
           useSuspenseQuery: true,
           useInfinite: true,
-          useInfiniteQueryParam: "nextId",
+          useInfiniteQueryParam: "page",
           // useMutation: true,
         },
       },
