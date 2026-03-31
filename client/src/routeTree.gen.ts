@@ -17,10 +17,12 @@ import { Route as InviteCodeImport } from './routes/invite/$code'
 import { Route as AuthLogoutImport } from './routes/auth/logout'
 import { Route as AuthLoginImport } from './routes/auth/login'
 import { Route as AuthCallbackImport } from './routes/auth/callback'
+import { Route as ProtectedTasksIndexImport } from './routes/_protected/tasks/index'
 import { Route as ProtectedBoardsIndexImport } from './routes/_protected/boards/index'
 import { Route as ProtectedBoardsBoardIdImport } from './routes/_protected/boards/$boardId'
 import { Route as ProtectedBoardsBoardIdEditImport } from './routes/_protected/boards/$boardId/edit'
 import { Route as ProtectedBoardsBoardIdCollaboratorsImport } from './routes/_protected/boards/$boardId/collaborators'
+import { Route as ProtectedBoardsBoardIdActivityImport } from './routes/_protected/boards/$boardId/activity'
 import { Route as ProtectedBoardsBoardIdTasksTaskIdImport } from './routes/_protected/boards/$boardId.tasks/$taskId'
 
 // Create/Update Routes
@@ -60,6 +62,12 @@ const AuthCallbackRoute = AuthCallbackImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProtectedTasksIndexRoute = ProtectedTasksIndexImport.update({
+  id: '/tasks/',
+  path: '/tasks/',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+
 const ProtectedBoardsIndexRoute = ProtectedBoardsIndexImport.update({
   id: '/boards/',
   path: '/boards/',
@@ -84,6 +92,13 @@ const ProtectedBoardsBoardIdCollaboratorsRoute =
   ProtectedBoardsBoardIdCollaboratorsImport.update({
     id: '/collaborators',
     path: '/collaborators',
+    getParentRoute: () => ProtectedBoardsBoardIdRoute,
+  } as any)
+
+const ProtectedBoardsBoardIdActivityRoute =
+  ProtectedBoardsBoardIdActivityImport.update({
+    id: '/activity',
+    path: '/activity',
     getParentRoute: () => ProtectedBoardsBoardIdRoute,
   } as any)
 
@@ -154,6 +169,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedBoardsIndexImport
       parentRoute: typeof ProtectedRouteImport
     }
+    '/_protected/tasks/': {
+      id: '/_protected/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof ProtectedTasksIndexImport
+      parentRoute: typeof ProtectedRouteImport
+    }
+    '/_protected/boards/$boardId/activity': {
+      id: '/_protected/boards/$boardId/activity'
+      path: '/activity'
+      fullPath: '/boards/$boardId/activity'
+      preLoaderRoute: typeof ProtectedBoardsBoardIdActivityImport
+      parentRoute: typeof ProtectedBoardsBoardIdImport
+    }
     '/_protected/boards/$boardId/collaborators': {
       id: '/_protected/boards/$boardId/collaborators'
       path: '/collaborators'
@@ -181,6 +210,7 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface ProtectedBoardsBoardIdRouteChildren {
+  ProtectedBoardsBoardIdActivityRoute: typeof ProtectedBoardsBoardIdActivityRoute
   ProtectedBoardsBoardIdCollaboratorsRoute: typeof ProtectedBoardsBoardIdCollaboratorsRoute
   ProtectedBoardsBoardIdEditRoute: typeof ProtectedBoardsBoardIdEditRoute
   ProtectedBoardsBoardIdTasksTaskIdRoute: typeof ProtectedBoardsBoardIdTasksTaskIdRoute
@@ -188,6 +218,7 @@ interface ProtectedBoardsBoardIdRouteChildren {
 
 const ProtectedBoardsBoardIdRouteChildren: ProtectedBoardsBoardIdRouteChildren =
   {
+    ProtectedBoardsBoardIdActivityRoute: ProtectedBoardsBoardIdActivityRoute,
     ProtectedBoardsBoardIdCollaboratorsRoute:
       ProtectedBoardsBoardIdCollaboratorsRoute,
     ProtectedBoardsBoardIdEditRoute: ProtectedBoardsBoardIdEditRoute,
@@ -203,11 +234,13 @@ const ProtectedBoardsBoardIdRouteWithChildren =
 interface ProtectedRouteRouteChildren {
   ProtectedBoardsBoardIdRoute: typeof ProtectedBoardsBoardIdRouteWithChildren
   ProtectedBoardsIndexRoute: typeof ProtectedBoardsIndexRoute
+  ProtectedTasksIndexRoute: typeof ProtectedTasksIndexRoute
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedBoardsBoardIdRoute: ProtectedBoardsBoardIdRouteWithChildren,
   ProtectedBoardsIndexRoute: ProtectedBoardsIndexRoute,
+  ProtectedTasksIndexRoute: ProtectedTasksIndexRoute,
 }
 
 const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
@@ -223,6 +256,8 @@ export interface FileRoutesByFullPath {
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards': typeof ProtectedBoardsIndexRoute
+  '/tasks': typeof ProtectedTasksIndexRoute
+  '/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
   '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
@@ -237,6 +272,8 @@ export interface FileRoutesByTo {
   '/invite/$code': typeof InviteCodeRoute
   '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/boards': typeof ProtectedBoardsIndexRoute
+  '/tasks': typeof ProtectedTasksIndexRoute
+  '/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
   '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
   '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
@@ -252,6 +289,8 @@ export interface FileRoutesById {
   '/invite/$code': typeof InviteCodeRoute
   '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
   '/_protected/boards/': typeof ProtectedBoardsIndexRoute
+  '/_protected/tasks/': typeof ProtectedTasksIndexRoute
+  '/_protected/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
   '/_protected/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
   '/_protected/boards/$boardId/edit': typeof ProtectedBoardsBoardIdEditRoute
   '/_protected/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
@@ -268,6 +307,8 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/boards/$boardId'
     | '/boards'
+    | '/tasks'
+    | '/boards/$boardId/activity'
     | '/boards/$boardId/collaborators'
     | '/boards/$boardId/edit'
     | '/boards/$boardId/tasks/$taskId'
@@ -281,6 +322,8 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/boards/$boardId'
     | '/boards'
+    | '/tasks'
+    | '/boards/$boardId/activity'
     | '/boards/$boardId/collaborators'
     | '/boards/$boardId/edit'
     | '/boards/$boardId/tasks/$taskId'
@@ -294,6 +337,8 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/_protected/boards/$boardId'
     | '/_protected/boards/'
+    | '/_protected/tasks/'
+    | '/_protected/boards/$boardId/activity'
     | '/_protected/boards/$boardId/collaborators'
     | '/_protected/boards/$boardId/edit'
     | '/_protected/boards/$boardId/tasks/$taskId'
@@ -343,7 +388,8 @@ export const routeTree = rootRoute
       "filePath": "_protected/route.tsx",
       "children": [
         "/_protected/boards/$boardId",
-        "/_protected/boards/"
+        "/_protected/boards/",
+        "/_protected/tasks/"
       ]
     },
     "/auth/callback": {
@@ -362,6 +408,7 @@ export const routeTree = rootRoute
       "filePath": "_protected/boards/$boardId.tsx",
       "parent": "/_protected",
       "children": [
+        "/_protected/boards/$boardId/activity",
         "/_protected/boards/$boardId/collaborators",
         "/_protected/boards/$boardId/edit",
         "/_protected/boards/$boardId/tasks/$taskId"
@@ -370,6 +417,14 @@ export const routeTree = rootRoute
     "/_protected/boards/": {
       "filePath": "_protected/boards/index.tsx",
       "parent": "/_protected"
+    },
+    "/_protected/tasks/": {
+      "filePath": "_protected/tasks/index.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/boards/$boardId/activity": {
+      "filePath": "_protected/boards/$boardId/activity.tsx",
+      "parent": "/_protected/boards/$boardId"
     },
     "/_protected/boards/$boardId/collaborators": {
       "filePath": "_protected/boards/$boardId/collaborators.tsx",
