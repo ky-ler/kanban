@@ -1,6 +1,7 @@
 import { InlineSaveActions } from "@/components/inline-save-actions";
 import { Input } from "@/components/ui/input";
 import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
+import type { MentionUser } from "@/components/rich-text/plugins/mentions-plugin";
 import { createCommentBody } from "@/api/gen/endpoints/comment-controller/comment-controller.zod";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { useState } from "react";
@@ -9,12 +10,16 @@ interface CommentInputProps {
   onSubmit: (content: string) => void;
   isPending?: boolean;
   placeholder?: string;
+  mentionUsers?: MentionUser[];
+  container?: HTMLElement | null;
 }
 
 export function CommentInput({
   onSubmit,
   isPending = false,
   placeholder = "Write a comment...",
+  mentionUsers = [],
+  container,
 }: CommentInputProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [content, setContent] = useState("");
@@ -101,6 +106,8 @@ export function CommentInput({
         toolbarVariant="compact"
         minHeightClassName="min-h-[96px]"
         autoFocus={true}
+        mentionUsers={mentionUsers}
+        container={container}
       />
       <p className="text-destructive">{commentError ?? "\u00A0"}</p>
       <InlineSaveActions

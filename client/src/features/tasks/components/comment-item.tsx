@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { InlineSaveActions } from "@/components/inline-save-actions";
 import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
+import type { MentionUser } from "@/components/rich-text/plugins/mentions-plugin";
 import { MarkdownView } from "@/components/rich-text/markdown-view";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { DateTooltip } from "@/components/date-tooltip";
@@ -24,19 +25,23 @@ import { useEffect, useState } from "react";
 interface CommentItemProps {
   comment: CommentDto;
   currentUserId?: string;
+  mentionUsers?: MentionUser[];
   onUpdate: (commentId: string, content: string) => void;
   onDelete: (commentId: string) => void;
   isUpdating?: boolean;
   isDeleting?: boolean;
+  container?: HTMLElement | null;
 }
 
 export function CommentItem({
   comment,
   currentUserId,
+  mentionUsers = [],
   onUpdate,
   onDelete,
   isUpdating = false,
   isDeleting = false,
+  container,
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
@@ -160,6 +165,8 @@ export function CommentItem({
               toolbarVariant="compact"
               minHeightClassName="min-h-[96px]"
               autoFocus={true}
+              mentionUsers={mentionUsers}
+              container={container}
             />
             <p className="text-destructive">{commentError ?? "\u00A0"}</p>
             <InlineSaveActions

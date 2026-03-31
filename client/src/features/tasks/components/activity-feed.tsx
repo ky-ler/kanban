@@ -1,7 +1,14 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import type { ActivityLogDto, CommentDto } from "@/api/gen/model";
-import { useGetTaskActivity } from "@/api/gen/endpoints/activity-log-controller/activity-log-controller";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import type {
+  ActivityLogDto,
+  CommentDto,
+  UserSummaryDto,
+} from "@/api/gen/model";
+import {
+  getTaskActivity,
+  getGetTaskActivityQueryKey,
+} from "@/api/gen/endpoints/activity-log-controller/activity-log-controller";
 import {
   useGetTaskComments,
   useCreateComment,
@@ -32,15 +39,30 @@ interface ActivityFeedProps {
   boardId: string;
   taskId: string;
   currentUserId?: string;
+  collaborators?: UserSummaryDto[];
+  container?: HTMLElement | null;
 }
 
 export function ActivityFeed({
   boardId,
   taskId,
   currentUserId,
+  collaborators = [],
+  container,
 }: ActivityFeedProps) {
   const [showDetails, setShowDetails] = useState(false);
   const queryClient = useQueryClient();
+
+  // Convert collaborators to mention users format
+  const mentionUsers = useMemo(
+    () =>
+      collaborators.map((user) => ({
+        id: user.id,
+        username: user.username,
+        profileImageUrl: user.profileImageUrl,
+      })),
+    [collaborators],
+  );
 
   // Fetch comments
   const {
@@ -49,12 +71,44 @@ export function ActivityFeed({
     error: commentsError,
   } = useGetTaskComments(boardId, taskId);
 
-  // Fetch activity
+  // Fetch activity (paginated with infinite query)
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
   const {
     data: activityData,
     isLoading: activityLoading,
     error: activityError,
-  } = useGetTaskActivity(boardId, taskId);
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: [...getGetTaskActivityQueryKey(boardId, taskId), "infinite"],
+    queryFn: ({ signal, pageParam }) =>
+      getTaskActivity(boardId, taskId, { page: pageParam }, { signal }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const page = lastPage.data;
+      return page.last ? undefined : (page.number ?? 0) + 1;
+    },
+  });
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasNextPage || !showDetails) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, fetchNextPage, showDetails]);
 
   // Mutations
   const createCommentMutation = useCreateComment({
@@ -155,7 +209,8 @@ export function ActivityFeed({
   }
 
   const comments = commentsData?.data ?? [];
-  const activities = activityData?.data ?? [];
+  const activities =
+    activityData?.pages.flatMap((page) => page.data.content ?? []) ?? [];
 
   // Merge comments and activities into a unified feed
   const feedItems: FeedItem[] = [
@@ -216,6 +271,8 @@ export function ActivityFeed({
       <CommentInput
         onSubmit={handleCreateComment}
         isPending={createCommentMutation.isPending}
+        mentionUsers={mentionUsers}
+        container={container}
       />
 
       {/* Feed items */}
@@ -239,10 +296,12 @@ export function ActivityFeed({
                   key={`comment-${item.data.id}`}
                   comment={item.data}
                   currentUserId={currentUserId}
+                  mentionUsers={mentionUsers}
                   onUpdate={handleUpdateComment}
                   onDelete={handleDeleteComment}
                   isUpdating={updateCommentMutation.isPending}
                   isDeleting={deleteCommentMutation.isPending}
+                  container={container}
                 />
               );
             }
@@ -253,6 +312,11 @@ export function ActivityFeed({
               />
             );
           })}
+          {showDetails && (
+            <div ref={loadMoreRef} className="py-2">
+              {isFetchingNextPage && <LoadingSpinner className="py-2" />}
+            </div>
+          )}
         </div>
       )}
     </div>

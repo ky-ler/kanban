@@ -3,59 +3,71 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DateTooltip } from "@/components/date-tooltip";
 import { formatDistanceToNow } from "date-fns";
 import {
-  IconPlus,
-  IconPencil,
-  IconArrowRight,
+  IconCirclePlus,
+  IconEdit,
+  IconArrowMoveRight,
   IconTrash,
-  IconUserCircle,
-  IconTag,
-  IconAlertCircle,
-  IconCalendar,
+  IconCircleCheck,
+  IconRefresh,
+  IconArchive,
+  IconArchiveOff,
+  IconUser,
+  IconTags,
+  IconFlag,
+  IconCalendarEvent,
 } from "@tabler/icons-react";
 
 const activityConfig: Record<
   string,
-  { icon: React.ElementType; label: string; color: string }
+  { icon: React.ElementType; label: string }
 > = {
   TASK_CREATED: {
-    icon: IconPlus,
+    icon: IconCirclePlus,
     label: "created this task",
-    color: "text-chart-1",
   },
   TASK_UPDATED: {
-    icon: IconPencil,
+    icon: IconEdit,
     label: "updated the task",
-    color: "text-chart-2",
   },
   TASK_MOVED: {
-    icon: IconArrowRight,
+    icon: IconArrowMoveRight,
     label: "moved the task",
-    color: "text-chart-3",
   },
   TASK_DELETED: {
     icon: IconTrash,
     label: "deleted the task",
-    color: "text-destructive",
+  },
+  TASK_COMPLETED: {
+    icon: IconCircleCheck,
+    label: "completed the task",
+  },
+  TASK_REOPENED: {
+    icon: IconRefresh,
+    label: "reopened the task",
+  },
+  TASK_ARCHIVED: {
+    icon: IconArchive,
+    label: "archived the task",
+  },
+  TASK_UNARCHIVED: {
+    icon: IconArchiveOff,
+    label: "unarchived the task",
   },
   ASSIGNEE_CHANGED: {
-    icon: IconUserCircle,
+    icon: IconUser,
     label: "changed assignee",
-    color: "text-chart-5",
   },
   LABELS_CHANGED: {
-    icon: IconTag,
+    icon: IconTags,
     label: "changed labels",
-    color: "text-chart-4",
   },
   PRIORITY_CHANGED: {
-    icon: IconAlertCircle,
+    icon: IconFlag,
     label: "changed priority",
-    color: "text-chart-1",
   },
   DUE_DATE_CHANGED: {
-    icon: IconCalendar,
+    icon: IconCalendarEvent,
     label: "changed due date",
-    color: "text-chart-2",
   },
 };
 
@@ -96,9 +108,16 @@ function formatActivityDetails(
       return null;
     }
     case "ASSIGNEE_CHANGED": {
+      const oldUsername = details.oldAssigneeUsername as string | undefined;
       const newUsername = details.newAssigneeUsername as string | undefined;
+      if (oldUsername && newUsername) {
+        return `Reassigned from ${oldUsername} to ${newUsername}`;
+      }
       if (newUsername) {
         return `Assigned to ${newUsername}`;
+      }
+      if (oldUsername) {
+        return `Unassigned ${oldUsername}`;
       }
       return "Unassigned the task";
     }
@@ -120,6 +139,18 @@ function formatActivityDetails(
       }
       return `Changed from ${oldDate} to ${newDate}`;
     }
+    case "LABELS_CHANGED": {
+      const added = details.addedLabels as string[] | undefined;
+      const removed = details.removedLabels as string[] | undefined;
+      const parts: string[] = [];
+      if (added && added.length > 0) {
+        parts.push(`Added ${added.join(", ")}`);
+      }
+      if (removed && removed.length > 0) {
+        parts.push(`Removed ${removed.join(", ")}`);
+      }
+      return parts.length > 0 ? parts.join(" and ") : null;
+    }
     default:
       return null;
   }
@@ -127,9 +158,8 @@ function formatActivityDetails(
 
 export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
   const config = activityConfig[activity.type] ?? {
-    icon: IconPencil,
+    icon: IconEdit,
     label: activity.type.toLowerCase().replace(/_/g, " "),
-    color: "text-muted-foreground",
   };
 
   const Icon = config.icon;
@@ -142,7 +172,7 @@ export function ActivityItem({ activity }: { activity: ActivityLogDto }) {
   return (
     <div className="flex gap-3 py-2">
       <Avatar>
-        <AvatarFallback className={config.color}>
+        <AvatarFallback>
           <Icon className="size-4" />
         </AvatarFallback>
       </Avatar>
