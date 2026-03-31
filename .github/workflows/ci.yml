@@ -22,6 +22,9 @@ jobs:
           java-version: 21
           cache: maven
 
+      - name: Pre-pull Testcontainers PostgreSQL image
+        run: docker pull postgres:18-alpine
+
       - run: chmod +x ./mvnw
       - run: ./mvnw verify -B
 
