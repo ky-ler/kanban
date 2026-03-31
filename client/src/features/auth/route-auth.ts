@@ -5,7 +5,6 @@ import {
   getCurrentAppPath,
   normalizeRedirectTarget,
 } from "@/features/auth/auth-navigation";
-import { router } from "@/lib/router";
 
 export function isUnauthorizedApiError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 401;
@@ -15,10 +14,11 @@ export function isForbiddenApiError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 403;
 }
 
-export function redirectToAuthLogin(
+export async function redirectToAuthLogin(
   target = getCurrentAppPath(),
   forceLogin = true,
 ) {
+  const { router } = await import("@/lib/router");
   return router.navigate({
     to: "/auth/login",
     search: getAuthLoginSearch(normalizeRedirectTarget(target), forceLogin),
