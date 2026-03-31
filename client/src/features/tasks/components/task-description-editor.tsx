@@ -5,7 +5,12 @@ import {
 
 type TaskDescriptionEditorProps = Pick<
   MarkdownEditorProps,
-  "value" | "onChange" | "onContentMetaChange" | "placeholder"
+  | "value"
+  | "onChange"
+  | "onContentMetaChange"
+  | "placeholder"
+  | "mentionUsers"
+  | "container"
 >;
 
 export function TaskDescriptionEditor({
@@ -13,6 +18,8 @@ export function TaskDescriptionEditor({
   onChange,
   onContentMetaChange,
   placeholder = "Add a more detailed description...",
+  mentionUsers = [],
+  container,
 }: Readonly<TaskDescriptionEditorProps>) {
   return (
     <MarkdownEditor
@@ -22,6 +29,8 @@ export function TaskDescriptionEditor({
       placeholder={placeholder}
       toolbarVariant="full"
       autoFocus={true}
+      mentionUsers={mentionUsers}
+      container={container}
     />
   );
 }
