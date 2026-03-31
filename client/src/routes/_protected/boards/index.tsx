@@ -62,6 +62,7 @@ function BoardCard({ board }: { board: BoardSummary }) {
 
   return (
     <Link
+      from="/boards"
       to="/boards/$boardId"
       params={{ boardId: String(board.id) }}
       search={{
@@ -87,11 +88,9 @@ function BoardCard({ board }: { board: BoardSummary }) {
               size="icon-sm"
             />
           </CardAction>
-          {board.description && (
-            <CardDescription className="line-clamp-2">
-              {board.description}
-            </CardDescription>
-          )}
+          <CardDescription className="line-clamp-2 min-h-5">
+            {board.description}
+          </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-3">

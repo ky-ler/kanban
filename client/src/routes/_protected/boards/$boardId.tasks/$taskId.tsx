@@ -62,8 +62,8 @@ import {
   updateTaskBodyTitleMin,
 } from "@/api/gen/endpoints/task-controller/task-controller.zod";
 import {
+  getTaskActivity,
   getGetTaskActivityQueryKey,
-  getGetTaskActivityQueryOptions,
 } from "@/api/gen/endpoints/activity-log-controller/activity-log-controller";
 import {
   getGetTaskCommentsQueryKey,
@@ -99,9 +99,15 @@ export const Route = createFileRoute(
       return await Promise.all([
         queryClient.ensureQueryData(getGetBoardQueryOptions(boardId)),
         queryClient.ensureQueryData(getGetTaskQueryOptions(taskId)),
-        queryClient.ensureQueryData(
-          getGetTaskActivityQueryOptions(boardId, taskId),
-        ),
+        queryClient.prefetchInfiniteQuery({
+          queryKey: [
+            ...getGetTaskActivityQueryKey(boardId, taskId),
+            "infinite",
+          ],
+          queryFn: ({ signal }) =>
+            getTaskActivity(boardId, taskId, { page: 0 }, { signal }),
+          initialPageParam: 0,
+        }),
         queryClient.ensureQueryData(
           getGetTaskCommentsQueryOptions(boardId, taskId),
         ),
@@ -150,6 +156,8 @@ function TaskComponent() {
   const [editingField, setEditingField] = useState<EditingField>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [isMobileActivityOpen, setIsMobileActivityOpen] = useState(false);
+  const [popoverContainer, setPopoverContainer] =
+    useState<HTMLDivElement | null>(null);
 
   const queryClient = useQueryClient();
   const { boardId, taskId } = Route.useParams();
@@ -192,6 +200,15 @@ function TaskComponent() {
       }
     },
   });
+
+  // Extract collaborator users for @mentions
+  const collaboratorUsers = useMemo(() => {
+    return (
+      board?.data?.collaborators
+        ?.map((c) => c.user)
+        .filter((user): user is NonNullable<typeof user> => user != null) ?? []
+    );
+  }, [board?.data?.collaborators]);
 
   const updateTaskMutation = useUpdateTask({
     mutation: {
@@ -371,6 +388,7 @@ function TaskComponent() {
           }
         }}
       >
+        <div ref={setPopoverContainer} className="contents" />
         <DialogDescription className="sr-only">
           Detailed view and editing options for the task.
         </DialogDescription>
@@ -581,6 +599,8 @@ function TaskComponent() {
                   onCancel={() => setEditingField(null)}
                   editValue={editValue}
                   setEditValue={setEditValue}
+                  mentionUsers={collaboratorUsers}
+                  container={popoverContainer}
                 />
 
                 {/* Metadata */}
@@ -604,6 +624,8 @@ function TaskComponent() {
                         boardId={boardId}
                         taskId={taskId}
                         currentUserId={currentUserId}
+                        collaborators={collaboratorUsers}
+                        container={popoverContainer}
                       />
                     </CardContent>
                   </Card>
@@ -644,6 +666,8 @@ function TaskComponent() {
                     boardId={boardId}
                     taskId={taskId}
                     currentUserId={currentUserId}
+                    collaborators={collaboratorUsers}
+                    container={popoverContainer}
                   />
                 </div>
               </ScrollArea>
@@ -768,6 +792,8 @@ function EditableDescription({
   onCancel,
   editValue,
   setEditValue,
+  mentionUsers,
+  container,
 }: {
   value: string;
   isEditing: boolean;
@@ -776,6 +802,12 @@ function EditableDescription({
   onCancel: () => void;
   editValue: string;
   setEditValue: (value: string) => void;
+  mentionUsers: Array<{
+    id: string;
+    username: string;
+    profileImageUrl: string;
+  }>;
+  container?: HTMLDivElement | null;
 }) {
   const normalizeMarkdown = (rawValue: string): string =>
     rawValue.replace(/\r\n/g, "\n").trimEnd();
@@ -816,6 +848,8 @@ function EditableDescription({
             value={editValue}
             onChange={setEditValue}
             placeholder="Add a more detailed description..."
+            mentionUsers={mentionUsers}
+            container={container}
           />
           <InlineSaveActions
             onCancel={onCancel}

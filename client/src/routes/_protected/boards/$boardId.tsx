@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
+  IconActivity,
   IconArchive,
   IconChevronRight,
   IconDotsVertical,
@@ -160,6 +161,8 @@ function BoardComponent() {
   const [deleteBoardOpen, setDeleteBoardOpen] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionEditValue, setDescriptionEditValue] = useState("");
+  const [popoverContainer, setPopoverContainer] =
+    useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setSearchInput(filters.query ?? "");
@@ -427,6 +430,23 @@ function BoardComponent() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto">
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/boards/$boardId/activity"
+                    params={{ boardId }}
+                    search={{
+                      q: undefined,
+                      assignee: undefined,
+                      priority: undefined,
+                      labels: undefined,
+                      due: undefined,
+                      archive: undefined,
+                    }}
+                  >
+                    <IconActivity className="size-3.5" />
+                    Activity
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => setTimeout(() => setAboutOpen(true), 0)}
                 >
@@ -617,6 +637,7 @@ function BoardComponent() {
         }}
       >
         <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
+          <div ref={setPopoverContainer} className="contents" />
           <DialogHeader>
             <DialogTitle>About This Board</DialogTitle>
             <DialogDescription className="sr-only">
@@ -664,6 +685,15 @@ function BoardComponent() {
                   autoFocus
                   placeholder="Add a board description..."
                   minHeightClassName="min-h-[120px]"
+                  mentionUsers={
+                    board.data.collaborators
+                      ?.map((c) => c.user)
+                      .filter(
+                        (user): user is NonNullable<typeof user> =>
+                          user != null,
+                      ) ?? []
+                  }
+                  container={popoverContainer}
                 />
                 <InlineSaveActions
                   onSave={() => {
