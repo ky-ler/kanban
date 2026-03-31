@@ -121,7 +121,7 @@ export function ArchivedBoardsModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-4xl">
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Archived Boards</DialogTitle>
             <DialogDescription>
@@ -146,7 +146,7 @@ export function ArchivedBoardsModal({
               </EmptyHeader>
             </Empty>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               {archivedBoards.map((board) => (
                 <Card key={board.id}>
                   <CardHeader>
