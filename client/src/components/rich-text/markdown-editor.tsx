@@ -51,6 +51,12 @@ import {
   UNORDERED_LIST,
   type Transformer,
 } from "@lexical/markdown";
+import { MentionNode } from "@/components/rich-text/nodes/mention-node";
+import { MENTION_TRANSFORMER } from "@/components/rich-text/transformers/mention-transformer";
+import {
+  MentionsPlugin,
+  type MentionUser,
+} from "@/components/rich-text/plugins/mentions-plugin";
 import {
   $isListNode,
   INSERT_ORDERED_LIST_COMMAND,
@@ -126,6 +132,7 @@ import { createPortal } from "react-dom";
 const OPEN_LINK_EDITOR_COMMAND = createCommand<void>();
 
 const MARKDOWN_TRANSFORMERS: Transformer[] = [
+  MENTION_TRANSFORMER,
   BOLD_STAR,
   ITALIC_STAR,
   STRIKETHROUGH,
@@ -226,6 +233,8 @@ export interface MarkdownEditorProps {
   toolbarVariant?: "full" | "compact";
   autoFocus?: boolean;
   minHeightClassName?: string;
+  mentionUsers?: MentionUser[];
+  container?: HTMLElement | null;
 }
 
 function setParagraph(editor: LexicalEditor): void {
@@ -589,7 +598,11 @@ function EditorShortcutsPlugin() {
 
 function ToolbarPlugin({
   toolbarVariant,
-}: Readonly<{ toolbarVariant: "full" | "compact" }>) {
+  container,
+}: Readonly<{
+  toolbarVariant: "full" | "compact";
+  container?: HTMLElement | null;
+}>) {
   const [editor] = useLexicalComposerContext();
   const [activeTextStyle, setActiveTextStyle] =
     useState<TextStyle>("paragraph");
@@ -694,21 +707,22 @@ function ToolbarPlugin({
       setLinkValue(baseUrl);
       setLinkDisplayText(baseText);
 
-      setLinkFormPosition(
-        options?.position ??
-          getSelectionPopoverPosition() ??
-          getEditorRootPopoverPosition(editor) ?? {
-            x: typeof window !== "undefined" ? window.innerWidth / 2 : 320,
-            y:
-              typeof window !== "undefined"
-                ? Math.max(120, window.innerHeight / 3)
-                : 180,
-          },
-      );
+      const position = options?.position ??
+        getSelectionPopoverPosition() ??
+        getEditorRootPopoverPosition(editor) ?? {
+          x: typeof window !== "undefined" ? window.innerWidth / 2 : 320,
+          y:
+            typeof window !== "undefined"
+              ? Math.max(120, window.innerHeight / 3)
+              : 180,
+        };
+      setLinkFormPosition(position);
 
       setIsLinkActionsOpen(false);
       setIsLinkPopoverOpen(false);
-      scheduleOpen(() => setIsLinkPopoverOpen(true));
+      scheduleOpen(() => {
+        setIsLinkPopoverOpen(true);
+      });
     },
     [editor, getLinkContextFromSelection],
   );
@@ -1181,7 +1195,9 @@ function ToolbarPlugin({
           onMouseDown={(event) => {
             event.preventDefault();
           }}
-          onClick={openLinkEditor}
+          onClick={() => {
+            openLinkEditor();
+          }}
         >
           <IconLink className="h-4 w-4" />
         </ToolbarButton>
@@ -1294,7 +1310,20 @@ function ToolbarPlugin({
             </PopoverAnchor>,
             document.body,
           )}
-        <PopoverContent className="w-fit p-2" align="center" sideOffset={8}>
+        <PopoverContent
+          className="w-fit p-2"
+          align="center"
+          sideOffset={8}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            const target = (e as CustomEvent<{ originalEvent: PointerEvent }>)
+              .detail?.originalEvent?.target;
+            if (target instanceof Element && target.closest("a")) {
+              e.preventDefault();
+            }
+          }}
+        >
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1374,6 +1403,7 @@ function ToolbarPlugin({
           className="w-80 space-y-3"
           align="center"
           sideOffset={8}
+          container={container ?? undefined}
         >
           <div className="space-y-1">
             <label className="text-sm font-medium">Link</label>
@@ -1429,6 +1459,8 @@ export function MarkdownEditor({
   toolbarVariant = "full",
   autoFocus = true,
   minHeightClassName = "min-h-[160px]",
+  mentionUsers = [],
+  container,
 }: Readonly<MarkdownEditorProps>) {
   const initialConfig = useMemo(
     () => ({
@@ -1461,7 +1493,14 @@ export function MarkdownEditor({
       onError: (error: Error) => {
         throw error;
       },
-      nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
+      nodes: [
+        HeadingNode,
+        QuoteNode,
+        ListNode,
+        ListItemNode,
+        LinkNode,
+        MentionNode,
+      ],
       editorState: () => {
         if (value.trim()) {
           $convertFromMarkdownString(value, MARKDOWN_TRANSFORMERS);
@@ -1474,7 +1513,7 @@ export function MarkdownEditor({
   return (
     <div className="border-border bg-background overflow-hidden rounded-md border">
       <LexicalComposer initialConfig={initialConfig}>
-        <ToolbarPlugin toolbarVariant={toolbarVariant} />
+        <ToolbarPlugin toolbarVariant={toolbarVariant} container={container} />
         <div className="relative">
           <RichTextPlugin
             contentEditable={
@@ -1501,6 +1540,7 @@ export function MarkdownEditor({
           <LinkPlugin />
           <EditorShortcutsPlugin />
           <MarkdownShortcutPlugin transformers={MARKDOWN_TRANSFORMERS} />
+          {mentionUsers.length > 0 && <MentionsPlugin users={mentionUsers} />}
           <OnChangePlugin
             ignoreSelectionChange={true}
             onChange={(editorState) => {

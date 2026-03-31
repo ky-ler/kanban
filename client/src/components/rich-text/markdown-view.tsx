@@ -9,6 +9,9 @@ interface MarkdownViewProps {
   emptyState?: ReactNode;
 }
 
+const mentionHrefRegex =
+  /^(?:[A-Za-z0-9_-]+\|[A-Za-z0-9_-]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
 const markdownComponents: Components = {
   p: ({ children }) => (
     <p className="mb-2 leading-6 break-words last:mb-0">{children}</p>
@@ -52,16 +55,22 @@ const markdownComponents: Components = {
       {children}
     </blockquote>
   ),
-  a: ({ children, href }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="text-primary underline underline-offset-2"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ children, href }) => {
+    if (href && mentionHrefRegex.test(href)) {
+      return <span className="text-primary">@{children}</span>;
+    }
+
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="text-primary underline underline-offset-2"
+      >
+        {children}
+      </a>
+    );
+  },
   code: ({ children, className }) => (
     <code
       className={cn(
