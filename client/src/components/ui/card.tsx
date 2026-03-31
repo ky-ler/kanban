@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 function Card({
   className,
   size = "default",
+  ref,
   ...props
 }: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
   return (
     <div
+      ref={ref}
       data-slot="card"
       data-size={size}
       className={cn(
