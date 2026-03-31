@@ -21,6 +21,7 @@ public class ActivityLogMapper {
                 activityLog.getType().name(),
                 activityLog.getDetails(),
                 activityLog.getTask().getId(),
+                activityLog.getTask().getTitle(),
                 user,
                 activityLog.getDateCreated() != null
                         ? activityLog.getDateCreated().toString()

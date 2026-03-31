@@ -11,16 +11,61 @@ export const getTaskActivityParams = zod.object({
   taskId: zod.string().uuid(),
 });
 
-export const getTaskActivityResponseItem = zod.object({
-  id: zod.string().uuid(),
-  type: zod.string().min(1),
-  details: zod.string().optional(),
-  taskId: zod.string().uuid(),
-  user: zod.object({
-    id: zod.string().min(1),
-    username: zod.string().min(1),
-    profileImageUrl: zod.string().min(1),
-  }),
-  dateCreated: zod.string().min(1),
+export const getTaskActivityQueryPageDefault = 0;
+export const getTaskActivityQuerySizeDefault = 20;
+
+export const getTaskActivityQueryParams = zod.object({
+  page: zod.number().optional(),
+  size: zod.number().default(getTaskActivityQuerySizeDefault),
 });
-export const getTaskActivityResponse = zod.array(getTaskActivityResponseItem);
+
+export const getTaskActivityResponse = zod.object({
+  totalElements: zod.number().optional(),
+  totalPages: zod.number().optional(),
+  size: zod.number().optional(),
+  content: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        type: zod.string().min(1),
+        details: zod.string().optional(),
+        taskId: zod.string().uuid(),
+        taskTitle: zod.string().min(1),
+        user: zod.object({
+          id: zod.string().min(1),
+          username: zod.string().min(1),
+          profileImageUrl: zod.string().min(1),
+        }),
+        dateCreated: zod.string().min(1),
+      }),
+    )
+    .optional(),
+  number: zod.number().optional(),
+  pageable: zod
+    .object({
+      offset: zod.number().optional(),
+      paged: zod.boolean().optional(),
+      pageNumber: zod.number().optional(),
+      pageSize: zod.number().optional(),
+      sort: zod
+        .object({
+          empty: zod.boolean().optional(),
+          sorted: zod.boolean().optional(),
+          unsorted: zod.boolean().optional(),
+        })
+        .optional(),
+      unpaged: zod.boolean().optional(),
+    })
+    .optional(),
+  sort: zod
+    .object({
+      empty: zod.boolean().optional(),
+      sorted: zod.boolean().optional(),
+      unsorted: zod.boolean().optional(),
+    })
+    .optional(),
+  first: zod.boolean().optional(),
+  last: zod.boolean().optional(),
+  numberOfElements: zod.number().optional(),
+  empty: zod.boolean().optional(),
+});

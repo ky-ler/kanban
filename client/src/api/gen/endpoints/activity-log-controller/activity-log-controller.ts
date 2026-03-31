@@ -4,37 +4,29 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-import {
-  useInfiniteQuery,
-  useQuery,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
-  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
-  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
-  UseInfiniteQueryOptions,
-  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult,
   UseSuspenseQueryOptions,
   UseSuspenseQueryResult,
 } from "@tanstack/react-query";
 
-import type { ActivityLogDto } from "../../model";
+import type { GetTaskActivityParams, PageActivityLogDto } from "../../model";
 
 import { apiClient } from "../../../../lib/api-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 export type getTaskActivityResponse200 = {
-  data: ActivityLogDto[];
+  data: PageActivityLogDto;
   status: 200;
 };
 
@@ -43,17 +35,34 @@ export type getTaskActivityResponseSuccess = getTaskActivityResponse200 & {
 };
 export type getTaskActivityResponse = getTaskActivityResponseSuccess;
 
-export const getGetTaskActivityUrl = (boardId: string, taskId: string) => {
-  return `/boards/${boardId}/tasks/${taskId}/activity`;
+export const getGetTaskActivityUrl = (
+  boardId: string,
+  taskId: string,
+  params?: GetTaskActivityParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/boards/${boardId}/tasks/${taskId}/activity?${stringifiedParams}`
+    : `/boards/${boardId}/tasks/${taskId}/activity`;
 };
 
 export const getTaskActivity = async (
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: RequestInit,
 ): Promise<getTaskActivityResponse> => {
   return apiClient<getTaskActivityResponse>(
-    getGetTaskActivityUrl(boardId, taskId),
+    getGetTaskActivityUrl(boardId, taskId, params),
     {
       ...options,
       method: "GET",
@@ -61,178 +70,16 @@ export const getTaskActivity = async (
   );
 };
 
-export const getGetTaskActivityInfiniteQueryKey = (
-  boardId?: string,
-  taskId?: string,
-) => {
-  return ["infinite", `/boards/${boardId}/tasks/${taskId}/activity`] as const;
-};
-
 export const getGetTaskActivityQueryKey = (
   boardId?: string,
   taskId?: string,
+  params?: GetTaskActivityParams,
 ) => {
-  return [`/boards/${boardId}/tasks/${taskId}/activity`] as const;
+  return [
+    `/boards/${boardId}/tasks/${taskId}/activity`,
+    ...(params ? [params] : []),
+  ] as const;
 };
-
-export const getGetTaskActivityInfiniteQueryOptions = <
-  TData = InfiniteData<Awaited<ReturnType<typeof getTaskActivity>>>,
-  TError = unknown,
->(
-  boardId: string,
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTaskActivity>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getGetTaskActivityInfiniteQueryKey(boardId, taskId);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTaskActivity>>> = ({
-    signal,
-  }) => getTaskActivity(boardId, taskId, { signal, ...requestOptions });
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!(boardId && taskId),
-    ...queryOptions,
-  } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof getTaskActivity>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type GetTaskActivityInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getTaskActivity>>
->;
-export type GetTaskActivityInfiniteQueryError = unknown;
-
-export function useGetTaskActivityInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTaskActivity>>>,
-  TError = unknown,
->(
-  boardId: string,
-  taskId: string,
-  options: {
-    query: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTaskActivity>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getTaskActivity>>,
-          TError,
-          Awaited<ReturnType<typeof getTaskActivity>>
-        >,
-        "initialData"
-      >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): DefinedUseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetTaskActivityInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTaskActivity>>>,
-  TError = unknown,
->(
-  boardId: string,
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTaskActivity>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getTaskActivity>>,
-          TError,
-          Awaited<ReturnType<typeof getTaskActivity>>
-        >,
-        "initialData"
-      >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetTaskActivityInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTaskActivity>>>,
-  TError = unknown,
->(
-  boardId: string,
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTaskActivity>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-
-export function useGetTaskActivityInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTaskActivity>>>,
-  TError = unknown,
->(
-  boardId: string,
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTaskActivity>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getGetTaskActivityInfiniteQueryOptions(
-    boardId,
-    taskId,
-    options,
-  );
-
-  const query = useInfiniteQuery(
-    queryOptions,
-    queryClient,
-  ) as UseInfiniteQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
 
 export const getGetTaskActivityQueryOptions = <
   TData = Awaited<ReturnType<typeof getTaskActivity>>,
@@ -240,6 +87,7 @@ export const getGetTaskActivityQueryOptions = <
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -254,11 +102,12 @@ export const getGetTaskActivityQueryOptions = <
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetTaskActivityQueryKey(boardId, taskId);
+    queryOptions?.queryKey ??
+    getGetTaskActivityQueryKey(boardId, taskId, params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getTaskActivity>>> = ({
     signal,
-  }) => getTaskActivity(boardId, taskId, { signal, ...requestOptions });
+  }) => getTaskActivity(boardId, taskId, params, { signal, ...requestOptions });
 
   return {
     queryKey,
@@ -283,6 +132,7 @@ export function useGetTaskActivity<
 >(
   boardId: string,
   taskId: string,
+  params: undefined | GetTaskActivityParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -311,6 +161,7 @@ export function useGetTaskActivity<
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -339,6 +190,7 @@ export function useGetTaskActivity<
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -360,6 +212,7 @@ export function useGetTaskActivity<
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -374,7 +227,12 @@ export function useGetTaskActivity<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getGetTaskActivityQueryOptions(boardId, taskId, options);
+  const queryOptions = getGetTaskActivityQueryOptions(
+    boardId,
+    taskId,
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,
@@ -392,6 +250,7 @@ export const getGetTaskActivitySuspenseQueryOptions = <
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -406,11 +265,12 @@ export const getGetTaskActivitySuspenseQueryOptions = <
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetTaskActivityQueryKey(boardId, taskId);
+    queryOptions?.queryKey ??
+    getGetTaskActivityQueryKey(boardId, taskId, params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getTaskActivity>>> = ({
     signal,
-  }) => getTaskActivity(boardId, taskId, { signal, ...requestOptions });
+  }) => getTaskActivity(boardId, taskId, params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
     Awaited<ReturnType<typeof getTaskActivity>>,
@@ -430,6 +290,7 @@ export function useGetTaskActivitySuspense<
 >(
   boardId: string,
   taskId: string,
+  params: undefined | GetTaskActivityParams,
   options: {
     query: Partial<
       UseSuspenseQueryOptions<
@@ -450,6 +311,7 @@ export function useGetTaskActivitySuspense<
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -470,6 +332,7 @@ export function useGetTaskActivitySuspense<
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -491,6 +354,7 @@ export function useGetTaskActivitySuspense<
 >(
   boardId: string,
   taskId: string,
+  params?: GetTaskActivityParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -508,6 +372,7 @@ export function useGetTaskActivitySuspense<
   const queryOptions = getGetTaskActivitySuspenseQueryOptions(
     boardId,
     taskId,
+    params,
     options,
   );
 

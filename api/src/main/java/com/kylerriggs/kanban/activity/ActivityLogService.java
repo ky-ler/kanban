@@ -11,12 +11,13 @@ import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,19 +30,37 @@ public class ActivityLogService {
     private final BoardEventPublisher eventPublisher;
 
     /**
-     * Retrieves all activity logs for a task, ordered by most recent first.
+     * Retrieves a page of activity logs for a task, ordered by most recent first.
      *
+     * @param boardId the ID of the board (used for validation)
      * @param taskId the ID of the task
-     * @return list of activity log DTOs
+     * @param page zero-based page index
+     * @param size number of items per page
+     * @return page of activity log DTOs
      */
-    public List<ActivityLogDto> getActivityForTask(@NonNull UUID boardId, @NonNull UUID taskId) {
+    public Page<ActivityLogDto> getActivityForTask(
+            @NonNull UUID boardId, @NonNull UUID taskId, int page, int size) {
         if (!taskRepository.existsByIdAndBoardId(taskId, boardId)) {
             throw new ResourceNotFoundException("Task not found in board: " + taskId);
         }
 
-        return activityLogRepository.findByTaskIdOrderByDateCreatedDesc(taskId).stream()
-                .map(activityLogMapper::toDto)
-                .toList();
+        return activityLogRepository
+                .findByTaskIdOrderByDateCreatedDesc(taskId, PageRequest.of(page, size))
+                .map(activityLogMapper::toDto);
+    }
+
+    /**
+     * Retrieves a page of activity logs for an entire board, ordered by most recent first.
+     *
+     * @param boardId the ID of the board
+     * @param page zero-based page index
+     * @param size number of items per page
+     * @return page of activity log DTOs for the board
+     */
+    public Page<ActivityLogDto> getActivityForBoard(@NonNull UUID boardId, int page, int size) {
+        return activityLogRepository
+                .findByTaskBoardIdOrderByDateCreatedDesc(boardId, PageRequest.of(page, size))
+                .map(activityLogMapper::toDto);
     }
 
     /**
