@@ -9,14 +9,9 @@ import type { KeyboardEventHandler } from "react";
 interface SortableTaskItemProps {
   task: TaskSummaryDto;
   boardId: string;
-  dropIndicator?: "before" | "after" | null;
 }
 
-export const SortableTaskItem = ({
-  task,
-  boardId,
-  dropIndicator = null,
-}: SortableTaskItemProps) => {
+export const SortableTaskItem = ({ task, boardId }: SortableTaskItemProps) => {
   const navigate = useNavigate();
   const {
     attributes,
@@ -78,10 +73,6 @@ export const SortableTaskItem = ({
       className={cn(
         "relative touch-none [-webkit-touch-callout:none]",
         isDragging && "z-10 opacity-50",
-        dropIndicator &&
-          "before:bg-primary/90 before:absolute before:inset-x-0 before:h-1 before:rounded-full before:shadow-[0_0_0_4px_var(--color-background)] before:content-['']",
-        dropIndicator === "before" && "before:-top-1.5",
-        dropIndicator === "after" && "before:-bottom-1.5",
       )}
     >
       <TaskItem task={task} boardId={boardId} />

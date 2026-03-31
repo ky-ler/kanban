@@ -8,11 +8,16 @@ import {
   KeyboardCode,
   useSensor,
   useSensors,
-  closestCenter,
   type DragStartEvent,
   type DragOverEvent,
   type UniqueIdentifier,
   TouchSensor,
+  pointerWithin,
+  rectIntersection,
+  closestCenter,
+  type CollisionDetection,
+  getFirstCollision,
+  MeasuringStrategy,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -20,7 +25,7 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { TaskItem } from "@/features/tasks/components/task-item";
 import { useMoveTaskOptimistic } from "../hooks/use-move-task-optimistic";
 import { useMoveColumnOptimistic } from "../hooks/use-move-column-optimistic";
@@ -43,16 +48,6 @@ interface ActiveItem {
   data: TaskSummaryDto | ColumnDto;
 }
 
-interface ColumnDropPreview {
-  overColumnId: string;
-  placement: "before" | "after";
-}
-
-interface TaskDropPreview {
-  overTaskId: string;
-  placement: "before" | "after";
-}
-
 const groupTasksByColumn = (
   tasks: TaskSummaryDto[],
   columns: ColumnDto[],
@@ -68,13 +63,13 @@ const groupTasksByColumn = (
 
 export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
   const [activeItem, setActiveItem] = useState<ActiveItem | null>(null);
-  const [columnDropPreview, setColumnDropPreview] =
-    useState<ColumnDropPreview | null>(null);
-  const [taskDropPreview, setTaskDropPreview] =
-    useState<TaskDropPreview | null>(null);
 
   const [tempTasks, setTempTasks] = useState<TaskSummaryDto[] | null>(null);
   const [tempColumns, setTempColumns] = useState<ColumnDto[] | null>(null);
+
+  // Refs for stable collision detection (per official dnd-kit pattern)
+  const lastOverId = useRef<UniqueIdentifier | null>(null);
+  const recentlyMovedToNewContainer = useRef(false);
 
   const displayTasks = tempTasks ?? tasks;
   const displayColumns = tempColumns ?? columns;
@@ -186,6 +181,68 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     ],
   );
 
+  // Reset recentlyMovedToNewContainer after each render to stabilize collision detection
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      recentlyMovedToNewContainer.current = false;
+    });
+  }, [displayTasks]);
+
+  // Custom collision detection strategy optimized for multiple containers (per official dnd-kit pattern)
+  const collisionDetectionStrategy: CollisionDetection = useCallback(
+    (args) => {
+      // When dragging a column, only consider other columns
+      if (activeItem?.type === "column") {
+        return closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter((container) =>
+            columnIds.includes(container.id as string),
+          ),
+        });
+      }
+
+      // For tasks: first find any droppable intersecting with the pointer
+      const pointerIntersections = pointerWithin(args);
+      const intersections =
+        pointerIntersections.length > 0
+          ? pointerIntersections
+          : rectIntersection(args);
+      let overId = getFirstCollision(intersections, "id");
+
+      if (overId != null) {
+        // If overId is a column, find the closest task within that column
+        if (columnIds.includes(overId as string)) {
+          const columnTasks = columnTasksMap[overId as string] || [];
+          if (columnTasks.length > 0) {
+            const closestTask = closestCenter({
+              ...args,
+              droppableContainers: args.droppableContainers.filter(
+                (container) =>
+                  container.id !== overId &&
+                  columnTasks.some((task) => task.id === container.id),
+              ),
+            })[0];
+            if (closestTask) {
+              overId = closestTask.id;
+            }
+          }
+        }
+
+        lastOverId.current = overId;
+        return [{ id: overId }];
+      }
+
+      // When task moves to new container, layout shifts and overId may become null
+      // Use cached lastOverId to prevent jitter
+      if (recentlyMovedToNewContainer.current) {
+        lastOverId.current = activeItem?.id ?? null;
+      }
+
+      return lastOverId.current ? [{ id: lastOverId.current }] : [];
+    },
+    [activeItem, columnIds, columnTasksMap],
+  );
+
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const type = getItemType(active.id);
@@ -195,14 +252,12 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
       if (task) {
         setActiveItem({ id: active.id, type: "task", data: task });
         setTempTasks(tasks);
-        setTaskDropPreview(null);
       }
     } else if (type === "column") {
       const column = columns.find((c) => c.id === active.id);
       if (column) {
         setActiveItem({ id: active.id, type: "column", data: column });
         setTempColumns(columns);
-        setColumnDropPreview(null);
       }
     }
   };
@@ -211,53 +266,22 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     const { active, over } = event;
     if (!over || !activeItem) return;
 
+    // Column dragging is finalized on drag end.
     if (activeItem.type === "column") {
-      const overColumnId = resolveOverColumnId(over);
-      const activeIndex = sortedColumns.findIndex(
-        (column) => column.id === active.id,
-      );
-      const overIndex = sortedColumns.findIndex(
-        (column) => column.id === overColumnId,
-      );
-
-      if (
-        !overColumnId ||
-        activeIndex === -1 ||
-        overIndex === -1 ||
-        activeIndex === overIndex
-      ) {
-        setColumnDropPreview(null);
-        return;
-      }
-
-      setColumnDropPreview({
-        overColumnId,
-        placement: activeIndex < overIndex ? "after" : "before",
-      });
       return;
     }
 
+    // Task dragging: only handle cross-column moves (per official dnd-kit pattern)
+    // Intra-column reordering is handled by handleDragEnd using arrayMove
     const activeColumnId = findColumnByTaskId(active.id);
     const overColumnId = resolveOverColumnId(over);
 
     if (!activeColumnId || !overColumnId) return;
 
-    const overType = getItemType(over.id);
-    if (overType === "task" && over.id !== active.id) {
-      const overColumnTasks = columnTasksMap[overColumnId] || [];
-      const activeIndex = overColumnTasks.findIndex((t) => t.id === active.id);
-      const overIndex = overColumnTasks.findIndex((t) => t.id === over.id);
-      setTaskDropPreview({
-        overTaskId: over.id as string,
-        placement:
-          activeIndex !== -1 && activeIndex < overIndex ? "after" : "before",
-      });
-    } else if (overType !== "task") {
-      setTaskDropPreview(null);
-    }
-
+    // Skip if still in the same column - let dnd-kit handle visual transforms
     if (activeColumnId === overColumnId) return;
 
+    // Cross-column move: update tempTasks with proper position values
     setTempTasks((prevTasks) => {
       if (!prevTasks) return prevTasks;
 
@@ -265,28 +289,48 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
       if (!activeTaskItem) return prevTasks;
 
       const tasksWithoutActive = prevTasks.filter((t) => t.id !== active.id);
-
-      const updatedTask: TaskSummaryDto = {
-        ...activeTaskItem,
-        columnId: overColumnId,
-      };
-
-      if (over.id === overColumnId) {
-        return [...tasksWithoutActive, updatedTask];
-      }
-
-      const overTaskIndex = tasksWithoutActive.findIndex(
-        (t) => t.id === over.id,
+      const overColumnTasks = tasksWithoutActive.filter(
+        (t) => t.columnId === overColumnId,
       );
-      if (overTaskIndex === -1) {
-        return [...tasksWithoutActive, updatedTask];
+
+      // Determine insertion index using isBelowOverItem check (per official pattern)
+      let newIndex: number;
+      const overType = getItemType(over.id);
+
+      if (overType === "column" || over.id === overColumnId) {
+        // Dropped on empty column or column itself - add at end
+        newIndex = overColumnTasks.length;
+      } else {
+        // Dropped on a task - determine above or below based on cursor position
+        const overIndex = overColumnTasks.findIndex((t) => t.id === over.id);
+        if (overIndex === -1) {
+          newIndex = overColumnTasks.length;
+        } else {
+          const isBelowOverItem =
+            over &&
+            active.rect.current.translated &&
+            active.rect.current.translated.top >
+              over.rect.top + over.rect.height;
+
+          newIndex = isBelowOverItem ? overIndex + 1 : overIndex;
+        }
       }
 
-      return [
-        ...tasksWithoutActive.slice(0, overTaskIndex),
-        updatedTask,
-        ...tasksWithoutActive.slice(overTaskIndex),
-      ];
+      // Build new task list for the destination column with sequential positions
+      const newOverColumnTasks = [
+        ...overColumnTasks.slice(0, newIndex),
+        { ...activeTaskItem, columnId: overColumnId },
+        ...overColumnTasks.slice(newIndex),
+      ].map((task, index) => ({ ...task, position: index }));
+
+      // Merge with other columns' tasks
+      const otherTasks = tasksWithoutActive.filter(
+        (t) => t.columnId !== overColumnId,
+      );
+
+      recentlyMovedToNewContainer.current = true;
+
+      return [...otherTasks, ...newOverColumnTasks];
     });
   };
 
@@ -295,15 +339,14 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
     const currentActiveItem = activeItem;
 
     setActiveItem(null);
-    setTaskDropPreview(null);
 
     if (!over || !currentActiveItem) {
       setTempTasks(null);
       setTempColumns(null);
-      setColumnDropPreview(null);
       return;
     }
 
+    // Column reordering
     if (currentActiveItem.type === "column") {
       const overColumnId = resolveOverColumnId(over);
 
@@ -328,55 +371,98 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
       }
 
       setTempColumns(null);
-      setColumnDropPreview(null);
       return;
     }
 
+    // Task reordering
     if (currentActiveItem.type === "task") {
-      const originalColumnId = findOriginalColumnByTaskId(active.id);
+      // Find where the task currently is (using tempTasks which reflects cross-column moves)
+      const currentColumnId = findColumnByTaskId(active.id);
       const overColumnId = resolveOverColumnId(over);
 
-      if (!originalColumnId || !overColumnId) {
+      if (!currentColumnId || !overColumnId) {
         setTempTasks(null);
         return;
       }
 
-      if (originalColumnId === overColumnId && active.id !== over.id) {
-        const columnTasks = columnTasksMap[originalColumnId] || [];
-        const activeIndex = columnTasks.findIndex((t) => t.id === active.id);
-        const overIndex = columnTasks.findIndex((t) => t.id === over.id);
+      // Get the current column's tasks from columnTasksMap (which uses displayTasks/tempTasks)
+      const columnTasks = columnTasksMap[currentColumnId] || [];
+      const activeIndex = columnTasks.findIndex((t) => t.id === active.id);
 
-        if (activeIndex !== -1 && overIndex !== -1) {
-          const newColumnTasks = arrayMove(
-            columnTasks,
-            activeIndex,
-            overIndex,
-          ).map((task, index) => ({
-            ...task,
-            columnId: originalColumnId,
-            position: index,
-          }));
+      // Determine the over index - either from a task or from the column itself
+      let overIndex: number;
+      const overType = getItemType(over.id);
 
-          setTempTasks((prevTasks) => {
-            if (!prevTasks) return prevTasks;
-            const otherTasks = prevTasks.filter(
-              (t) => t.columnId !== originalColumnId,
-            );
-            return [...otherTasks, ...newColumnTasks];
+      if (overType === "task") {
+        overIndex = columnTasks.findIndex((t) => t.id === over.id);
+      } else {
+        // Dropping on column - find position based on where it would land
+        overIndex = columnTasks.length - 1;
+      }
+
+      // Apply arrayMove for final positioning (handles both same-column and post-cross-column)
+      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+        const newColumnTasks = arrayMove(
+          columnTasks,
+          activeIndex,
+          overIndex,
+        ).map((task, index) => ({
+          ...task,
+          columnId: currentColumnId,
+          position: index,
+        }));
+
+        setTempTasks((prevTasks) => {
+          if (!prevTasks) return prevTasks;
+          const otherTasks = prevTasks.filter(
+            (t) => t.columnId !== currentColumnId,
+          );
+          return [...otherTasks, ...newColumnTasks];
+        });
+
+        // Find the task's final position in the reordered array
+        const finalIndex = newColumnTasks.findIndex((t) => t.id === active.id);
+        const afterTaskId =
+          finalIndex > 0 ? newColumnTasks[finalIndex - 1].id : undefined;
+        const beforeTaskId =
+          finalIndex < newColumnTasks.length - 1
+            ? newColumnTasks[finalIndex + 1].id
+            : undefined;
+
+        try {
+          await moveTaskMutation.mutateAsync({
+            boardId,
+            taskId: active.id as string,
+            newColumnId: currentColumnId,
+            afterTaskId,
+            beforeTaskId,
           });
+        } catch {
+          // Mutation hook handles rollback/auth redirect.
+        }
+      } else if (activeIndex !== -1) {
+        // Task is in a new column but position didn't change via arrayMove
+        // This happens when cross-column move to a specific position
+        const finalIndex = activeIndex;
+        const afterTaskId =
+          finalIndex > 0 ? columnTasks[finalIndex - 1].id : undefined;
+        const beforeTaskId =
+          finalIndex < columnTasks.length - 1
+            ? columnTasks[finalIndex + 1].id
+            : undefined;
 
-          const afterTaskId =
-            overIndex > 0 ? newColumnTasks[overIndex - 1].id : undefined;
-          const beforeTaskId =
-            overIndex < newColumnTasks.length - 1
-              ? newColumnTasks[overIndex + 1].id
-              : undefined;
-
+        // Check if we actually moved to a different column from the original
+        const originalColumnId = findOriginalColumnByTaskId(active.id);
+        if (
+          originalColumnId !== currentColumnId ||
+          afterTaskId ||
+          beforeTaskId
+        ) {
           try {
             await moveTaskMutation.mutateAsync({
               boardId,
               taskId: active.id as string,
-              newColumnId: originalColumnId,
+              newColumnId: currentColumnId,
               afterTaskId,
               beforeTaskId,
             });
@@ -384,52 +470,27 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
             // Mutation hook handles rollback/auth redirect.
           }
         }
-      } else if (originalColumnId !== overColumnId) {
-        const destColumnTasks = columnTasksMap[overColumnId] || [];
-        const taskIndexInDest = destColumnTasks.findIndex(
-          (t) => t.id === active.id,
-        );
-        const dropIndex =
-          taskIndexInDest === -1 ? destColumnTasks.length : taskIndexInDest;
-
-        const otherDestTasks = destColumnTasks.filter(
-          (t) => t.id !== active.id,
-        );
-        const afterTaskId =
-          dropIndex > 0 ? otherDestTasks[dropIndex - 1]?.id : undefined;
-        const beforeTaskId = otherDestTasks[dropIndex]?.id;
-
-        try {
-          await moveTaskMutation.mutateAsync({
-            boardId,
-            taskId: active.id as string,
-            newColumnId: overColumnId,
-            afterTaskId,
-            beforeTaskId,
-          });
-        } catch {
-          // Mutation hook handles rollback/auth redirect.
-        }
       }
 
       setTempTasks(null);
     }
-
-    setColumnDropPreview(null);
   };
 
   const handleDragCancel = () => {
     setActiveItem(null);
     setTempTasks(null);
     setTempColumns(null);
-    setColumnDropPreview(null);
-    setTaskDropPreview(null);
   };
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetectionStrategy}
+      measuring={{
+        droppable: {
+          strategy: MeasuringStrategy.Always,
+        },
+      }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -448,12 +509,6 @@ export const KanbanBoard = ({ columns, tasks, boardId }: KanbanBoardProps) => {
                   column={column}
                   tasks={columnTasksMap[column.id] || []}
                   boardId={boardId}
-                  dropIndicator={
-                    columnDropPreview?.overColumnId === column.id
-                      ? columnDropPreview.placement
-                      : null
-                  }
-                  taskDropPreview={taskDropPreview}
                 />
               ))}
             </SortableContext>

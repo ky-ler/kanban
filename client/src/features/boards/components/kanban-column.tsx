@@ -55,17 +55,11 @@ import { toast } from "sonner";
 import { handleMutationAuthError } from "@/features/auth/route-auth";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface TaskDropPreview {
-  overTaskId: string;
-  placement: "before" | "after";
-}
-
 interface KanbanColumnProps {
   column: ColumnDto;
   tasks: TaskSummaryDto[];
   boardId: string;
   dragHandleProps?: Record<string, unknown>;
-  taskDropPreview?: TaskDropPreview | null;
 }
 
 export const KanbanColumn = ({
@@ -73,7 +67,6 @@ export const KanbanColumn = ({
   tasks,
   boardId,
   dragHandleProps,
-  taskDropPreview = null,
 }: KanbanColumnProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
@@ -353,11 +346,6 @@ export const KanbanColumn = ({
                       key={task.id}
                       task={task}
                       boardId={boardId}
-                      dropIndicator={
-                        taskDropPreview?.overTaskId === task.id
-                          ? taskDropPreview.placement
-                          : null
-                      }
                     />
                   ))}
                 </div>
