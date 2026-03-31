@@ -216,3 +216,40 @@ export const moveTaskBody = zod.object({
   beforeTaskId: zod.string().uuid().optional(),
   newColumnId: zod.string().uuid().optional(),
 });
+
+export const getMyTasksQueryParams = zod.object({
+  priority: zod.string().optional(),
+});
+
+export const getMyTasksResponseItem = zod.object({
+  id: zod.string().uuid(),
+  title: zod.string().min(1),
+  description: zod.string().optional(),
+  priority: zod.string().optional(),
+  dueDate: zod.string().optional(),
+  isCompleted: zod.boolean(),
+  isArchived: zod.boolean(),
+  boardId: zod.string().uuid(),
+  boardName: zod.string().min(1),
+  columnId: zod.string().uuid(),
+  columnName: zod.string().min(1),
+  assignedTo: zod
+    .object({
+      id: zod.string().min(1),
+      username: zod.string().min(1),
+      profileImageUrl: zod.string().min(1),
+    })
+    .optional(),
+  labels: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        name: zod.string().min(1),
+        color: zod.string().min(1),
+      }),
+    )
+    .optional(),
+  dateCreated: zod.string().min(1),
+  dateModified: zod.string().min(1),
+});
+export const getMyTasksResponse = zod.array(getMyTasksResponseItem);

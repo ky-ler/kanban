@@ -4,25 +4,16 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
-  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
-  InfiniteData,
   MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
-  UseInfiniteQueryOptions,
-  UseInfiniteQueryResult,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -32,7 +23,9 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  GetMyTasksParams,
   MoveTaskRequest,
+  MyTaskDto,
   TaskDto,
   TaskRequest,
   TaskStatusRequest,
@@ -66,161 +59,9 @@ export const getTask = async (
   });
 };
 
-export const getGetTaskInfiniteQueryKey = (taskId?: string) => {
-  return ["infinite", `/tasks/${taskId}`] as const;
-};
-
 export const getGetTaskQueryKey = (taskId?: string) => {
   return [`/tasks/${taskId}`] as const;
 };
-
-export const getGetTaskInfiniteQueryOptions = <
-  TData = InfiniteData<Awaited<ReturnType<typeof getTask>>>,
-  TError = unknown,
->(
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTask>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetTaskInfiniteQueryKey(taskId);
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTask>>> = ({
-    signal,
-  }) => getTask(taskId, { signal, ...requestOptions });
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!taskId,
-    ...queryOptions,
-  } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof getTask>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type GetTaskInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getTask>>
->;
-export type GetTaskInfiniteQueryError = unknown;
-
-export function useGetTaskInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTask>>>,
-  TError = unknown,
->(
-  taskId: string,
-  options: {
-    query: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTask>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getTask>>,
-          TError,
-          Awaited<ReturnType<typeof getTask>>
-        >,
-        "initialData"
-      >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): DefinedUseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetTaskInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTask>>>,
-  TError = unknown,
->(
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTask>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getTask>>,
-          TError,
-          Awaited<ReturnType<typeof getTask>>
-        >,
-        "initialData"
-      >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetTaskInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTask>>>,
-  TError = unknown,
->(
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTask>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-
-export function useGetTaskInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getTask>>>,
-  TError = unknown,
->(
-  taskId: string,
-  options?: {
-    query?: Partial<
-      UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getTask>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof apiClient>;
-  },
-  queryClient?: QueryClient,
-): UseInfiniteQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getGetTaskInfiniteQueryOptions(taskId, options);
-
-  const query = useInfiniteQuery(
-    queryOptions,
-    queryClient,
-  ) as UseInfiniteQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
 
 export const getGetTaskQueryOptions = <
   TData = Awaited<ReturnType<typeof getTask>>,
@@ -929,3 +770,290 @@ export const useMoveTask = <TError = unknown, TContext = unknown>(
 
   return useMutation(mutationOptions, queryClient);
 };
+export type getMyTasksResponse200 = {
+  data: MyTaskDto[];
+  status: 200;
+};
+
+export type getMyTasksResponseSuccess = getMyTasksResponse200 & {
+  headers: Headers;
+};
+export type getMyTasksResponse = getMyTasksResponseSuccess;
+
+export const getGetMyTasksUrl = (params?: GetMyTasksParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/tasks/me?${stringifiedParams}`
+    : `/tasks/me`;
+};
+
+export const getMyTasks = async (
+  params?: GetMyTasksParams,
+  options?: RequestInit,
+): Promise<getMyTasksResponse> => {
+  return apiClient<getMyTasksResponse>(getGetMyTasksUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyTasksQueryKey = (params?: GetMyTasksParams) => {
+  return [`/tasks/me`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetMyTasksQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getMyTasks>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyTasksQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTasks>>> = ({
+    signal,
+  }) => getMyTasks(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyTasks>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GetMyTasksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyTasks>>
+>;
+export type GetMyTasksQueryError = unknown;
+
+export function useGetMyTasks<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params: undefined | GetMyTasksParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getMyTasks>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyTasks>>,
+          TError,
+          Awaited<ReturnType<typeof getMyTasks>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetMyTasks<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getMyTasks>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyTasks>>,
+          TError,
+          Awaited<ReturnType<typeof getMyTasks>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetMyTasks<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getMyTasks>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGetMyTasks<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getMyTasks>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetMyTasksQueryOptions(params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getGetMyTasksSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getMyTasks>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyTasksQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTasks>>> = ({
+    signal,
+  }) => getMyTasks(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof getMyTasks>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type GetMyTasksSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyTasks>>
+>;
+export type GetMyTasksSuspenseQueryError = unknown;
+
+export function useGetMyTasksSuspense<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params: undefined | GetMyTasksParams,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getMyTasks>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetMyTasksSuspense<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getMyTasks>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetMyTasksSuspense<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getMyTasks>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useGetMyTasksSuspense<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = unknown,
+>(
+  params?: GetMyTasksParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof getMyTasks>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof apiClient>;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetMyTasksSuspenseQueryOptions(params, options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}

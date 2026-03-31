@@ -11,11 +11,13 @@ import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.label.Label;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
+import com.kylerriggs.kanban.task.dto.MyTaskDto;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserLookupService;
+import com.kylerriggs.kanban.user.UserService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
@@ -47,6 +49,7 @@ public class TaskService {
     private final BoardRepository boardRepository;
     private final TaskMapper taskMapper;
     private final UserLookupService userLookupService;
+    private final UserService userService;
     private final TaskValidationService taskValidationService;
     private final TaskArchiveService taskArchiveService;
     private final BoardEventPublisher eventPublisher;
@@ -68,6 +71,36 @@ public class TaskService {
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         return taskMapper.toDto(task);
+    }
+
+    /**
+     * Retrieves all tasks assigned to the current user across all boards they have access to.
+     * Supports optional filtering by priority values.
+     *
+     * @param priorityFilter comma-separated priority values (e.g. "HIGH,MEDIUM"), or null/empty
+     * @return list of tasks as cross-board DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<MyTaskDto> getAssignedTasksForCurrentUser(String priorityFilter) {
+        String userId = userService.getCurrentUserId();
+
+        // Parse priority filter
+        boolean filterByPriority = StringUtils.hasText(priorityFilter);
+        List<Priority> priorities = List.of();
+        if (filterByPriority) {
+            priorities =
+                    Arrays.stream(priorityFilter.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .map(s -> Priority.valueOf(s.toUpperCase(Locale.ROOT)))
+                            .toList();
+            filterByPriority = !priorities.isEmpty();
+        }
+
+        List<Task> tasks =
+                taskRepository.findAssignedTasksForUser(userId, priorities, filterByPriority);
+
+        return tasks.stream().map(taskMapper::toMyTaskDto).toList();
     }
 
     /**
@@ -185,8 +218,15 @@ public class TaskService {
         Priority oldPriority = taskToUpdate.getPriority();
         String oldAssigneeId =
                 Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
+        String oldAssigneeUsername =
+                Optional.ofNullable(taskToUpdate.getAssignedTo())
+                        .map(User::getUsername)
+                        .orElse(null);
         Set<UUID> oldLabelIds =
                 taskToUpdate.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
+        Map<UUID, String> oldLabelNames =
+                taskToUpdate.getLabels().stream()
+                        .collect(Collectors.toMap(Label::getId, Label::getName));
         String oldDueDate =
                 taskToUpdate.getDueDate() != null ? taskToUpdate.getDueDate().toString() : null;
         boolean oldCompleted = taskToUpdate.isCompleted();
@@ -260,7 +300,9 @@ public class TaskService {
                 oldDescription,
                 oldPriority,
                 oldAssigneeId,
+                oldAssigneeUsername,
                 oldLabelIds,
+                oldLabelNames,
                 oldDueDate,
                 oldCompleted,
                 oldArchived,
@@ -275,7 +317,9 @@ public class TaskService {
             String oldDescription,
             Priority oldPriority,
             String oldAssigneeId,
+            String oldAssigneeUsername,
             Set<UUID> oldLabelIds,
+            Map<UUID, String> oldLabelNames,
             String oldDueDate,
             boolean oldCompleted,
             boolean oldArchived,
@@ -304,6 +348,9 @@ public class TaskService {
             Map<String, Object> details = new HashMap<>();
             details.put("oldAssigneeId", oldAssigneeId);
             details.put("newAssigneeId", newAssigneeId);
+            if (oldAssigneeUsername != null) {
+                details.put("oldAssigneeUsername", oldAssigneeUsername);
+            }
             if (task.getAssignedTo() != null) {
                 details.put("newAssigneeUsername", task.getAssignedTo().getUsername());
             }
@@ -345,9 +392,25 @@ public class TaskService {
             Set<UUID> newLabelIds =
                     task.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
             if (!Objects.equals(oldLabelIds, newLabelIds)) {
+                Map<UUID, String> newLabelNameMap =
+                        task.getLabels().stream()
+                                .collect(Collectors.toMap(Label::getId, Label::getName));
+
+                List<String> addedLabels =
+                        newLabelIds.stream()
+                                .filter(id -> !oldLabelIds.contains(id))
+                                .map(id -> newLabelNameMap.getOrDefault(id, id.toString()))
+                                .toList();
+
+                List<String> removedLabels =
+                        oldLabelIds.stream()
+                                .filter(id -> !newLabelIds.contains(id))
+                                .map(id -> oldLabelNames.getOrDefault(id, id.toString()))
+                                .toList();
+
                 Map<String, Object> details = new HashMap<>();
-                details.put("oldLabelIds", oldLabelIds);
-                details.put("newLabelIds", newLabelIds);
+                details.put("addedLabels", addedLabels);
+                details.put("removedLabels", removedLabels);
                 activityLogService.logActivity(task, ActivityType.LABELS_CHANGED, toJson(details));
             }
         }

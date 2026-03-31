@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.task;
 
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
+import com.kylerriggs.kanban.task.dto.MyTaskDto;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
@@ -21,10 +22,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -33,6 +36,21 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TaskController {
     private final TaskService taskService;
+
+    /**
+     * Retrieves all tasks assigned to the current user across all boards they have access to.
+     * Supports optional filtering by priority. No explicit authorization annotation needed — the
+     * query only returns tasks from boards where the user is a collaborator.
+     *
+     * @param priority optional comma-separated priority values (e.g. "HIGH,MEDIUM")
+     * @return list of cross-board task DTOs
+     */
+    @GetMapping("/me")
+    public ResponseEntity<List<MyTaskDto>> getMyTasks(
+            @RequestParam(required = false) String priority) {
+        List<MyTaskDto> tasks = taskService.getAssignedTasksForCurrentUser(priority);
+        return ResponseEntity.ok(tasks);
+    }
 
     /**
      * Retrieves a single task by its ID. Requires the user to be a collaborator on the board that

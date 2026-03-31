@@ -4,6 +4,7 @@ import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.label.LabelMapper;
 import com.kylerriggs.kanban.label.dto.LabelSummaryDto;
+import com.kylerriggs.kanban.task.dto.MyTaskDto;
 import com.kylerriggs.kanban.task.dto.TaskDto;
 import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskSummaryDto;
@@ -133,5 +134,37 @@ public class TaskMapper {
         }
 
         return task;
+    }
+
+    /**
+     * Converts a Task entity to a cross-board "My Task" DTO that includes board and column context.
+     * Used by the /tasks/me endpoint to provide context when tasks span multiple boards.
+     *
+     * @param task the task entity to convert
+     * @return the task as a MyTaskDto with board/column names
+     */
+    public MyTaskDto toMyTaskDto(Task task) {
+        UserSummaryDto assignedTo =
+                task.getAssignedTo() != null ? userMapper.toSummaryDto(task.getAssignedTo()) : null;
+
+        List<LabelSummaryDto> labels =
+                task.getLabels().stream().map(labelMapper::toSummaryDto).toList();
+
+        return new MyTaskDto(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getPriority() != null ? task.getPriority().name() : null,
+                task.getDueDate() != null ? task.getDueDate().toString() : null,
+                task.isCompleted(),
+                task.isArchived(),
+                task.getBoard().getId(),
+                task.getBoard().getName(),
+                task.getColumn().getId(),
+                task.getColumn().getName(),
+                assignedTo,
+                labels,
+                task.getDateCreated() != null ? task.getDateCreated().toString() : null,
+                task.getDateModified() != null ? task.getDateModified().toString() : null);
     }
 }

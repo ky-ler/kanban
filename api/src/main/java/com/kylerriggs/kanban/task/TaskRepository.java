@@ -14,6 +14,40 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
+
+    /**
+     * Finds all non-archived tasks assigned to a user, across all non-archived boards where the
+     * user is a collaborator. Authorization is baked into the query. Results are ordered by due
+     * date (nulls last) then by most recently modified.
+     *
+     * @param userId the user ID to match as assignee
+     * @param priorities optional list of priority values to filter by (pass null or empty to skip)
+     * @param filterByPriority whether to apply the priority filter
+     * @return list of tasks assigned to the user
+     */
+    @Query(
+            """
+            SELECT t FROM Task t
+            JOIN FETCH t.board b
+            JOIN FETCH t.column c
+            LEFT JOIN FETCH t.labels
+            LEFT JOIN FETCH t.assignedTo
+            LEFT JOIN FETCH t.createdBy
+            WHERE t.assignedTo.id = :userId
+              AND t.isArchived = false
+              AND b.isArchived = false
+              AND (:filterByPriority = false OR t.priority IN :priorities)
+              AND EXISTS (
+                  SELECT 1 FROM BoardUser bu
+                  WHERE bu.board.id = b.id AND bu.user.id = :userId
+              )
+            ORDER BY t.dueDate ASC NULLS LAST, t.dateModified DESC
+            """)
+    List<Task> findAssignedTasksForUser(
+            @Param("userId") String userId,
+            @Param("priorities") List<Priority> priorities,
+            @Param("filterByPriority") boolean filterByPriority);
+
     /**
      * Finds a task by ID and board ID for authorization or scoped lookups.
      *
