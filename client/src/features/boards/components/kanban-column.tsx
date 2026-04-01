@@ -370,6 +370,10 @@ export const KanbanColumn = ({
                     setTitle("");
                   }
                 }}
+                onBlur={(e) => {
+                  e.preventDefault();
+                  setIsAdding(false);
+                }}
                 disabled={createTaskMutation.isPending}
               />
               <div className="flex items-center gap-1">
