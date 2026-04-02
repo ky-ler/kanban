@@ -411,7 +411,7 @@ function CollaboratorsComponent() {
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
-                              <IconDotsVertical className="size-3.5" />
+                              <IconDotsVertical />
                               <span className="sr-only">
                                 Collaborator actions
                               </span>
@@ -428,7 +428,7 @@ function CollaboratorsComponent() {
                                 setTimeout(() => setRoleModalTarget(target), 0)
                               }
                             >
-                              <IconShield className="size-3.5" />
+                              <IconShield />
                               Change Role
                             </DropdownMenuItem>
 
@@ -439,7 +439,7 @@ function CollaboratorsComponent() {
                                   setTimeout(() => setTransferTarget(target), 0)
                                 }
                               >
-                                <IconCrown className="size-3.5" />
+                                <IconCrown />
                                 Promote to Leader
                               </DropdownMenuItem>
                             )}
@@ -454,7 +454,7 @@ function CollaboratorsComponent() {
                                     setTimeout(() => setRemoveTarget(target), 0)
                                   }
                                 >
-                                  <IconUserMinus className="size-3.5" />
+                                  <IconUserMinus />
                                   Remove
                                 </DropdownMenuItem>
                               </>

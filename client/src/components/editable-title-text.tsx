@@ -130,6 +130,10 @@ export function EditableTitleText({
                   handleCancel();
                 }
               }}
+              onBlur={(event) => {
+                event.preventDefault();
+                handleCancel();
+              }}
               className={cn(
                 "h-auto border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0",
                 config.inputClassName,

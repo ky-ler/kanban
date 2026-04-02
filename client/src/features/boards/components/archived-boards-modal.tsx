@@ -188,7 +188,7 @@ export function ArchivedBoardsModal({
                         {board.completedTasks}/{board.totalTasks} tasks
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <IconCalendar className="size-3.5" />
+                        <IconCalendar />
                         {new Date(board.dateModified).toLocaleDateString()}
                       </span>
                     </div>

@@ -1,4 +1,10 @@
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getLabelColorClasses } from "../constants";
 import type { LabelSummaryDto } from "@/api/gen/model";
@@ -13,20 +19,27 @@ export function LabelBadge({ label, size = "sm", className }: LabelBadgeProps) {
   const colorClasses = getLabelColorClasses(label.color);
 
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        colorClasses.bg,
-        colorClasses.text,
-        colorClasses.border,
-        size === "sm"
-          ? "h-5 px-2 leading-none"
-          : "h-6 px-2.5 text-sm leading-none",
-        className,
-      )}
-      aria-label={label.name}
-    >
-      {label.name}
-    </Badge>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            variant="outline"
+            className={cn(
+              colorClasses.bg,
+              colorClasses.text,
+              colorClasses.border,
+              size === "sm"
+                ? "h-5 max-w-40 px-2"
+                : "h-6 max-w-60 px-2.5 text-sm",
+              className,
+            )}
+            aria-label={label.name}
+          >
+            <span className="truncate">{label.name}</span>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>{label.name}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

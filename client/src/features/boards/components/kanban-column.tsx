@@ -275,7 +275,7 @@ export const KanbanColumn = ({
     <>
       <Card
         ref={setNodeRef}
-        className="flex max-h-[75vh] w-3xs max-w-3xs flex-col gap-2 py-2 transition-colors md:max-h-[80vh]"
+        className="flex max-h-[75vh] w-72 max-w-72 flex-col gap-2 py-2 transition-colors md:max-h-[80vh]"
       >
         {dragHandleProps && (
           <CardHeader
@@ -293,13 +293,13 @@ export const KanbanColumn = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-8">
-                  <IconDots className="size-4" />
+                  <IconDots />
                   <span className="sr-only">Column options</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto">
                 <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                  <IconPencil className="mr-2 size-4" />
+                  <IconPencil className="mr-2" />
                   Rename
                 </DropdownMenuItem>
                 {!column.isArchived ? (
@@ -310,7 +310,7 @@ export const KanbanColumn = ({
                       disabled={tasks.length === 0 || isArchivingAllTasks}
                       variant="destructive"
                     >
-                      <IconListCheck className="mr-2 size-4" />
+                      <IconListCheck className="mr-2" />
                       Archive all tasks
                     </DropdownMenuItem>
                   </>
@@ -323,9 +323,9 @@ export const KanbanColumn = ({
                   variant={column.isArchived ? undefined : "destructive"}
                 >
                   {column.isArchived ? (
-                    <IconRestore className="mr-2 size-4" />
+                    <IconRestore className="mr-2" />
                   ) : (
-                    <IconArchive className="mr-2 size-4" />
+                    <IconArchive className="mr-2" />
                   )}
                   {column.isArchived ? "Unarchive" : "Archive"}
                 </DropdownMenuItem>
@@ -387,13 +387,12 @@ export const KanbanColumn = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-8"
                   onClick={() => {
                     setIsAdding(false);
                     setTitle("");
                   }}
                 >
-                  <IconX className="size-4" />
+                  <IconX />
                 </Button>
               </div>
             </>
@@ -404,7 +403,7 @@ export const KanbanColumn = ({
               onClick={() => setIsAdding(true)}
               disabled={column.isArchived}
             >
-              <IconPlus className="size-4" />
+              <IconPlus />
               {column.isArchived ? "Archived column" : "New task"}
             </Button>
           )}

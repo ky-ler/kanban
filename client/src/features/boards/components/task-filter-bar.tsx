@@ -51,7 +51,7 @@ function FilterCheckbox({ checked }: { checked: boolean | undefined }) {
     <div
       aria-hidden="true"
       className={cn(
-        "border-input flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
+        "border-input flex shrink-0 items-center justify-center rounded-[4px] border",
         checked && "border-primary bg-primary text-primary-foreground",
       )}
     >
@@ -105,7 +105,7 @@ export function TaskFilterBar({
       {/* Search Input */}
       <InputGroup className="w-36 sm:w-48">
         <InputGroupAddon>
-          <IconSearch className="size-4" />
+          <IconSearch />
         </InputGroupAddon>
         <InputGroupInput
           type="search"

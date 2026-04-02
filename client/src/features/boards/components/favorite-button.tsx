@@ -138,10 +138,7 @@ export function FavoriteButton({
       aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
     >
       <IconStar
-        className={cn(
-          "h-4 w-4",
-          isFavorite && "fill-yellow-400 text-yellow-400",
-        )}
+        className={cn(isFavorite && "fill-yellow-400 text-yellow-400")}
       />
       {showLabel && (isFavorite ? "Favorited" : "Favorite")}
     </Button>

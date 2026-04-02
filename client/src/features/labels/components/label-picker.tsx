@@ -33,6 +33,7 @@ interface LabelPickerProps {
   onOpenChange?: (open: boolean) => void;
   onPopoverOpenChange?: (open: boolean) => void;
   selectedBadgeSize?: "sm" | "md";
+  disabled?: boolean;
 }
 
 export function LabelPicker({
@@ -43,6 +44,7 @@ export function LabelPicker({
   onOpenChange,
   onPopoverOpenChange,
   selectedBadgeSize = "sm",
+  disabled = false,
 }: LabelPickerProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -145,7 +147,8 @@ export function LabelPicker({
           variant="outline"
           role="combobox"
           aria-expanded={isOpen}
-          className="h-auto min-h-[44px] w-full justify-start px-3 py-3 font-normal"
+          disabled={disabled}
+          className="h-fit min-h-8 w-full justify-start py-2 font-normal"
         >
           {selectedLabels.length > 0 ? (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -274,7 +277,7 @@ export function LabelPicker({
                         onClick={(e) => handleDeleteLabel(e, label.id)}
                         title="Delete label"
                       >
-                        <IconTrash className="size-3.5" />
+                        <IconTrash />
                       </Button>
                     </div>
                   );

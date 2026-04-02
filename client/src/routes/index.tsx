@@ -66,7 +66,7 @@ function Index() {
         <div className="mt-8 flex items-center justify-center gap-3">
           <Button size="lg" onClick={signUp}>
             Get Started Free
-            <IconArrowRight className="size-4" />
+            <IconArrowRight />
           </Button>
         </div>
       </section>
@@ -116,7 +116,7 @@ function Index() {
           </p>
           <Button className="mt-6" onClick={signUp}>
             Sign Up Free
-            <IconArrowRight className="size-4" />
+            <IconArrowRight />
           </Button>
         </div>
       </section>
