@@ -33,6 +33,7 @@ import {
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import { cn } from "@/lib/utils";
 import { ArchivedBoardsModal } from "@/features/boards/components/archived-boards-modal";
+import PageWrapper from "@/components/page-wrapper";
 
 export const Route = createFileRoute("/_protected/boards/")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -166,7 +167,7 @@ function BoardsComponent() {
               <NewBoardDialog
                 trigger={
                   <Button>
-                    <IconPlus className="size-3.5" />
+                    <IconPlus />
                     Create Your First Board
                   </Button>
                 }
@@ -206,7 +207,8 @@ function BoardsComponent() {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6">
+      {/* <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6"> */}
+      <PageWrapper>
         {/* Page Header */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -258,7 +260,7 @@ function BoardsComponent() {
             </div>
           </section>
         )}
-      </div>
+      </PageWrapper>
 
       <ArchivedBoardsModal
         open={isArchiveModalOpen}

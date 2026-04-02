@@ -437,14 +437,14 @@ function BoardComponent() {
                   archive: undefined,
                 }}
               >
-                <IconUsers className="size-3.5" />
+                <IconUsers />
                 <span className="sr-only">Collaborators</span>
               </Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <IconDotsVertical className="size-3.5" />
+                  <IconDotsVertical />
                   <span className="sr-only">Board actions</span>
                 </Button>
               </DropdownMenuTrigger>
@@ -462,14 +462,14 @@ function BoardComponent() {
                       archive: undefined,
                     }}
                   >
-                    <IconActivity className="size-3.5" />
+                    <IconActivity />
                     Activity
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => setTimeout(() => setAboutOpen(true), 0)}
                 >
-                  <IconInfoCircle className="size-3.5" />
+                  <IconInfoCircle />
                   About This Board
                 </DropdownMenuItem>
                 {!isBoardArchived ? (
@@ -478,7 +478,7 @@ function BoardComponent() {
                       setTimeout(() => openArchiveModal("tasks"), 0)
                     }
                   >
-                    <IconHistory className="size-3.5" />
+                    <IconHistory />
                     Archived Items
                   </DropdownMenuItem>
                 ) : null}
@@ -491,7 +491,7 @@ function BoardComponent() {
                         setTimeout(() => setArchiveBoardConfirmOpen(true), 0)
                       }
                     >
-                      <IconArchive className="size-3.5" />
+                      <IconArchive />
                       Archive Board
                     </DropdownMenuItem>
                   </>
@@ -655,7 +655,19 @@ function BoardComponent() {
           }
         }}
       >
-        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent
+          className="max-h-[80vh] overflow-y-auto sm:max-w-lg"
+          onEscapeKeyDown={(event) => {
+            const activeElement = document.activeElement as HTMLElement | null;
+            const isRichTextFocused = Boolean(
+              activeElement?.closest('[contenteditable="true"]'),
+            );
+            if (isEditingDescription && isRichTextFocused) {
+              event.preventDefault();
+              setIsEditingDescription(false);
+            }
+          }}
+        >
           <div ref={setPopoverContainer} className="contents" />
           <DialogHeader>
             <DialogTitle>About This Board</DialogTitle>
@@ -667,7 +679,7 @@ function BoardComponent() {
             {canEditBoardMeta && isEditingDescription ? (
               <div
                 className="space-y-2"
-                onKeyDown={(e) => {
+                onKeyDownCapture={(e) => {
                   const target = e.target as HTMLElement;
                   if (!target.closest('[contenteditable="true"]')) return;
                   if (e.key === "Enter" && isPrimaryModifierPressed(e)) {
@@ -693,6 +705,7 @@ function BoardComponent() {
                   }
                   if (e.key === "Escape") {
                     e.preventDefault();
+                    e.stopPropagation();
                     setIsEditingDescription(false);
                   }
                 }}
@@ -738,9 +751,13 @@ function BoardComponent() {
                 tabIndex={0}
                 className={cn(
                   "rounded-lg border border-transparent px-3 py-2 transition-colors",
-                  "bg-muted/30 hover:border-border hover:bg-muted/50 cursor-pointer",
+                  "bg-muted/30 hover:border-border hover:bg-accent cursor-pointer",
                 )}
-                onClick={() => {
+                onClick={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (target.closest('a, [data-mention-trigger="true"]')) {
+                    return;
+                  }
                   setDescriptionEditValue(board.data.description ?? "");
                   setIsEditingDescription(true);
                 }}

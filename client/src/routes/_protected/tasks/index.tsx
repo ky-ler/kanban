@@ -49,6 +49,7 @@ import {
   startOfDay,
   startOfToday,
 } from "date-fns";
+import PageWrapper from "@/components/page-wrapper";
 
 type DueFilter = "overdue" | "today" | "week" | "month" | "none" | undefined;
 
@@ -114,7 +115,7 @@ function FilterCheckbox({ checked }: { checked: boolean | undefined }) {
     <div
       aria-hidden="true"
       className={cn(
-        "border-input flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
+        "border-input flex shrink-0 items-center justify-center rounded-[4px] border",
         checked && "border-primary bg-primary text-primary-foreground",
       )}
     >
@@ -306,7 +307,7 @@ function MyTaskItem({ task }: { task: MyTaskDto }) {
             )}
           </div>
 
-          <div className="flex min-h-6 items-end gap-2">
+          <div className="flex min-h-6 items-center gap-2">
             {/* Board & column context */}
             <span className="text-muted-foreground flex items-center gap-1">
               <IconLayoutKanban className="h-3 w-3" />
@@ -451,7 +452,8 @@ function MyTasksComponent() {
   const boardGroups = Object.values(tasksByBoard);
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-6 sm:px-6">
+    // <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-6 sm:px-6">
+    <PageWrapper>
       {/* Page Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -565,6 +567,6 @@ function MyTasksComponent() {
           ))}
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 }
