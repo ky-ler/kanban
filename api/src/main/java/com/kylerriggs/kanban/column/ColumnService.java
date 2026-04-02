@@ -1,5 +1,9 @@
 package com.kylerriggs.kanban.column;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylerriggs.kanban.activity.ActivityLogService;
+import com.kylerriggs.kanban.activity.ActivityType;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.column.dto.ColumnArchiveRequest;
@@ -21,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -32,6 +38,8 @@ public class ColumnService {
     private final TaskRepository taskRepository;
     private final TaskArchiveService taskArchiveService;
     private final BoardEventPublisher eventPublisher;
+    private final ActivityLogService activityLogService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Creates a new column in the specified board.
@@ -76,6 +84,10 @@ public class ColumnService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
+        Map<String, Object> details = new HashMap<>();
+        details.put("columnName", column.getName());
+        activityLogService.logBoardActivity(board, ActivityType.COLUMN_CREATED, toJson(details));
+
         // Broadcast event via WebSocket
         eventPublisher.publish(BoardEventType.COLUMN_CREATED, boardId, column.getId());
 
@@ -108,12 +120,18 @@ public class ColumnService {
             throw new BadRequestException("Column is archived. Restore it before editing it.");
         }
 
+        String oldName = column.getName();
         column.setName(request.name());
         column = columnRepository.save(column);
 
         Board board = column.getBoard();
         board.setDateModified(Instant.now());
         boardRepository.save(board);
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("oldName", oldName);
+        details.put("newName", column.getName());
+        activityLogService.logBoardActivity(board, ActivityType.COLUMN_UPDATED, toJson(details));
 
         // Broadcast event via WebSocket
         eventPublisher.publish(BoardEventType.COLUMN_UPDATED, board.getId(), columnId);
@@ -148,12 +166,17 @@ public class ColumnService {
 
         Board board = column.getBoard();
         UUID boardId = board.getId();
+        String columnName = column.getName();
         taskRepository.deleteByColumnId(columnId);
 
         columnRepository.delete(column);
 
         board.setDateModified(Instant.now());
         boardRepository.save(board);
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("columnName", columnName);
+        activityLogService.logBoardActivity(board, ActivityType.COLUMN_DELETED, toJson(details));
 
         // Broadcast event via WebSocket
         eventPublisher.publish(BoardEventType.COLUMN_DELETED, boardId, columnId);
@@ -218,6 +241,12 @@ public class ColumnService {
         board.setDateModified(Instant.now());
         boardRepository.save(board);
 
+        Map<String, Object> details = new HashMap<>();
+        details.put("columnName", column.getName());
+        details.put("oldPosition", oldPosition);
+        details.put("newPosition", newPosition);
+        activityLogService.logBoardActivity(board, ActivityType.COLUMN_MOVED, toJson(details));
+
         // Broadcast event via WebSocket
         eventPublisher.publish(BoardEventType.COLUMN_MOVED, boardId, columnId);
     }
@@ -266,12 +295,13 @@ public class ColumnService {
         } else if (!shouldArchive && column.isArchived()) {
             int activeColumnCount =
                     (int) columnRepository.countByBoardIdAndIsArchivedFalse(boardId);
+            Integer previousRestorePosition = column.getRestorePosition();
             int restorePosition =
                     Math.max(
                             0,
                             Math.min(
-                                    column.getRestorePosition() != null
-                                            ? column.getRestorePosition()
+                                    previousRestorePosition != null
+                                            ? previousRestorePosition
                                             : activeColumnCount,
                                     activeColumnCount));
             columnRepository.incrementActivePositionsFrom(boardId, restorePosition);
@@ -283,8 +313,23 @@ public class ColumnService {
         columnRepository.save(column);
 
         boardRepository.touchDateModified(boardId, Instant.now());
+
+        ActivityType activityType =
+                shouldArchive ? ActivityType.COLUMN_ARCHIVED : ActivityType.COLUMN_RESTORED;
+        Map<String, Object> details = new HashMap<>();
+        details.put("columnName", column.getName());
+        activityLogService.logBoardActivity(column.getBoard(), activityType, toJson(details));
+
         eventPublisher.publish(BoardEventType.COLUMN_UPDATED, boardId, columnId);
 
         return columnMapper.toDto(column);
+    }
+
+    private String toJson(Map<String, Object> map) {
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 }

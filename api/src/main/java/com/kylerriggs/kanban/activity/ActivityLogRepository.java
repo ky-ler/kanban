@@ -19,13 +19,14 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, UUID> 
     Page<ActivityLog> findByTaskIdOrderByDateCreatedDesc(UUID taskId, Pageable pageable);
 
     /**
-     * Finds paginated activity log entries for a board (across all tasks), ordered by newest first.
+     * Finds paginated activity log entries for a board (across all tasks and columns), ordered by
+     * newest first.
      *
-     * @param boardId the board ID to match via the task's board
+     * @param boardId the board ID to match
      * @param pageable pagination parameters
      * @return page of activity logs for the board
      */
-    Page<ActivityLog> findByTaskBoardIdOrderByDateCreatedDesc(UUID boardId, Pageable pageable);
+    Page<ActivityLog> findByBoardIdOrderByDateCreatedDesc(UUID boardId, Pageable pageable);
 
     /**
      * Deletes all activity log entries for the given task.

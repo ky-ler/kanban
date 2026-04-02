@@ -1,13 +1,17 @@
 import { useEffect, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetBoardQueryOptions,
   useGetBoardSuspense,
 } from "@/api/gen/endpoints/board-controller/board-controller";
 import {
   useGetBoardActivityInfinite,
+  getGetBoardActivityInfiniteQueryKey,
   type GetBoardActivityInfiniteQueryResult,
 } from "@/api/gen/endpoints/board-activity-controller/board-activity-controller";
+import { useBoardSubscription } from "@/features/boards/hooks/use-board-subscription";
+import { BoardEventType } from "@/features/boards/constants/board-event-type";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import {
   Dialog,
@@ -58,6 +62,17 @@ function BoardActivityComponent() {
   const { boardId } = Route.useParams();
   const { data: board } = useGetBoardSuspense(boardId);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  useBoardSubscription(boardId, {
+    onEvent: (event) => {
+      if (event.type === BoardEventType.ACTIVITY_LOGGED) {
+        queryClient.invalidateQueries({
+          queryKey: getGetBoardActivityInfiniteQueryKey(boardId),
+        });
+      }
+    },
+  });
 
   const {
     data: activityData,
@@ -122,7 +137,7 @@ function BoardActivityComponent() {
             Board Activity
           </DialogTitle>
           <DialogDescription>
-            Recent activity across all tasks in {board?.data.name}
+            Recent activity across all tasks and columns in {board?.data.name}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,29 +154,49 @@ function BoardActivityComponent() {
           </div>
         ) : (
           <ScrollArea className="-mx-4 max-h-[75vh] px-4">
-            {activities.map((activity, index) => (
-              <div key={activity.id} className="space-y-0.5">
-                <Link
-                  to="/boards/$boardId/tasks/$taskId"
-                  params={{ boardId, taskId: activity.taskId }}
-                  search={{
-                    q: undefined,
-                    assignee: undefined,
-                    priority: undefined,
-                    labels: undefined,
-                    due: undefined,
-                    archive: undefined,
-                  }}
-                  className="text-muted-foreground hover:text-foreground text-xs font-medium wrap-anywhere transition-colors"
-                >
-                  {activity.taskTitle}
-                </Link>
-                <ActivityItem activity={activity} />
-                {index < activities.length - 1 ? (
-                  <Separator className="my-2" />
-                ) : null}
-              </div>
-            ))}
+            {activities.map((activity, index) => {
+              const columnName = (() => {
+                if (!activity.details) return null;
+                try {
+                  return (
+                    ((JSON.parse(activity.details) as Record<string, unknown>)
+                      ?.columnName as string | undefined) ?? null
+                  );
+                } catch {
+                  return null;
+                }
+              })();
+
+              return (
+                <div key={activity.id} className="space-y-0.5">
+                  {activity.taskId && activity.taskTitle ? (
+                    <Link
+                      to="/boards/$boardId/tasks/$taskId"
+                      params={{ boardId, taskId: activity.taskId }}
+                      search={{
+                        q: undefined,
+                        assignee: undefined,
+                        priority: undefined,
+                        labels: undefined,
+                        due: undefined,
+                        archive: undefined,
+                      }}
+                      className="text-muted-foreground hover:text-foreground text-xs font-medium wrap-anywhere transition-colors"
+                    >
+                      {activity.taskTitle}
+                    </Link>
+                  ) : columnName ? (
+                    <span className="text-muted-foreground text-xs font-medium wrap-anywhere">
+                      {columnName}
+                    </span>
+                  ) : null}
+                  <ActivityItem activity={activity} />
+                  {index < activities.length - 1 ? (
+                    <Separator className="my-2" />
+                  ) : null}
+                </div>
+              );
+            })}
             <div ref={loadMoreRef} className="py-2">
               {isFetchingNextPage && <LoadingSpinner className="py-2" />}
             </div>

@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.activity;
 
 import com.kylerriggs.kanban.activity.dto.ActivityLogDto;
+import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
@@ -59,7 +60,7 @@ public class ActivityLogService {
      */
     public Page<ActivityLogDto> getActivityForBoard(@NonNull UUID boardId, int page, int size) {
         return activityLogRepository
-                .findByTaskBoardIdOrderByDateCreatedDesc(boardId, PageRequest.of(page, size))
+                .findByBoardIdOrderByDateCreatedDesc(boardId, PageRequest.of(page, size))
                 .map(activityLogMapper::toDto);
     }
 
@@ -77,7 +78,13 @@ public class ActivityLogService {
         User user = userLookupService.getRequiredCurrentUser();
 
         ActivityLog activityLog =
-                ActivityLog.builder().task(task).user(user).type(type).details(details).build();
+                ActivityLog.builder()
+                        .board(task.getBoard())
+                        .task(task)
+                        .user(user)
+                        .type(type)
+                        .details(details)
+                        .build();
 
         activityLogRepository.save(activityLog);
 
@@ -103,5 +110,25 @@ public class ActivityLogService {
                                 () -> new ResourceNotFoundException("Task not found: " + taskId));
 
         logActivity(task, type, details);
+    }
+
+    /**
+     * Logs a board-level activity (e.g. column events) not tied to any task.
+     *
+     * @param board the board the activity is for
+     * @param type the type of activity
+     * @param details optional JSON details about the activity
+     */
+    @Transactional
+    public void logBoardActivity(
+            @NonNull Board board, @NonNull ActivityType type, @Nullable String details) {
+        User user = userLookupService.getRequiredCurrentUser();
+
+        ActivityLog activityLog =
+                ActivityLog.builder().board(board).user(user).type(type).details(details).build();
+
+        activityLogRepository.save(activityLog);
+
+        eventPublisher.publish(BoardEventType.ACTIVITY_LOGGED, board.getId(), null);
     }
 }

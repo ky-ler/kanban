@@ -28,8 +28,8 @@ export const GetBoardActivityResponse = zod.object({
         id: zod.string().uuid(),
         type: zod.string().min(1),
         details: zod.string().optional(),
-        taskId: zod.string().uuid(),
-        taskTitle: zod.string().min(1),
+        taskId: zod.string().uuid().optional(),
+        taskTitle: zod.string().optional(),
         user: zod.object({
           id: zod.string().min(1),
           username: zod.string().min(1),
@@ -63,8 +63,8 @@ export const GetBoardActivityResponse = zod.object({
       unsorted: zod.boolean().optional(),
     })
     .optional(),
-  numberOfElements: zod.number().optional(),
   first: zod.boolean().optional(),
   last: zod.boolean().optional(),
+  numberOfElements: zod.number().optional(),
   empty: zod.boolean().optional(),
 });

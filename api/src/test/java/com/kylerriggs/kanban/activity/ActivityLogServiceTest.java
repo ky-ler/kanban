@@ -1,24 +1,12 @@
 package com.kylerriggs.kanban.activity;
 
-import java.util.List;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 import com.kylerriggs.kanban.activity.dto.ActivityLogDto;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
@@ -26,6 +14,19 @@ import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class ActivityLogServiceTest {

@@ -1,6 +1,7 @@
 package com.kylerriggs.kanban.activity;
 
 import com.kylerriggs.kanban.activity.dto.ActivityLogDto;
+import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.user.UserMapper;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 
@@ -15,13 +16,14 @@ public class ActivityLogMapper {
 
     public ActivityLogDto toDto(ActivityLog activityLog) {
         UserSummaryDto user = userMapper.toSummaryDto(activityLog.getUser());
+        Task task = activityLog.getTask();
 
         return new ActivityLogDto(
                 activityLog.getId(),
                 activityLog.getType().name(),
                 activityLog.getDetails(),
-                activityLog.getTask().getId(),
-                activityLog.getTask().getTitle(),
+                task != null ? task.getId() : null,
+                task != null ? task.getTitle() : null,
                 user,
                 activityLog.getDateCreated() != null
                         ? activityLog.getDateCreated().toString()

@@ -13,9 +13,13 @@ import { Client, type IMessage } from "@stomp/stompjs";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { getAuthToken } from "@/features/auth/token-provider";
 import { env } from "@/config/env";
+import {
+  BoardEventType,
+  type BoardEventType as BoardEventTypeValue,
+} from "@/features/boards/constants/board-event-type";
 
 export interface BoardEvent {
-  type: string;
+  type: BoardEventTypeValue;
   boardId: string;
   entityId: string | null;
   details: string | null;
@@ -50,16 +54,20 @@ const MAX_RETRY_DELAY = 30000;
 const MAX_RETRY_ATTEMPTS = 5;
 const PENDING_MUTATION_TIMEOUT = 5000;
 
-const STRUCTURE_MODIFYING_EVENTS = [
-  "TASK_CREATED",
-  "TASK_UPDATED",
-  "TASK_DELETED",
-  "TASK_MOVED",
-  "BOARD_UPDATED",
-  "COLUMN_CREATED",
-  "COLUMN_UPDATED",
-  "COLUMN_DELETED",
-  "COLUMN_MOVED",
+const STRUCTURE_MODIFYING_EVENTS: BoardEventTypeValue[] = [
+  BoardEventType.TASK_CREATED,
+  BoardEventType.TASK_UPDATED,
+  BoardEventType.TASK_DELETED,
+  BoardEventType.TASK_MOVED,
+  BoardEventType.BOARD_UPDATED,
+  BoardEventType.COLUMN_CREATED,
+  BoardEventType.COLUMN_UPDATED,
+  BoardEventType.COLUMN_DELETED,
+  BoardEventType.COLUMN_MOVED,
+  BoardEventType.CHECKLIST_ITEM_ADDED,
+  BoardEventType.CHECKLIST_ITEM_UPDATED,
+  BoardEventType.CHECKLIST_ITEM_DELETED,
+  BoardEventType.CHECKLIST_ITEM_REORDERED,
 ];
 
 interface BoardWebSocketProviderProps {

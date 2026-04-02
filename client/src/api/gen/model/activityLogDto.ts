@@ -11,9 +11,8 @@ export interface ActivityLogDto {
   /** @minLength 1 */
   type: string;
   details?: string;
-  taskId: string;
-  /** @minLength 1 */
-  taskTitle: string;
+  taskId?: string;
+  taskTitle?: string;
   user: UserSummaryDto;
   /** @minLength 1 */
   dateCreated: string;

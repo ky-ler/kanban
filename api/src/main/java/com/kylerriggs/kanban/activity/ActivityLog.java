@@ -1,5 +1,6 @@
 package com.kylerriggs.kanban.activity;
 
+import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.common.BaseEntity;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.user.User;
@@ -19,7 +20,10 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "activity_logs",
-        indexes = {@Index(name = "idx_activity_logs_task_id", columnList = "task_id")})
+        indexes = {
+            @Index(name = "idx_activity_logs_task_id", columnList = "task_id"),
+            @Index(name = "idx_activity_logs_board_id", columnList = "board_id")
+        })
 public class ActivityLog extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,6 +37,10 @@ public class ActivityLog extends BaseEntity {
     private String details;
 
     @ManyToOne(optional = false)
+    @JoinColumn(name = "board_id", foreignKey = @ForeignKey(name = "fk_activity_log_board"))
+    private Board board;
+
+    @ManyToOne(optional = true)
     @JoinColumn(name = "task_id", foreignKey = @ForeignKey(name = "fk_activity_log_task"))
     private Task task;
 

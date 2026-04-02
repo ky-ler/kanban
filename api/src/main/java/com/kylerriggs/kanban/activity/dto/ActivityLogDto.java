@@ -11,7 +11,7 @@ public record ActivityLogDto(
         @NotNull UUID id,
         @NotBlank String type,
         String details,
-        @NotNull UUID taskId,
-        @NotBlank String taskTitle,
+        UUID taskId,
+        String taskTitle,
         @NotNull UserSummaryDto user,
         @NotBlank String dateCreated) {}
