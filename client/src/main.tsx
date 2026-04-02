@@ -11,6 +11,7 @@ import { ThemeProvider } from "./features/theme/components/theme-provider";
 import { LoadingSpinner } from "./components/loading-spinner";
 import { queryClient } from "@/lib/router";
 import { AuthInjector } from "./features/auth/components/auth-injector";
+import { NotificationWebSocketProvider } from "./features/notifications/context/notification-websocket-context";
 
 // eslint-disable-next-line react-refresh/only-export-components
 function InnerApp() {
@@ -23,13 +24,28 @@ function InnerApp() {
   return <RouterProvider router={router} context={{ auth }} />;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+function AuthenticatedProviders({ children }: { children: React.ReactNode }) {
+  const auth = useAuth0Context();
+
+  if (auth.isAuthenticated) {
+    return (
+      <NotificationWebSocketProvider>{children}</NotificationWebSocketProvider>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Auth0Wrapper>
       <QueryClientProvider client={queryClient}>
         <AuthInjector />
         <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-          <InnerApp />
+          <AuthenticatedProviders>
+            <InnerApp />
+          </AuthenticatedProviders>
         </ThemeProvider>
       </QueryClientProvider>
     </Auth0Wrapper>

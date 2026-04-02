@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createFileRoute,
@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MarkdownEditor } from "@/components/rich-text/markdown-editor";
 import { MarkdownView } from "@/components/rich-text/markdown-view";
+import type { MentionUser } from "@/components/rich-text/plugins/mentions-plugin";
 import { InlineSaveActions } from "@/components/inline-save-actions";
 import { isPrimaryModifierPressed } from "@/lib/keyboard-shortcuts";
 import { cn } from "@/lib/utils";
@@ -225,6 +226,24 @@ function BoardComponent() {
   const isBoardOwner = board?.data.createdBy.id === currentUserId;
   const isBoardArchived = board?.data.isArchived ?? false;
   const canEditBoardMeta = isAdmin || isBoardOwner;
+  const mentionUsers = useMemo<MentionUser[]>(() => {
+    return (
+      board?.data.collaborators?.flatMap((collaborator) => {
+        if (!collaborator.user) {
+          return [];
+        }
+        return [
+          {
+            id: collaborator.user.id,
+            username: collaborator.user.username,
+            profileImageUrl: collaborator.user.profileImageUrl,
+            displayName: collaborator.user.username,
+            role: collaborator.role,
+          },
+        ];
+      }) ?? []
+    );
+  }, [board?.data.collaborators]);
 
   const updateBoardMutation = useUpdateBoard({
     mutation: {
@@ -685,14 +704,7 @@ function BoardComponent() {
                   autoFocus
                   placeholder="Add a board description..."
                   minHeightClassName="min-h-[120px]"
-                  mentionUsers={
-                    board.data.collaborators
-                      ?.map((c) => c.user)
-                      .filter(
-                        (user): user is NonNullable<typeof user> =>
-                          user != null,
-                      ) ?? []
-                  }
+                  mentionUsers={mentionUsers}
                   container={popoverContainer}
                 />
                 <InlineSaveActions
@@ -741,6 +753,8 @@ function BoardComponent() {
               >
                 <MarkdownView
                   value={board.data.description ?? ""}
+                  mentionUsers={mentionUsers}
+                  container={popoverContainer}
                   emptyState={
                     <p className="text-muted-foreground italic">
                       Click to add a description...
@@ -752,6 +766,8 @@ function BoardComponent() {
               <div className="px-3 py-2">
                 <MarkdownView
                   value={board.data.description ?? ""}
+                  mentionUsers={mentionUsers}
+                  container={popoverContainer}
                   emptyState={
                     <p className="text-muted-foreground italic">
                       No description

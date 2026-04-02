@@ -35,6 +35,9 @@ export default defineConfig({
           getBoardActivity: {
             query: { useInfinite: true },
           },
+          getNotifications: {
+            query: { useInfinite: true },
+          },
         },
       },
     },

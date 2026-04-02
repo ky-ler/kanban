@@ -3,6 +3,9 @@ package com.kylerriggs.kanban.comment;
 import com.kylerriggs.kanban.comment.dto.CommentDto;
 import com.kylerriggs.kanban.comment.dto.CommentRequest;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.notification.event.NotificationEvent.CommentCreatedEvent;
+import com.kylerriggs.kanban.notification.event.NotificationEvent.CommentDeletedEvent;
+import com.kylerriggs.kanban.notification.event.NotificationEvent.CommentUpdatedEvent;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.User;
@@ -12,6 +15,7 @@ import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +32,7 @@ public class CommentService {
     private final TaskRepository taskRepository;
     private final UserLookupService userLookupService;
     private final BoardEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * Retrieves all comments for a task, ordered by oldest first.
@@ -64,6 +69,15 @@ public class CommentService {
         eventPublisher.publish(
                 BoardEventType.COMMENT_ADDED, task.getBoard().getId(), saved.getId());
 
+        // Publish notification event for mentions and task assignee
+        applicationEventPublisher.publishEvent(
+                new CommentCreatedEvent(
+                        saved.getId(),
+                        task.getId(),
+                        task.getBoard().getId(),
+                        author.getId(),
+                        request.content()));
+
         return commentMapper.toDto(saved);
     }
 
@@ -90,6 +104,7 @@ public class CommentService {
 
         validateCommentContext(comment, boardId, taskId, commentId);
 
+        String oldContent = comment.getContent();
         comment.setContent(request.content());
         comment.setDateModified(Instant.now());
 
@@ -99,6 +114,16 @@ public class CommentService {
                 BoardEventType.COMMENT_UPDATED,
                 comment.getTask().getBoard().getId(),
                 saved.getId());
+
+        User editor = userLookupService.getRequiredCurrentUser();
+        applicationEventPublisher.publishEvent(
+                new CommentUpdatedEvent(
+                        saved.getId(),
+                        comment.getTask().getId(),
+                        comment.getTask().getBoard().getId(),
+                        editor.getId(),
+                        oldContent,
+                        saved.getContent()));
 
         return commentMapper.toDto(saved);
     }
@@ -126,6 +151,8 @@ public class CommentService {
         commentRepository.delete(comment);
 
         eventPublisher.publish(BoardEventType.COMMENT_DELETED, commentBoardId, commentId);
+
+        applicationEventPublisher.publishEvent(new CommentDeletedEvent(commentId));
     }
 
     private Task requireTaskInBoard(UUID boardId, UUID taskId) {

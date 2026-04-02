@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useMatchRoute } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import {
   IconLayoutKanban,
   IconLogin,
@@ -28,6 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { NewBoardDialog } from "@/features/boards/components/new-board-dialog";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { cn } from "@/lib/utils";
 
 type NavLink = {
@@ -51,13 +52,20 @@ const navLinks = [
     label: "Tasks",
     // icon: IconChecklist,
   },
+  {
+    to: "/notifications",
+    label: "Notifications",
+  },
 ] as NavLink[];
 
 export function AppHeader() {
   const auth = useAuth0Context();
-  const matchRoute = useMatchRoute();
   const [newBoardOpen, setNewBoardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  const isNavLinkActive = (to: string) =>
+    pathname === to || pathname.startsWith(`${to}/`);
 
   const initials =
     auth.user?.nickname?.charAt(0).toUpperCase() ??
@@ -72,7 +80,7 @@ export function AppHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 sm:hidden"
+            className="sm:hidden"
             onClick={() => setMobileMenuOpen(true)}
           >
             <IconMenu2 />
@@ -84,28 +92,27 @@ export function AppHeader() {
         <Link
           to="/"
           search={{ archive: undefined }}
-          className="flex shrink-0 items-center gap-2 font-semibold tracking-tight"
+          className="hidden shrink-0 items-center gap-2 p-1 font-semibold tracking-tight sm:flex"
         >
-          <IconLayoutKanban className="text-primary size-5" />
-          <span className="text-sm">Kanban</span>
+          <IconLayoutKanban className="text-primary" />
+          <span className="">Kanban</span>
         </Link>
 
         {/* Nav Links */}
         {auth.isAuthenticated && (
           <nav className="hidden items-center gap-1 sm:flex">
             {navLinks.map((link) => {
-              const isOnBoardsRoute = matchRoute({ to: link.to, fuzzy: true });
-              const isActive = isOnBoardsRoute;
+              const isActive = isNavLinkActive(link.to);
               return (
                 <Button
                   key={link.to}
                   asChild
                   variant="ghost"
-                  size="sm"
+                  size="default"
                   className={cn(isActive && "bg-muted text-foreground")}
                 >
                   <Link to={link.to} search={link.search}>
-                    {link.icon && <link.icon className="size-3.5" />}
+                    {link.icon && <link.icon />}
                     <span className="hidden sm:inline">{link.label}</span>
                   </Link>
                 </Button>
@@ -119,24 +126,22 @@ export function AppHeader() {
           {auth.isAuthenticated && (
             <Button
               variant="default"
-              size="sm"
+              size="default"
               onClick={() => setNewBoardOpen(true)}
             >
-              <IconPlus className="size-3.5" />
+              <IconPlus />
               <span className="hidden sm:inline">New Board</span>
             </Button>
           )}
 
           <ThemeToggle />
 
+          {auth.isAuthenticated && <NotificationBell />}
+
           {auth.isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 rounded-full"
-                >
+                <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar size="sm">
                     {auth.user?.picture && (
                       <AvatarImage
@@ -160,7 +165,7 @@ export function AppHeader() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => auth.logout()}>
-                  <IconLogout className="size-4" />
+                  <IconLogout />
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -169,22 +174,22 @@ export function AppHeader() {
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
-                size="sm"
+                size="default"
                 onClick={() => auth.loginWithRedirect()}
               >
-                <IconLogin className="size-3.5" />
+                <IconLogin />
                 Sign In
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() =>
                   auth.loginWithRedirect({
                     authorizationParams: { screen_hint: "signup" },
                   })
                 }
               >
-                <IconUserPlus className="size-3.5" />
+                <IconUserPlus />
                 Sign Up
               </Button>
             </div>
@@ -204,7 +209,7 @@ export function AppHeader() {
             </SheetHeader>
             <nav className="flex flex-col gap-1 px-4">
               {navLinks.map((link) => {
-                const isActive = matchRoute({ to: link.to, fuzzy: true });
+                const isActive = isNavLinkActive(link.to);
                 return (
                   <SheetClose key={link.to} asChild>
                     <Link
@@ -243,7 +248,7 @@ export function AppHeader() {
               </div>
               <Button
                 variant="ghost"
-                size="sm"
+                size="default"
                 className="mt-3 w-full justify-start"
                 onClick={() => {
                   setMobileMenuOpen(false);

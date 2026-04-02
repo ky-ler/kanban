@@ -14,6 +14,8 @@ export interface MentionUser {
   id: string;
   username: string;
   profileImageUrl: string;
+  displayName?: string;
+  role?: string;
 }
 
 const SUGGESTION_LIST_LENGTH_LIMIT = 5;

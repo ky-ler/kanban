@@ -30,6 +30,7 @@ import com.kylerriggs.kanban.task.dto.TaskRequest;
 import com.kylerriggs.kanban.task.dto.TaskStatusRequest;
 import com.kylerriggs.kanban.user.User;
 import com.kylerriggs.kanban.user.UserLookupService;
+import com.kylerriggs.kanban.user.UserService;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
 import com.kylerriggs.kanban.websocket.dto.BoardEventType;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -67,11 +69,13 @@ class TaskServiceTest {
     @Mock private BoardRepository boardRepository;
     @Mock private TaskMapper taskMapper;
     @Mock private UserLookupService userLookupService;
+    @Mock private UserService userService;
     @Mock private TaskValidationService taskValidationService;
     @Mock private TaskArchiveService taskArchiveService;
     @Mock private BoardEventPublisher eventPublisher;
     @Mock private ActivityLogService activityLogService;
     @Mock private ObjectMapper objectMapper;
+    @Mock private ApplicationEventPublisher applicationEventPublisher;
     @InjectMocks private TaskService taskService;
 
     private User user;

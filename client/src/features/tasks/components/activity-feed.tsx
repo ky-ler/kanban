@@ -1,10 +1,7 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type {
-  ActivityLogDto,
-  CommentDto,
-  UserSummaryDto,
-} from "@/api/gen/model";
+import type { ActivityLogDto, CommentDto } from "@/api/gen/model";
+import type { MentionUser } from "@/components/rich-text/plugins/mentions-plugin";
 import {
   useGetTaskActivityInfinite,
   type GetTaskActivityInfiniteQueryResult,
@@ -39,7 +36,7 @@ interface ActivityFeedProps {
   boardId: string;
   taskId: string;
   currentUserId?: string;
-  collaborators?: UserSummaryDto[];
+  mentionUsers?: MentionUser[];
   container?: HTMLElement | null;
 }
 
@@ -47,22 +44,11 @@ export function ActivityFeed({
   boardId,
   taskId,
   currentUserId,
-  collaborators = [],
+  mentionUsers = [],
   container,
 }: ActivityFeedProps) {
   const [showDetails, setShowDetails] = useState(false);
   const queryClient = useQueryClient();
-
-  // Convert collaborators to mention users format
-  const mentionUsers = useMemo(
-    () =>
-      collaborators.map((user) => ({
-        id: user.id,
-        username: user.username,
-        profileImageUrl: user.profileImageUrl,
-      })),
-    [collaborators],
-  );
 
   // Fetch comments
   const {

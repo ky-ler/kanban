@@ -148,8 +148,12 @@
   }
 
   .mention {
-    @apply bg-primary/15 text-primary inline-block rounded-sm px-0.5 py-px;
-    cursor: default;
-    user-select: all;
+    @apply hover:bg-primary/20 text-primary inline-block rounded-md py-px font-medium transition-colors;
+    cursor: text;
+    user-select: none;
+  }
+
+  button.mention {
+    @apply cursor-pointer transition-colors;
   }
 }

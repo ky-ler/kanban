@@ -106,6 +106,7 @@ export function CommentItem({
 
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       handleCancel();
     }
   };
@@ -127,7 +128,7 @@ export function CommentItem({
           referrerPolicy="no-referrer"
         />
         <AvatarFallback>
-          <IconUser className="size-4" />
+          <IconUser />
         </AvatarFallback>
       </Avatar>
 
@@ -180,14 +181,14 @@ export function CommentItem({
         ) : (
           <>
             <div
-              className="bg-muted/50 mt-1 rounded-lg px-3 py-2"
+              className="mt-1 rounded-lg"
               onClick={(event) => {
                 if (!isAuthor) {
                   return;
                 }
 
                 const target = event.target as HTMLElement;
-                if (target.closest("a")) {
+                if (target.closest('a, [data-mention-trigger="true"]')) {
                   return;
                 }
 
@@ -196,7 +197,11 @@ export function CommentItem({
               style={{ cursor: isAuthor ? "pointer" : "default" }}
             >
               <div className="">
-                <MarkdownView value={comment.content} />
+                <MarkdownView
+                  value={comment.content}
+                  mentionUsers={mentionUsers}
+                  container={container}
+                />
               </div>
             </div>
 

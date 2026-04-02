@@ -6,8 +6,8 @@ import {
   MentionNode,
 } from "@/components/rich-text/nodes/mention-node";
 
-// Matches @[Display Name](userId) pattern in markdown
-const MENTION_REGEX = /@\[([^\]]+)\]\(([^)]+)\)/;
+// Matches [@Display Name](userId) and legacy @[Display Name](userId)
+const MENTION_REGEX = /(?:@\[|\[@)([^\]]+)\]\(([^)]+)\)/;
 
 export const MENTION_TRANSFORMER: TextMatchTransformer = {
   dependencies: [MentionNode],
@@ -15,7 +15,7 @@ export const MENTION_TRANSFORMER: TextMatchTransformer = {
     if (!$isMentionNode(node)) {
       return null;
     }
-    return `@[${node.getMentionName()}](${node.getUserId()})`;
+    return `[@${node.getMentionName()}](${node.getUserId()})`;
   },
   importRegExp: MENTION_REGEX,
   regExp: MENTION_REGEX,

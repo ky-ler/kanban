@@ -10,6 +10,8 @@ import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.exception.BadRequestException;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
 import com.kylerriggs.kanban.label.Label;
+import com.kylerriggs.kanban.notification.event.NotificationEvent.AssigneeChangedEvent;
+import com.kylerriggs.kanban.notification.event.NotificationEvent.TaskDescriptionUpdatedEvent;
 import com.kylerriggs.kanban.task.dto.MoveTaskRequest;
 import com.kylerriggs.kanban.task.dto.MyTaskDto;
 import com.kylerriggs.kanban.task.dto.TaskDto;
@@ -23,6 +25,7 @@ import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +58,7 @@ public class TaskService {
     private final BoardEventPublisher eventPublisher;
     private final ActivityLogService activityLogService;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * Retrieves a single task by its ID.
@@ -292,6 +296,27 @@ public class TaskService {
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish(
                 BoardEventType.TASK_UPDATED, Objects.requireNonNull(board.getId()), taskId);
+
+        // Publish notification events for assignee and description changes
+        String currentUserId = userService.getCurrentUserId();
+        String newAssigneeId =
+                Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
+
+        if (!Objects.equals(oldAssigneeId, newAssigneeId) && newAssigneeId != null) {
+            applicationEventPublisher.publishEvent(
+                    new AssigneeChangedEvent(
+                            taskId, board.getId(), currentUserId, newAssigneeId, oldAssigneeId));
+        }
+
+        if (!Objects.equals(oldDescription, taskToUpdate.getDescription())) {
+            applicationEventPublisher.publishEvent(
+                    new TaskDescriptionUpdatedEvent(
+                            taskId,
+                            board.getId(),
+                            currentUserId,
+                            taskToUpdate.getDescription(),
+                            oldDescription));
+        }
 
         // Log activity for changes
         logTaskUpdateActivities(

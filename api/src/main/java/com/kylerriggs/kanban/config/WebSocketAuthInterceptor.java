@@ -36,6 +36,8 @@ import java.util.UUID;
 @Slf4j
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private static final String BOARD_TOPIC_PREFIX = "/topic/boards/";
+    private static final String USER_TOPIC_PREFIX = "/topic/users/";
+    private static final String NOTIFICATIONS_SUFFIX = "/notifications";
     private static final JwtGrantedAuthoritiesConverter JWT_AUTHORITIES_CONVERTER =
             new JwtGrantedAuthoritiesConverter();
 
@@ -75,7 +77,16 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private void handleSubscribe(StompHeaderAccessor accessor) {
         String destination = accessor.getDestination();
-        if (destination == null || !destination.startsWith(BOARD_TOPIC_PREFIX)) {
+        if (destination == null) {
+            return;
+        }
+
+        if (destination.startsWith(USER_TOPIC_PREFIX)) {
+            handleUserTopicSubscribe(accessor, destination);
+            return;
+        }
+
+        if (!destination.startsWith(BOARD_TOPIC_PREFIX)) {
             return;
         }
 
@@ -103,6 +114,46 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             boardAccess.isCollaborator(auth.getName(), boardId);
         } catch (ForbiddenException ex) {
             throw new AccessDeniedException("BOARD_ACCESS_DENIED: board subscription forbidden");
+        }
+    }
+
+    private void handleUserTopicSubscribe(StompHeaderAccessor accessor, String destination) {
+        // Only allow subscriptions to notifications topic: /topic/users/{userId}/notifications
+        if (!destination.endsWith(NOTIFICATIONS_SUFFIX)) {
+            throw new AccessDeniedException("Invalid user topic subscription");
+        }
+
+        Authentication auth = resolveAuthentication(accessor);
+        if (auth == null || !auth.isAuthenticated()) {
+            auth =
+                    authenticateBearerHeader(
+                            findAuthorizationHeader(accessor), accessor, "SUBSCRIBE");
+        }
+        if (auth == null || !auth.isAuthenticated()) {
+            log.warn(
+                    "WebSocket SUBSCRIBE without authenticated user for user topic {};"
+                            + " sessionId={}",
+                    destination,
+                    accessor.getSessionId());
+            throw new AccessDeniedException("Authentication required for user topic subscriptions");
+        }
+
+        // Extract userId from /topic/users/{userId}/notifications
+        String path = destination.substring(USER_TOPIC_PREFIX.length());
+        int slashIndex = path.indexOf('/');
+        if (slashIndex == -1) {
+            throw new IllegalArgumentException("Invalid user topic destination format");
+        }
+        String userId = path.substring(0, slashIndex);
+
+        // Verify the user is subscribing to their own notifications
+        if (!auth.getName().equals(userId)) {
+            log.warn(
+                    "User {} attempted to subscribe to notifications for user {}",
+                    auth.getName(),
+                    userId);
+            throw new AccessDeniedException(
+                    "USER_ACCESS_DENIED: cannot subscribe to another user's notifications");
         }
     }
 

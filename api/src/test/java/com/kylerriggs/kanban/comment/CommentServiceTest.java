@@ -9,10 +9,12 @@ import static org.mockito.Mockito.when;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.comment.dto.CommentRequest;
 import com.kylerriggs.kanban.exception.ResourceNotFoundException;
+import com.kylerriggs.kanban.notification.event.NotificationEvent.CommentDeletedEvent;
 import com.kylerriggs.kanban.task.Task;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.UserLookupService;
 import com.kylerriggs.kanban.websocket.BoardEventPublisher;
+import com.kylerriggs.kanban.websocket.dto.BoardEventType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +43,7 @@ class CommentServiceTest {
     @Mock private TaskRepository taskRepository;
     @Mock private UserLookupService userLookupService;
     @Mock private BoardEventPublisher eventPublisher;
+    @Mock private ApplicationEventPublisher applicationEventPublisher;
 
     @InjectMocks private CommentService commentService;
 
@@ -107,5 +111,19 @@ class CommentServiceTest {
                 () -> commentService.deleteComment(BOARD_ID, TASK_ID, COMMENT_ID));
 
         verify(commentRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteComment_WhenContextMatches_DeletesAndPublishesLifecycleEvent() {
+        Board board = Board.builder().id(BOARD_ID).name("Board").build();
+        Task task = Task.builder().id(TASK_ID).title("Task").position(1L).board(board).build();
+        Comment comment = Comment.builder().id(COMMENT_ID).content("Existing").task(task).build();
+        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
+
+        commentService.deleteComment(BOARD_ID, TASK_ID, COMMENT_ID);
+
+        verify(commentRepository).delete(comment);
+        verify(eventPublisher).publish(BoardEventType.COMMENT_DELETED, BOARD_ID, COMMENT_ID);
+        verify(applicationEventPublisher).publishEvent(new CommentDeletedEvent(COMMENT_ID));
     }
 }

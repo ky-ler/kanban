@@ -27,6 +27,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
   editorHeadingClasses,
   headingTypographyClasses,
   type HeadingTag,
@@ -57,6 +62,7 @@ import {
   MentionsPlugin,
   type MentionUser,
 } from "@/components/rich-text/plugins/mentions-plugin";
+import { MentionProfileCard } from "@/components/rich-text/mention-profile-card";
 import {
   $isListNode,
   INSERT_ORDERED_LIST_COMMAND,
@@ -123,6 +129,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEvent,
   type ReactNode,
@@ -223,6 +230,12 @@ type LinkEditContext = {
 type PopoverPosition = {
   x: number;
   y: number;
+};
+
+type MentionPreviewState = {
+  user: MentionUser;
+  mentionName: string;
+  position: PopoverPosition;
 };
 
 export interface MarkdownEditorProps {
@@ -598,9 +611,11 @@ function EditorShortcutsPlugin() {
 
 function ToolbarPlugin({
   toolbarVariant,
+  mentionUsers,
   container,
 }: Readonly<{
   toolbarVariant: "full" | "compact";
+  mentionUsers: MentionUser[];
   container?: HTMLElement | null;
 }>) {
   const [editor] = useLexicalComposerContext();
@@ -619,6 +634,10 @@ function ToolbarPlugin({
 
   const [linkFormPosition, setLinkFormPosition] =
     useState<PopoverPosition | null>(null);
+  const [mentionPreview, setMentionPreview] =
+    useState<MentionPreviewState | null>(null);
+  const [isMentionPreviewOpen, setIsMentionPreviewOpen] = useState(false);
+  const mentionHoveringCardRef = useRef(false);
 
   const closeLinkUi = useCallback(() => {
     setIsLinkActionsOpen(false);
@@ -727,16 +746,16 @@ function ToolbarPlugin({
     [editor, getLinkContextFromSelection],
   );
 
-  const openLinkActions = (params: {
-    position: PopoverPosition;
-    context: LinkEditContext;
-  }) => {
-    setLinkContext(params.context);
-    setLinkActionsPosition(params.position);
-    setIsLinkActionsOpen(false);
-    setIsLinkPopoverOpen(false);
-    scheduleOpen(() => setIsLinkActionsOpen(true));
-  };
+  const openLinkActions = useCallback(
+    (params: { position: PopoverPosition; context: LinkEditContext }) => {
+      setLinkContext(params.context);
+      setLinkActionsPosition(params.position);
+      setIsLinkActionsOpen(false);
+      setIsLinkPopoverOpen(false);
+      scheduleOpen(() => setIsLinkActionsOpen(true));
+    },
+    [],
+  );
 
   const applyLinkValue = () => {
     const normalized = normalizeLinkUrl(linkValue);
@@ -932,7 +951,91 @@ function ToolbarPlugin({
       },
       COMMAND_PRIORITY_HIGH,
     );
-  }, [editor]);
+  }, [editor, openLinkActions]);
+
+  useEffect(() => {
+    const rootElement = editor.getRootElement();
+    if (!rootElement || mentionUsers.length === 0) {
+      return;
+    }
+
+    let closeTimer: ReturnType<typeof setTimeout> | null = null;
+    const clearCloseTimer = () => {
+      if (closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+    };
+
+    const openMentionPreview = (target: HTMLElement) => {
+      const mentionUserId = target.getAttribute("data-mention-user-id");
+      const mentionName =
+        target.getAttribute("data-mention-name")?.replace(/^@/, "") ??
+        target.textContent?.replace(/^@/, "") ??
+        "";
+
+      if (!mentionUserId || !mentionName) {
+        return;
+      }
+
+      const mentionUser = mentionUsers.find(
+        (user) => user.id === mentionUserId,
+      );
+      if (!mentionUser) {
+        return;
+      }
+
+      const rect = target.getBoundingClientRect();
+      setMentionPreview({
+        user: mentionUser,
+        mentionName,
+        position: {
+          x: rect.left + rect.width / 2,
+          y: rect.bottom + 6,
+        },
+      });
+      setIsMentionPreviewOpen(true);
+    };
+
+    const handleRootPointerMove = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      const mentionElement = target?.closest(
+        "[data-mention-user-id][data-mention-name]",
+      );
+      if (!(mentionElement instanceof HTMLElement)) {
+        clearCloseTimer();
+        closeTimer = setTimeout(() => {
+          if (mentionHoveringCardRef.current) {
+            return;
+          }
+          setIsMentionPreviewOpen(false);
+        }, 80);
+        return;
+      }
+
+      clearCloseTimer();
+      openMentionPreview(mentionElement);
+    };
+
+    const handleRootPointerLeave = () => {
+      clearCloseTimer();
+      closeTimer = setTimeout(() => {
+        if (mentionHoveringCardRef.current) {
+          return;
+        }
+        setIsMentionPreviewOpen(false);
+      }, 100);
+    };
+
+    rootElement.addEventListener("pointermove", handleRootPointerMove);
+    rootElement.addEventListener("pointerleave", handleRootPointerLeave);
+
+    return () => {
+      rootElement.removeEventListener("pointermove", handleRootPointerMove);
+      rootElement.removeEventListener("pointerleave", handleRootPointerLeave);
+      clearCloseTimer();
+    };
+  }, [editor, mentionUsers]);
 
   useEffect(() => {
     const updateToolbarState = (): void => {
@@ -1066,7 +1169,7 @@ function ToolbarPlugin({
                   "rounded-md border px-1.5 py-0.5 font-mono leading-none tracking-normal",
                   activeTextStyle === "paragraph"
                     ? "border-accent-foreground/30 text-accent-foreground/90"
-                    : "border-border bg-muted/50 text-muted-foreground",
+                    : "border-border bg-accent text-muted-foreground",
                 )}
               >
                 {formatShortcutLabel("Mod+Alt+0")}
@@ -1447,6 +1550,46 @@ function ToolbarPlugin({
           </div>
         </PopoverContent>
       </Popover>
+
+      <HoverCard open={isMentionPreviewOpen && Boolean(mentionPreview)}>
+        {mentionPreview &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <HoverCardTrigger asChild>
+              <div
+                style={{
+                  position: "fixed",
+                  left: mentionPreview.position.x,
+                  top: mentionPreview.position.y,
+                  width: 1,
+                  height: 1,
+                  pointerEvents: "none",
+                }}
+              />
+            </HoverCardTrigger>,
+            document.body,
+          )}
+        <HoverCardContent
+          className="w-64 p-3"
+          align="center"
+          sideOffset={8}
+          container={container ?? undefined}
+          onPointerEnter={() => {
+            mentionHoveringCardRef.current = true;
+          }}
+          onPointerLeave={() => {
+            mentionHoveringCardRef.current = false;
+            setIsMentionPreviewOpen(false);
+          }}
+        >
+          {mentionPreview ? (
+            <MentionProfileCard
+              user={mentionPreview.user}
+              fallbackName={mentionPreview.mentionName}
+            />
+          ) : null}
+        </HoverCardContent>
+      </HoverCard>
     </>
   );
 }
@@ -1513,7 +1656,11 @@ export function MarkdownEditor({
   return (
     <div className="border-border bg-background overflow-hidden rounded-md border">
       <LexicalComposer initialConfig={initialConfig}>
-        <ToolbarPlugin toolbarVariant={toolbarVariant} container={container} />
+        <ToolbarPlugin
+          toolbarVariant={toolbarVariant}
+          mentionUsers={mentionUsers}
+          container={container}
+        />
         <div className="relative">
           <RichTextPlugin
             contentEditable={
