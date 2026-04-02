@@ -9,10 +9,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylerriggs.kanban.activity.ActivityLogService;
 import com.kylerriggs.kanban.board.Board;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.column.dto.ColumnArchiveRequest;
@@ -54,6 +57,8 @@ class ColumnServiceTest {
     @Mock private TaskRepository taskRepository;
     @Mock private TaskArchiveService taskArchiveService;
     @Mock private BoardEventPublisher eventPublisher;
+    @Mock private ActivityLogService activityLogService;
+    @Mock private ObjectMapper objectMapper;
     @InjectMocks private ColumnService columnService;
 
     private User user;
@@ -62,7 +67,9 @@ class ColumnServiceTest {
     private ColumnDto columnDto;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        lenient().when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+
         user = new User();
         user.setId(USER_ID);
         user.setUsername("testuser");

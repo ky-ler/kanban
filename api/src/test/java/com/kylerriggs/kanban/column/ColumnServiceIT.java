@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,8 @@ class ColumnServiceIT extends PostgresIntegrationTestBase {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
+
         User user =
                 userRepository.save(
                         User.builder()
@@ -95,6 +99,7 @@ class ColumnServiceIT extends PostgresIntegrationTestBase {
 
     @Test
     void updateColumnArchive_withConfirm_archivesColumnAndTasks() {
+        withAuthenticatedUser("auth0|column-service-it");
         ColumnDto result =
                 columnService.updateColumnArchive(
                         boardId, targetColumnId, new ColumnArchiveRequest(true, true));
@@ -125,6 +130,7 @@ class ColumnServiceIT extends PostgresIntegrationTestBase {
 
     @Test
     void updateColumnArchive_restoreReturnsColumnToOriginalPosition() {
+        withAuthenticatedUser("auth0|column-service-it");
         columnService.updateColumnArchive(
                 boardId, targetColumnId, new ColumnArchiveRequest(true, true));
         entityManager.flush();
@@ -150,5 +156,12 @@ class ColumnServiceIT extends PostgresIntegrationTestBase {
         assertThat(restoredColumn.getPosition()).isEqualTo(0);
         assertThat(restoredColumn.getRestorePosition()).isNull();
         assertThat(displacedColumn.getPosition()).isEqualTo(1);
+    }
+
+    private void withAuthenticatedUser(String userId) {
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new UsernamePasswordAuthenticationToken(
+                                userId, "n/a", java.util.List.of()));
     }
 }

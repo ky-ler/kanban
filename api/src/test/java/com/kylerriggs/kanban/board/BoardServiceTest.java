@@ -74,6 +74,7 @@ class BoardServiceTest {
     @Mock private BoardProperties boardProperties;
     @Mock private TaskArchiveService taskArchiveService;
     @Mock private com.kylerriggs.kanban.comment.CommentRepository commentRepository;
+    @Mock private com.kylerriggs.kanban.checklist.ChecklistItemRepository checklistItemRepository;
     @Mock private BoardEventPublisher eventPublisher;
     @InjectMocks private BoardService boardService;
 
@@ -217,14 +218,15 @@ class BoardServiceTest {
             // Given
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
-            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap(), anyMap()))
+                    .thenReturn(boardDto);
 
             // When
             BoardDto result = boardService.getBoard(Objects.requireNonNull(BOARD_ID));
 
             // Then
             assertNotNull(result);
-            verify(boardMapper).toDto(eq(board), eq(USER_ID), anyMap());
+            verify(boardMapper).toDto(eq(board), eq(USER_ID), anyMap(), anyMap());
         }
 
         @Test
@@ -330,7 +332,8 @@ class BoardServiceTest {
             when(userService.getCurrentUserId()).thenReturn(USER_ID);
             when(boardRepository.findById(Objects.requireNonNull(BOARD_ID)))
                     .thenReturn(Optional.of(board));
-            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap(), anyMap()))
+                    .thenReturn(boardDto);
 
             // When
             boardService.updateBoard(Objects.requireNonNull(BOARD_ID), updateRequest);
@@ -380,7 +383,8 @@ class BoardServiceTest {
             when(taskRepository.countByBoardIdAndIsArchivedFalse(BOARD_ID)).thenReturn(3L);
             when(taskRepository.findByBoardId(BOARD_ID)).thenReturn(List.of(activeTask));
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
-            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap(), anyMap()))
+                    .thenReturn(boardDto);
 
             BoardDto result =
                     boardService.updateBoardArchive(BOARD_ID, new BoardArchiveRequest(true, true));
@@ -408,7 +412,8 @@ class BoardServiceTest {
             when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
             when(taskRepository.findByBoardId(BOARD_ID)).thenReturn(List.of(archivedTask));
             when(boardRepository.findByIdWithDetails(BOARD_ID)).thenReturn(Optional.of(board));
-            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap())).thenReturn(boardDto);
+            when(boardMapper.toDto(eq(board), eq(USER_ID), anyMap(), anyMap()))
+                    .thenReturn(boardDto);
 
             boardService.updateBoardArchive(BOARD_ID, new BoardArchiveRequest(false, false));
 

@@ -8,6 +8,7 @@ import com.kylerriggs.kanban.column.ColumnRepository;
 import com.kylerriggs.kanban.comment.CommentRepository;
 import com.kylerriggs.kanban.invite.BoardInviteRepository;
 import com.kylerriggs.kanban.label.LabelRepository;
+import com.kylerriggs.kanban.notification.NotificationRepository;
 import com.kylerriggs.kanban.task.TaskRepository;
 import com.kylerriggs.kanban.user.UserRepository;
 
@@ -34,6 +35,7 @@ class KanbanApplicationTests {
     @MockitoBean private CommentRepository commentRepository;
     @MockitoBean private ChecklistItemRepository checklistItemRepository;
     @MockitoBean private LabelRepository labelRepository;
+    @MockitoBean private NotificationRepository notificationRepository;
     @MockitoBean private TaskRepository taskRepository;
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private JpaMetamodelMappingContext jpaMappingContext;
