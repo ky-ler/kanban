@@ -14,6 +14,10 @@ export const getBoardResponseTasksItemPositionMin = 0;
 
 export const getBoardResponseTasksItemCommentCountMin = 0;
 
+export const getBoardResponseTasksItemChecklistProgressTotalMin = 0;
+
+export const getBoardResponseTasksItemChecklistProgressCompletedMin = 0;
+
 export const getBoardResponseColumnsItemPositionMin = 0;
 
 export const GetBoardResponse = zod.object({
@@ -71,6 +75,16 @@ export const GetBoardResponse = zod.object({
           .number()
           .min(getBoardResponseTasksItemCommentCountMin),
         hasDescription: zod.boolean(),
+        checklistProgress: zod
+          .object({
+            total: zod
+              .number()
+              .min(getBoardResponseTasksItemChecklistProgressTotalMin),
+            completed: zod
+              .number()
+              .min(getBoardResponseTasksItemChecklistProgressCompletedMin),
+          })
+          .optional(),
       }),
     )
     .optional(),
@@ -106,6 +120,10 @@ export const UpdateBoardBody = zod.object({
 export const updateBoardResponseTasksItemPositionMin = 0;
 
 export const updateBoardResponseTasksItemCommentCountMin = 0;
+
+export const updateBoardResponseTasksItemChecklistProgressTotalMin = 0;
+
+export const updateBoardResponseTasksItemChecklistProgressCompletedMin = 0;
 
 export const updateBoardResponseColumnsItemPositionMin = 0;
 
@@ -164,6 +182,16 @@ export const UpdateBoardResponse = zod.object({
           .number()
           .min(updateBoardResponseTasksItemCommentCountMin),
         hasDescription: zod.boolean(),
+        checklistProgress: zod
+          .object({
+            total: zod
+              .number()
+              .min(updateBoardResponseTasksItemChecklistProgressTotalMin),
+            completed: zod
+              .number()
+              .min(updateBoardResponseTasksItemChecklistProgressCompletedMin),
+          })
+          .optional(),
       }),
     )
     .optional(),
@@ -235,6 +263,10 @@ export const createBoardResponseTasksItemPositionMin = 0;
 
 export const createBoardResponseTasksItemCommentCountMin = 0;
 
+export const createBoardResponseTasksItemChecklistProgressTotalMin = 0;
+
+export const createBoardResponseTasksItemChecklistProgressCompletedMin = 0;
+
 export const createBoardResponseColumnsItemPositionMin = 0;
 
 export const CreateBoardResponse = zod.object({
@@ -292,6 +324,16 @@ export const CreateBoardResponse = zod.object({
           .number()
           .min(createBoardResponseTasksItemCommentCountMin),
         hasDescription: zod.boolean(),
+        checklistProgress: zod
+          .object({
+            total: zod
+              .number()
+              .min(createBoardResponseTasksItemChecklistProgressTotalMin),
+            completed: zod
+              .number()
+              .min(createBoardResponseTasksItemChecklistProgressCompletedMin),
+          })
+          .optional(),
       }),
     )
     .optional(),
@@ -338,6 +380,10 @@ export const UpdateBoardArchiveBody = zod.object({
 export const updateBoardArchiveResponseTasksItemPositionMin = 0;
 
 export const updateBoardArchiveResponseTasksItemCommentCountMin = 0;
+
+export const updateBoardArchiveResponseTasksItemChecklistProgressTotalMin = 0;
+
+export const updateBoardArchiveResponseTasksItemChecklistProgressCompletedMin = 0;
 
 export const updateBoardArchiveResponseColumnsItemPositionMin = 0;
 
@@ -396,6 +442,20 @@ export const UpdateBoardArchiveResponse = zod.object({
           .number()
           .min(updateBoardArchiveResponseTasksItemCommentCountMin),
         hasDescription: zod.boolean(),
+        checklistProgress: zod
+          .object({
+            total: zod
+              .number()
+              .min(
+                updateBoardArchiveResponseTasksItemChecklistProgressTotalMin,
+              ),
+            completed: zod
+              .number()
+              .min(
+                updateBoardArchiveResponseTasksItemChecklistProgressCompletedMin,
+              ),
+          })
+          .optional(),
       }),
     )
     .optional(),
@@ -425,6 +485,10 @@ export const getTasksForBoardResponsePositionMin = 0;
 
 export const getTasksForBoardResponseCommentCountMin = 0;
 
+export const getTasksForBoardResponseChecklistProgressTotalMin = 0;
+
+export const getTasksForBoardResponseChecklistProgressCompletedMin = 0;
+
 export const GetTasksForBoardResponseItem = zod.object({
   id: zod.string().uuid(),
   title: zod.string().min(1),
@@ -452,6 +516,16 @@ export const GetTasksForBoardResponseItem = zod.object({
     .optional(),
   commentCount: zod.number().min(getTasksForBoardResponseCommentCountMin),
   hasDescription: zod.boolean(),
+  checklistProgress: zod
+    .object({
+      total: zod
+        .number()
+        .min(getTasksForBoardResponseChecklistProgressTotalMin),
+      completed: zod
+        .number()
+        .min(getTasksForBoardResponseChecklistProgressCompletedMin),
+    })
+    .optional(),
 });
 export const GetTasksForBoardResponse = zod.array(GetTasksForBoardResponseItem);
 

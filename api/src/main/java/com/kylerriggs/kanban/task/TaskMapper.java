@@ -69,7 +69,7 @@ public class TaskMapper {
      * @return the task as a summary DTO
      */
     public TaskSummaryDto toSummaryDto(Task task) {
-        return toSummaryDto(task, 0L);
+        return toSummaryDto(task, 0L, null);
     }
 
     /**
@@ -80,6 +80,22 @@ public class TaskMapper {
      * @return the task as a summary DTO
      */
     public TaskSummaryDto toSummaryDto(Task task, long commentCount) {
+        return toSummaryDto(task, commentCount, null);
+    }
+
+    /**
+     * Converts a Task entity to a summary DTO with precomputed comment count and checklist
+     * progress.
+     *
+     * @param task the task entity to convert
+     * @param commentCount total comments for the task
+     * @param checklistProgress checklist progress for the task (can be null)
+     * @return the task as a summary DTO
+     */
+    public TaskSummaryDto toSummaryDto(
+            Task task,
+            long commentCount,
+            com.kylerriggs.kanban.checklist.dto.ChecklistProgressDto checklistProgress) {
         UserSummaryDto assignee = null;
         if (task.getAssignedTo() != null) {
             assignee = userMapper.toSummaryDto(task.getAssignedTo());
@@ -102,7 +118,8 @@ public class TaskMapper {
                 task.getDueDate() != null ? task.getDueDate().toString() : null,
                 labels,
                 commentCount,
-                hasDescription);
+                hasDescription,
+                checklistProgress);
     }
 
     /**

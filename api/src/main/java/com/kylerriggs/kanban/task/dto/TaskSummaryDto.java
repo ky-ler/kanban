@@ -1,5 +1,6 @@
 package com.kylerriggs.kanban.task.dto;
 
+import com.kylerriggs.kanban.checklist.dto.ChecklistProgressDto;
 import com.kylerriggs.kanban.label.dto.LabelSummaryDto;
 import com.kylerriggs.kanban.user.dto.UserSummaryDto;
 
@@ -22,4 +23,5 @@ public record TaskSummaryDto(
         String dueDate,
         List<LabelSummaryDto> labels,
         @NotNull @Min(0) long commentCount,
-        @NotNull boolean hasDescription) {}
+        @NotNull boolean hasDescription,
+        ChecklistProgressDto checklistProgress) {}

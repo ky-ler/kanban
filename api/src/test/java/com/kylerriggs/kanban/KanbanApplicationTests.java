@@ -3,6 +3,7 @@ package com.kylerriggs.kanban;
 import com.kylerriggs.kanban.activity.ActivityLogRepository;
 import com.kylerriggs.kanban.board.BoardRepository;
 import com.kylerriggs.kanban.board.BoardUserRepository;
+import com.kylerriggs.kanban.checklist.ChecklistItemRepository;
 import com.kylerriggs.kanban.column.ColumnRepository;
 import com.kylerriggs.kanban.comment.CommentRepository;
 import com.kylerriggs.kanban.invite.BoardInviteRepository;
@@ -31,6 +32,7 @@ class KanbanApplicationTests {
     @MockitoBean private BoardUserRepository boardUserRepository;
     @MockitoBean private ColumnRepository columnRepository;
     @MockitoBean private CommentRepository commentRepository;
+    @MockitoBean private ChecklistItemRepository checklistItemRepository;
     @MockitoBean private LabelRepository labelRepository;
     @MockitoBean private TaskRepository taskRepository;
     @MockitoBean private UserRepository userRepository;

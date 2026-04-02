@@ -5,6 +5,8 @@ import com.kylerriggs.kanban.board.dto.BoardDto;
 import com.kylerriggs.kanban.board.dto.BoardRequest;
 import com.kylerriggs.kanban.board.dto.BoardSummary;
 import com.kylerriggs.kanban.board.dto.CollaboratorRequest;
+import com.kylerriggs.kanban.checklist.ChecklistItemRepository;
+import com.kylerriggs.kanban.checklist.dto.ChecklistProgressDto;
 import com.kylerriggs.kanban.column.Column;
 import com.kylerriggs.kanban.comment.CommentRepository;
 import com.kylerriggs.kanban.config.BoardProperties;
@@ -47,6 +49,7 @@ public class BoardService {
     private final TaskRepository taskRepository;
     private final TaskArchiveService taskArchiveService;
     private final CommentRepository commentRepository;
+    private final ChecklistItemRepository checklistItemRepository;
     private final BoardEventPublisher eventPublisher;
 
     /**
@@ -112,8 +115,11 @@ public class BoardService {
 
         List<UUID> taskIds = board.getTasks().stream().map(task -> task.getId()).toList();
         Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+        Map<UUID, ChecklistProgressDto> checklistProgressByTaskId =
+                getChecklistProgressByTaskIds(taskIds);
 
-        return boardMapper.toDto(board, requestUserId, commentCountByTaskId);
+        return boardMapper.toDto(
+                board, requestUserId, commentCountByTaskId, checklistProgressByTaskId);
     }
 
     /**
@@ -127,12 +133,16 @@ public class BoardService {
         List<Task> tasks = taskRepository.findByBoardId(boardId);
         List<UUID> taskIds = tasks.stream().map(task -> task.getId()).toList();
         Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+        Map<UUID, ChecklistProgressDto> checklistProgressByTaskId =
+                getChecklistProgressByTaskIds(taskIds);
 
         return tasks.stream()
                 .map(
                         task ->
                                 taskMapper.toSummaryDto(
-                                        task, commentCountByTaskId.getOrDefault(task.getId(), 0L)))
+                                        task,
+                                        commentCountByTaskId.getOrDefault(task.getId(), 0L),
+                                        checklistProgressByTaskId.get(task.getId())))
                 .toList();
     }
 
@@ -198,8 +208,11 @@ public class BoardService {
 
         List<UUID> taskIds = boardToUpdate.getTasks().stream().map(task -> task.getId()).toList();
         Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+        Map<UUID, ChecklistProgressDto> checklistProgressByTaskId =
+                getChecklistProgressByTaskIds(taskIds);
 
-        return boardMapper.toDto(boardToUpdate, requestUserId, commentCountByTaskId);
+        return boardMapper.toDto(
+                boardToUpdate, requestUserId, commentCountByTaskId, checklistProgressByTaskId);
     }
 
     @Transactional
@@ -230,7 +243,10 @@ public class BoardService {
                                                     "Board not found: " + boardId));
             List<UUID> taskIds = currentBoard.getTasks().stream().map(Task::getId).toList();
             Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
-            return boardMapper.toDto(currentBoard, requestUserId, commentCountByTaskId);
+            Map<UUID, ChecklistProgressDto> checklistProgressByTaskId =
+                    getChecklistProgressByTaskIds(taskIds);
+            return boardMapper.toDto(
+                    currentBoard, requestUserId, commentCountByTaskId, checklistProgressByTaskId);
         }
 
         if (shouldArchive && !boardToUpdate.isArchived()) {
@@ -266,8 +282,11 @@ public class BoardService {
 
         List<UUID> taskIds = refreshedBoard.getTasks().stream().map(Task::getId).toList();
         Map<UUID, Long> commentCountByTaskId = getCommentCountByTaskIds(taskIds);
+        Map<UUID, ChecklistProgressDto> checklistProgressByTaskId =
+                getChecklistProgressByTaskIds(taskIds);
 
-        return boardMapper.toDto(refreshedBoard, requestUserId, commentCountByTaskId);
+        return boardMapper.toDto(
+                refreshedBoard, requestUserId, commentCountByTaskId, checklistProgressByTaskId);
     }
 
     private Map<UUID, Long> getCommentCountByTaskIds(List<UUID> taskIds) {
@@ -280,6 +299,20 @@ public class BoardService {
                         Collectors.toMap(
                                 CommentRepository.TaskCommentCount::getTaskId,
                                 CommentRepository.TaskCommentCount::getCommentCount));
+    }
+
+    private Map<UUID, ChecklistProgressDto> getChecklistProgressByTaskIds(List<UUID> taskIds) {
+        if (taskIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return checklistItemRepository.getProgressByTaskIds(taskIds).stream()
+                .collect(
+                        Collectors.toMap(
+                                ChecklistItemRepository.TaskChecklistProgress::getTaskId,
+                                p ->
+                                        new ChecklistProgressDto(
+                                                (int) p.getTotal(), (int) p.getCompleted())));
     }
 
     @Transactional

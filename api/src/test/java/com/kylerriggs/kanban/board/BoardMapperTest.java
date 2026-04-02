@@ -214,7 +214,8 @@ class BoardMapperTest {
                             null,
                             null,
                             0L,
-                            false);
+                            false,
+                            null);
 
             when(userMapper.toSummaryDto(creator)).thenReturn(creatorSummary);
             when(taskMapper.toSummaryDto(task, 0L)).thenReturn(taskSummary);

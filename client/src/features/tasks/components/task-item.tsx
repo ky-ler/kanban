@@ -15,6 +15,7 @@ import {
   IconAlignLeft,
   IconMessage,
   IconArchive,
+  IconListCheck,
 } from "@tabler/icons-react";
 import { getGetBoardQueryKey } from "@/api/gen/endpoints/board-controller/board-controller";
 import { useUpdateTaskStatus } from "@/api/gen/endpoints/task-controller/task-controller";
@@ -34,6 +35,7 @@ import type { TaskSummaryDto } from "@/api/gen/model";
 import { cn } from "@/lib/utils";
 import { LabelBadge } from "@/features/labels/components/label-badge";
 import { PrioritySignal } from "./priority-signal";
+import { ChecklistProgress } from "./checklist-progress";
 
 function isOverdue(dueDate: string): boolean {
   const parsedDueDate = parseISO(dueDate);
@@ -82,8 +84,15 @@ export const TaskItem = ({
   const commentCount = task.commentCount ?? 0;
   const hasDescription = task.hasDescription;
   const hasComments = commentCount > 0;
+  const checklistTotal = task.checklistProgress?.total ?? 0;
+  const checklistCompleted = task.checklistProgress?.completed ?? 0;
+  const hasChecklist = checklistTotal > 0;
   const hasBottomMeta = Boolean(
-    task.dueDate || task.assignedTo || hasDescription || hasComments,
+    task.dueDate ||
+      task.assignedTo ||
+      hasDescription ||
+      hasComments ||
+      hasChecklist,
   );
 
   const handleToggleCompleted = () => {
@@ -97,7 +106,7 @@ export const TaskItem = ({
   };
 
   return (
-    <Item size="sm" variant="outline" className="bg-card items-baseline gap-2">
+    <Item variant="outline" className="items-baseline gap-2">
       <Checkbox
         aria-label={task.isCompleted ? "Mark incomplete" : "Mark complete"}
         checked={task.isCompleted}
@@ -118,6 +127,21 @@ export const TaskItem = ({
         onPointerDown={(event) => event.stopPropagation()}
         className="relative top-0.5 disabled:cursor-pointer"
       />
+      {task.assignedTo && (
+        <div className="absolute top-3 right-3">
+          <Avatar size="sm" title={task.assignedTo.username}>
+            <AvatarImage
+              src={task.assignedTo.profileImageUrl ?? undefined}
+              alt={task.assignedTo.username}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+            <AvatarFallback>
+              <IconUser />
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      )}
       <Link
         to={"/boards/$boardId/tasks/$taskId"}
         params={{ boardId, taskId: task.id }}
@@ -136,7 +160,7 @@ export const TaskItem = ({
           <ItemTitle
             title={task.title}
             className={cn(
-              "w-full leading-snug wrap-anywhere whitespace-normal",
+              "w-full pr-12 leading-snug wrap-anywhere hyphens-auto whitespace-normal",
               task.isCompleted && "text-muted-foreground line-through",
             )}
           >
@@ -204,22 +228,27 @@ export const TaskItem = ({
                   </TooltipContent>
                 </Tooltip>
               )}
-              {task.assignedTo ? (
-                <div className="ml-auto">
-                  <Avatar size="sm" title={task.assignedTo.username}>
-                    <AvatarImage
-                      src={task.assignedTo.profileImageUrl ?? undefined}
-                      alt={task.assignedTo.username}
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
-                    <AvatarFallback>
-                      <IconUser className="size-3" />
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              ) : null}
+              {hasChecklist && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-muted-foreground inline-flex items-center gap-1 leading-none">
+                      <IconListCheck className="h-3.5 w-3.5" />
+                      {`${checklistCompleted}/${checklistTotal}`}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {`Checklist progress: ${checklistCompleted}/${checklistTotal}`}
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
+          )}
+          {hasChecklist && (
+            <ChecklistProgress
+              progress={task.checklistProgress}
+              compact
+              className="mt-0.5"
+            />
           )}
         </ItemContent>
       </Link>

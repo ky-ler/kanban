@@ -4,6 +4,7 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+import type { ChecklistProgressDto } from "./checklistProgressDto";
 import type { LabelSummaryDto } from "./labelSummaryDto";
 import type { UserSummaryDto } from "./userSummaryDto";
 
@@ -23,4 +24,5 @@ export interface TaskSummaryDto {
   /** @minimum 0 */
   commentCount: number;
   hasDescription: boolean;
+  checklistProgress?: ChecklistProgressDto;
 }

@@ -43,6 +43,24 @@ public class BoardMapper {
      * @return the board as a detailed DTO
      */
     public BoardDto toDto(Board board, String currentUserId, Map<UUID, Long> commentCountByTaskId) {
+        return toDto(board, currentUserId, commentCountByTaskId, Map.of());
+    }
+
+    /**
+     * Converts a Board entity to a detailed DTO with all collaborators, tasks, and columns.
+     *
+     * @param board the board entity to convert
+     * @param currentUserId the ID of the current user to determine favorite status
+     * @param commentCountByTaskId precomputed comment counts by task ID
+     * @param checklistProgressByTaskId precomputed checklist progress by task ID
+     * @return the board as a detailed DTO
+     */
+    public BoardDto toDto(
+            Board board,
+            String currentUserId,
+            Map<UUID, Long> commentCountByTaskId,
+            Map<UUID, com.kylerriggs.kanban.checklist.dto.ChecklistProgressDto>
+                    checklistProgressByTaskId) {
         UserSummaryDto creatorSummary = userMapper.toSummaryDto(board.getCreatedBy());
 
         CollaboratorDto[] collaborators =
@@ -59,8 +77,8 @@ public class BoardMapper {
                                 task ->
                                         taskMapper.toSummaryDto(
                                                 task,
-                                                commentCountByTaskId.getOrDefault(
-                                                        task.getId(), 0L)))
+                                                commentCountByTaskId.getOrDefault(task.getId(), 0L),
+                                                checklistProgressByTaskId.get(task.getId())))
                         .toArray(TaskSummaryDto[]::new);
 
         ColumnDto[] columns =
