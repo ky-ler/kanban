@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Client, type IMessage } from "@stomp/stompjs";
+import { Client, type IMessage, ReconnectionTimeMode } from "@stomp/stompjs";
 import { getAuthToken } from "@/features/auth/token-provider";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { env } from "@/config/env";
@@ -47,6 +47,8 @@ interface NotificationWebSocketContextType {
 const NotificationWebSocketContext =
   createContext<NotificationWebSocketContextType | null>(null);
 
+const MAX_AUTH_FAILURES = 3;
+
 interface NotificationWebSocketProviderProps {
   children: ReactNode;
 }
@@ -59,6 +61,9 @@ export function NotificationWebSocketProvider({
   const clientRef = useRef<Client | null>(null);
   const connectRef = useRef<() => Promise<void>>(async () => {});
   const isMountedRef = useRef(false);
+  const manualDisconnectRef = useRef(false);
+  const currentTokenRef = useRef<string | null>(null);
+  const authFailureCountRef = useRef(0);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -66,6 +71,7 @@ export function NotificationWebSocketProvider({
   const isAuthenticated = auth.isAuthenticated;
 
   const disconnect = useCallback(() => {
+    manualDisconnectRef.current = true;
     const client = clientRef.current;
     clientRef.current = null;
     if (client?.active) {
@@ -79,11 +85,15 @@ export function NotificationWebSocketProvider({
       return;
     }
 
+    manualDisconnectRef.current = false;
+    authFailureCountRef.current = 0;
+
     const token = await getAuthToken();
     if (!token) {
       setStatus("error");
       return;
     }
+    currentTokenRef.current = token;
 
     // Disconnect existing connection
     if (clientRef.current?.active) {
@@ -100,9 +110,37 @@ export function NotificationWebSocketProvider({
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
-      reconnectDelay: 5000,
+      reconnectDelay: 2000,
+      reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
+      maxReconnectDelay: 30000,
       heartbeatIncoming: 20000,
       heartbeatOutgoing: 20000,
+
+      beforeConnect: async (stompClient) => {
+        if (manualDisconnectRef.current || !isMountedRef.current) {
+          return;
+        }
+
+        try {
+          const freshToken = await getAuthToken();
+          if (freshToken) {
+            currentTokenRef.current = freshToken;
+            stompClient.connectHeaders = {
+              Authorization: `Bearer ${freshToken}`,
+            };
+            authFailureCountRef.current = 0;
+          } else {
+            authFailureCountRef.current += 1;
+          }
+        } catch {
+          authFailureCountRef.current += 1;
+        }
+
+        if (authFailureCountRef.current >= MAX_AUTH_FAILURES) {
+          setStatus("error");
+          void stompClient.deactivate();
+        }
+      },
 
       onConnect: () => {
         if (!isMountedRef.current) {
@@ -110,6 +148,7 @@ export function NotificationWebSocketProvider({
           return;
         }
 
+        authFailureCountRef.current = 0;
         setStatus("connected");
 
         // Subscribe to user's notification topic
@@ -137,23 +176,28 @@ export function NotificationWebSocketProvider({
               console.error("Failed to parse notification message:", e);
             }
           },
-          { Authorization: `Bearer ${token}` },
+          { Authorization: `Bearer ${currentTokenRef.current}` },
         );
       },
 
       onStompError: (frame) => {
-        console.error("STOMP error:", frame.headers["message"]);
-        setStatus("error");
+        if (import.meta.env.DEV) {
+          console.debug("Notification STOMP error:", frame.headers["message"]);
+        }
+        // STOMP.js auto-reconnect with beforeConnect will handle retry
       },
 
       onWebSocketClose: () => {
         if (isMountedRef.current && clientRef.current === client) {
-          setStatus("disconnected");
+          if (manualDisconnectRef.current) {
+            setStatus("disconnected");
+          }
+          // Otherwise STOMP.js auto-reconnect handles it
         }
       },
 
       onWebSocketError: () => {
-        setStatus("error");
+        // STOMP.js auto-reconnect with beforeConnect will handle retry
       },
     });
 

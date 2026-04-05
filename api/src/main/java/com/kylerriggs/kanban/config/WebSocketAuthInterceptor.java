@@ -194,7 +194,11 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             accessor.setUser(auth);
             return auth;
         } catch (JwtException e) {
-            log.warn("WebSocket {} token authentication failed: {}", source, e.getMessage());
+            if (e.getMessage() != null && e.getMessage().contains("expired")) {
+                log.debug("WebSocket {} token expired: {}", source, e.getMessage());
+            } else {
+                log.warn("WebSocket {} token authentication failed: {}", source, e.getMessage());
+            }
             return null;
         }
     }

@@ -385,7 +385,7 @@ export function BoardWebSocketProvider({
           }
 
           if (failureReason === "auth") {
-            handleAuthFailure();
+            scheduleReconnect("auth", generation);
             return;
           }
 
@@ -422,7 +422,7 @@ export function BoardWebSocketProvider({
           }
 
           if (failureReason === "auth") {
-            handleAuthFailure();
+            scheduleReconnect("auth", generation);
             return;
           }
 
