@@ -24,7 +24,6 @@ import lombok.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -81,9 +80,6 @@ public class ColumnService {
 
         column = columnRepository.save(column);
 
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
-
         Map<String, Object> details = new HashMap<>();
         details.put("columnName", column.getName());
         activityLogService.logBoardActivity(board, ActivityType.COLUMN_CREATED, toJson(details));
@@ -125,8 +121,6 @@ public class ColumnService {
         column = columnRepository.save(column);
 
         Board board = column.getBoard();
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
 
         Map<String, Object> details = new HashMap<>();
         details.put("oldName", oldName);
@@ -170,9 +164,6 @@ public class ColumnService {
         taskRepository.deleteByColumnId(columnId);
 
         columnRepository.delete(column);
-
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
 
         Map<String, Object> details = new HashMap<>();
         details.put("columnName", columnName);
@@ -237,9 +228,6 @@ public class ColumnService {
 
         column.setPosition(newPosition);
         columnRepository.save(column);
-
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
 
         Map<String, Object> details = new HashMap<>();
         details.put("columnName", column.getName());
@@ -311,8 +299,6 @@ public class ColumnService {
 
         column.setArchived(shouldArchive);
         columnRepository.save(column);
-
-        boardRepository.touchDateModified(boardId, Instant.now());
 
         ActivityType activityType =
                 shouldArchive ? ActivityType.COLUMN_ARCHIVED : ActivityType.COLUMN_RESTORED;

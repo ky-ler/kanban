@@ -63,8 +63,8 @@ export const GetBoardActivityResponse = zod.object({
       unsorted: zod.boolean().optional(),
     })
     .optional(),
+  numberOfElements: zod.number().optional(),
   first: zod.boolean().optional(),
   last: zod.boolean().optional(),
-  numberOfElements: zod.number().optional(),
   empty: zod.boolean().optional(),
 });

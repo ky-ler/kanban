@@ -16,8 +16,8 @@ export interface PageNotificationDto {
   number?: number;
   pageable?: PageableObject;
   sort?: SortObject;
+  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
-  numberOfElements?: number;
   empty?: boolean;
 }

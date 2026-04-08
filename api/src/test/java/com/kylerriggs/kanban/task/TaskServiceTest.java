@@ -231,8 +231,6 @@ class TaskServiceTest {
             // Then
             assertNotNull(result);
             verify(taskRepository).save(any(Task.class));
-            verify(boardRepository)
-                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
@@ -439,8 +437,6 @@ class TaskServiceTest {
             assertNotNull(result);
             assertEquals("Updated Task", task.getTitle());
             assertEquals("Updated Description", task.getDescription());
-            verify(boardRepository)
-                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
@@ -642,8 +638,6 @@ class TaskServiceTest {
 
             // Then
             verify(taskRepository).delete(Objects.requireNonNull(task));
-            verify(boardRepository)
-                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
@@ -682,8 +676,6 @@ class TaskServiceTest {
 
             // Then — position = maxPos + GAP = 2_000_000
             assertEquals(2_000_000L, task.getPosition());
-            verify(boardRepository)
-                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
@@ -700,8 +692,6 @@ class TaskServiceTest {
 
             // Then — position = afterPos + GAP = 3_000_000
             assertEquals(3_000_000L, task.getPosition());
-            verify(boardRepository)
-                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
         }
 
         @Test
@@ -718,8 +708,6 @@ class TaskServiceTest {
 
             // Then — position = beforePos / 2 = 1_000_000
             assertEquals(1_000_000L, task.getPosition());
-            verify(boardRepository)
-                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
         }
 
         @Test
@@ -756,8 +744,6 @@ class TaskServiceTest {
             // Then
             assertEquals(newColumn, task.getColumn());
             assertEquals(2_000_000L, task.getPosition());
-            verify(boardRepository)
-                    .touchDateModified(eq(Objects.requireNonNull(BOARD_ID)), any(Instant.class));
             verify(eventPublisher).publish(any(BoardEventType.class), eq(BOARD_ID), any());
         }
 
@@ -930,7 +916,6 @@ class TaskServiceTest {
 
             assertNotNull(result);
             assertTrue(task.isCompleted());
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any(Instant.class));
             verify(eventPublisher).publish(BoardEventType.TASK_UPDATED, BOARD_ID, TASK_ID);
             verify(activityLogService).logActivity(task, ActivityType.TASK_COMPLETED, null);
         }

@@ -117,7 +117,6 @@ class ColumnServiceTest {
             assertEquals("New Column", result.name());
             assertEquals(3, result.position());
             verify(columnRepository, never()).incrementActivePositionsFrom(any(), anyInt());
-            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq(BoardEventType.COLUMN_CREATED), eq(BOARD_ID), any());
         }
 
@@ -146,7 +145,6 @@ class ColumnServiceTest {
             // Then
             assertEquals(1, result.position());
             verify(columnRepository).incrementActivePositionsFrom(BOARD_ID, 1);
-            verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
         @Test
@@ -181,7 +179,6 @@ class ColumnServiceTest {
 
             // Then
             assertEquals("Renamed Column", result.name());
-            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq(BoardEventType.COLUMN_UPDATED), eq(BOARD_ID), any());
         }
 
@@ -232,7 +229,6 @@ class ColumnServiceTest {
             assertEquals(0, column.getRestorePosition());
             verify(taskArchiveService).archiveTasks(java.util.List.of());
             verify(columnRepository).decrementActivePositionsAfter(BOARD_ID, 0);
-            verify(boardRepository).touchDateModified(eq(BOARD_ID), any());
             verify(eventPublisher).publish(BoardEventType.COLUMN_UPDATED, BOARD_ID, COLUMN_ID);
         }
 
@@ -270,7 +266,6 @@ class ColumnServiceTest {
             // Then
             verify(taskRepository).deleteByColumnId(COLUMN_ID);
             verify(columnRepository).delete(Objects.requireNonNull(column));
-            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq(BoardEventType.COLUMN_DELETED), eq(BOARD_ID), any());
         }
 
@@ -334,7 +329,6 @@ class ColumnServiceTest {
             // Then
             assertEquals(3, column.getPosition());
             verify(columnRepository).decrementActivePositionsInRange(BOARD_ID, 1, 3);
-            verify(boardRepository).save(Objects.requireNonNull(board));
             verify(eventPublisher).publish(eq(BoardEventType.COLUMN_MOVED), eq(BOARD_ID), any());
         }
 
@@ -352,7 +346,6 @@ class ColumnServiceTest {
             // Then
             assertEquals(1, column.getPosition());
             verify(columnRepository).incrementActivePositionsInRange(BOARD_ID, 1, 3);
-            verify(boardRepository).save(Objects.requireNonNull(board));
         }
 
         @Test

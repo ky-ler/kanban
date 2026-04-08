@@ -31,7 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -172,9 +171,6 @@ public class TaskService {
             taskArchiveService.archiveTask(savedTask);
         }
 
-        // Atomically update board's dateModified to avoid optimistic locking conflicts
-        boardRepository.touchDateModified(board.getId(), Instant.now());
-
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish(
                 BoardEventType.TASK_CREATED,
@@ -289,9 +285,6 @@ public class TaskService {
                             taskValidationService.validateLabelsInBoard(
                                     requestLabelIds, board.getId()));
         }
-
-        // Atomically update board's dateModified to avoid optimistic locking conflicts
-        boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish(
@@ -478,7 +471,6 @@ public class TaskService {
         }
 
         UUID boardId = taskToUpdate.getBoard().getId();
-        boardRepository.touchDateModified(boardId, Instant.now());
         eventPublisher.publish(BoardEventType.TASK_UPDATED, boardId, taskId);
 
         if (oldCompleted != taskToUpdate.isCompleted()) {
@@ -536,9 +528,6 @@ public class TaskService {
 
         // Delete the task directly
         taskRepository.delete(taskToDelete);
-
-        // Atomically update board's dateModified to avoid optimistic locking conflicts
-        boardRepository.touchDateModified(boardId, Instant.now());
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish(
@@ -608,9 +597,6 @@ public class TaskService {
         }
 
         taskToMove.setPosition(newPosition);
-
-        // Atomically update board's dateModified to avoid optimistic locking conflicts
-        boardRepository.touchDateModified(board.getId(), Instant.now());
 
         // Publish event to be broadcast after transaction commits
         eventPublisher.publish(

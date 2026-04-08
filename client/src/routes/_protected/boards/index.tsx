@@ -120,7 +120,6 @@ function BoardCard({ board }: { board: BoardSummary }) {
                 {board.completedTasks}/{board.totalTasks} tasks
               </span>
             </div>
-            <span>{new Date(board.dateModified).toLocaleDateString()}</span>
           </div>
         </CardContent>
       </Card>

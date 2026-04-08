@@ -18,7 +18,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -57,9 +56,6 @@ public class LabelService {
 
         Label savedLabel = labelRepository.save(label);
 
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
-
         eventPublisher.publish(
                 BoardEventType.LABEL_CREATED,
                 Objects.requireNonNull(board.getId(), "Board id is required"),
@@ -90,8 +86,6 @@ public class LabelService {
         Label updatedLabel = labelRepository.save(label);
 
         Board board = label.getBoard();
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
 
         eventPublisher.publish(
                 BoardEventType.LABEL_UPDATED,
@@ -124,9 +118,6 @@ public class LabelService {
         }
 
         labelRepository.delete(label);
-
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
 
         eventPublisher.publish(
                 BoardEventType.LABEL_DELETED,
@@ -192,8 +183,6 @@ public class LabelService {
         taskRepository.save(task);
 
         Board board = task.getBoard();
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
 
         eventPublisher.publish(
                 BoardEventType.TASK_UPDATED,
@@ -226,8 +215,6 @@ public class LabelService {
         taskRepository.save(task);
 
         Board board = task.getBoard();
-        board.setDateModified(Instant.now());
-        boardRepository.save(board);
 
         eventPublisher.publish(
                 BoardEventType.TASK_UPDATED,

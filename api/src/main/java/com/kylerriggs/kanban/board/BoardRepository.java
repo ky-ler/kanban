@@ -1,11 +1,9 @@
 package com.kylerriggs.kanban.board;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,19 +70,4 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
      * @return true if the board exists and is owned by the user
      */
     boolean existsByIdAndCreatedById(UUID id, String createdById);
-
-    /**
-     * Atomically updates the board's dateModified timestamp and increments its version. This avoids
-     * loading the full board entity and prevents optimistic locking conflicts when multiple
-     * operations modify related entities (tasks, columns) concurrently.
-     *
-     * @param boardId the ID of the board to update
-     * @param dateModified the new modification timestamp
-     */
-    @Modifying
-    @Query(
-            "UPDATE Board b SET b.dateModified = :dateModified, b.version = b.version + 1 WHERE"
-                    + " b.id = :boardId")
-    void touchDateModified(
-            @Param("boardId") UUID boardId, @Param("dateModified") Instant dateModified);
 }
