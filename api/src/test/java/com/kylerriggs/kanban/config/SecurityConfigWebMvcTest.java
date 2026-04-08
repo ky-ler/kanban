@@ -35,7 +35,6 @@ import java.util.Map;
 @WebMvcTest(controllers = {SecurityTestController.class, BoardInviteController.class})
 @Import({
     SecurityConfig.class,
-    SecurityProperties.class,
     RestAuthenticationEntryPoint.class,
     RestAccessDeniedHandler.class,
     ErrorResponseFactory.class,

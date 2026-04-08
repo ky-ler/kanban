@@ -5,6 +5,7 @@ import com.kylerriggs.kanban.user.UserSynchronizerFilter;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +30,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true)
+@EnableConfigurationProperties(SecurityProperties.class)
 @RequiredArgsConstructor
 public class SecurityConfig {
     private static final String CSP_POLICY =
