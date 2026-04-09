@@ -20,7 +20,7 @@ import { DateTooltip } from "@/components/date-tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { IconUser } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface CommentItemProps {
   comment: CommentDto;
@@ -82,15 +82,12 @@ export function CommentItem({
     setIsEditing(false);
   };
 
-  useEffect(() => {
-    if (isEditing) {
-      return;
-    }
-
+  const beginEdit = () => {
     setEditContent(comment.content);
     setEditPlainText(comment.content);
     setCommentError(null);
-  }, [comment.content, isEditing]);
+    setIsEditing(true);
+  };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -192,7 +189,7 @@ export function CommentItem({
                   return;
                 }
 
-                setIsEditing(true);
+                beginEdit();
               }}
               style={{ cursor: isAuthor ? "pointer" : "default" }}
             >
@@ -211,7 +208,7 @@ export function CommentItem({
                   variant="link"
                   size="sm"
                   className="text-muted-foreground h-auto p-0"
-                  onClick={() => setIsEditing(true)}
+                  onClick={beginEdit}
                 >
                   Edit
                 </Button>
