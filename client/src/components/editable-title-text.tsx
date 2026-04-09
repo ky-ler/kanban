@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ElementType } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ElementType,
+  type FocusEvent,
+} from "react";
 import { IconCheck, IconPencil, IconX } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -63,6 +69,7 @@ export function EditableTitleText({
 }: EditableTitleTextProps & Readonly<{ variant: EditableTitleVariant }>) {
   const config = titleVariantConfig[variant];
   const inputRef = useRef<HTMLInputElement>(null);
+  const editContainerRef = useRef<HTMLDivElement>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,12 +80,6 @@ export function EditableTitleText({
     if (inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  useEffect(() => {
-    if (!isEditing) {
-      setErrorMessage(null);
     }
   }, [isEditing]);
 
@@ -98,9 +99,29 @@ export function EditableTitleText({
     onCancel();
   };
 
+  const handleEdit = () => {
+    setErrorMessage(null);
+    onEdit();
+  };
+
+  const handleInputBlur = (event: FocusEvent<HTMLInputElement>) => {
+    const nextFocused = event.relatedTarget;
+    if (nextFocused instanceof Node && editContainerRef.current) {
+      if (editContainerRef.current.contains(nextFocused)) {
+        return;
+      }
+    }
+
+    event.preventDefault();
+    handleCancel();
+  };
+
   if (isEditing) {
     return (
-      <div className={cn("w-full", config.editContainerClassName)}>
+      <div
+        ref={editContainerRef}
+        className={cn("w-full", config.editContainerClassName)}
+      >
         <div className="flex items-center gap-2">
           <div
             className={cn(
@@ -130,10 +151,7 @@ export function EditableTitleText({
                   handleCancel();
                 }
               }}
-              onBlur={(event) => {
-                event.preventDefault();
-                handleCancel();
-              }}
+              onBlur={handleInputBlur}
               className={cn(
                 "h-auto border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0",
                 config.inputClassName,
@@ -175,7 +193,7 @@ export function EditableTitleText({
   return (
     <TitleViewComponent
       className={config.viewClassName}
-      onClick={canEdit ? onEdit : undefined}
+      onClick={canEdit ? handleEdit : undefined}
     >
       {value}
       {shouldShowPencil ? (
