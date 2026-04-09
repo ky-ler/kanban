@@ -14,6 +14,7 @@ import { getAuthToken } from "@/features/auth/token-provider";
 import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { env } from "@/config/env";
 import {
+  getGetNotificationsInfiniteQueryKey,
   getGetNotificationsQueryKey,
   getGetUnreadCountQueryKey,
 } from "@/api/gen/endpoints/notification-controller/notification-controller";
@@ -59,7 +60,6 @@ export function NotificationWebSocketProvider({
   const auth = useAuth0Context();
   const queryClient = useQueryClient();
   const clientRef = useRef<Client | null>(null);
-  const connectRef = useRef<() => Promise<void>>(async () => {});
   const isMountedRef = useRef(false);
   const manualDisconnectRef = useRef(false);
   const currentTokenRef = useRef<string | null>(null);
@@ -78,6 +78,7 @@ export function NotificationWebSocketProvider({
       void client.deactivate();
     }
     setStatus("disconnected");
+    setUnreadCount(0);
   }, []);
 
   const connect = useCallback(async () => {
@@ -167,6 +168,9 @@ export function NotificationWebSocketProvider({
 
               // Invalidate notification queries to refresh the list
               void queryClient.invalidateQueries({
+                queryKey: getGetNotificationsInfiniteQueryKey(),
+              });
+              void queryClient.invalidateQueries({
                 queryKey: getGetNotificationsQueryKey(),
               });
               void queryClient.invalidateQueries({
@@ -205,35 +209,28 @@ export function NotificationWebSocketProvider({
     client.activate();
   }, [userId, isAuthenticated, queryClient]);
 
-  connectRef.current = connect;
-
   const reconnect = useCallback(() => {
-    void connectRef.current();
-  }, []);
+    void connect();
+  }, [connect]);
 
   // Connect when authenticated
   useEffect(() => {
     isMountedRef.current = true;
-
-    if (isAuthenticated && userId) {
-      void connect();
-    }
+    const connectTimer =
+      isAuthenticated && userId
+        ? setTimeout(() => {
+            void connect();
+          }, 0)
+        : null;
 
     return () => {
+      if (connectTimer) {
+        clearTimeout(connectTimer);
+      }
       isMountedRef.current = false;
       disconnect();
     };
   }, [isAuthenticated, userId, connect, disconnect]);
-
-  // Sync unread count from API
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setUnreadCount(0);
-      return;
-    }
-
-    // Initial fetch of unread count happens via the component that uses this context
-  }, [isAuthenticated]);
 
   const value: NotificationWebSocketContextType = {
     status,
