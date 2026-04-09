@@ -7,8 +7,8 @@
 import * as zod from "zod";
 
 export const GetTaskActivityParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
 });
 
 export const getTaskActivityQueryPageDefault = 0;
@@ -26,10 +26,10 @@ export const GetTaskActivityResponse = zod.object({
   content: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         type: zod.string().min(1),
         details: zod.string().optional(),
-        taskId: zod.string().uuid().optional(),
+        taskId: zod.uuid().optional(),
         taskTitle: zod.string().optional(),
         user: zod.object({
           id: zod.string().min(1),

@@ -7,7 +7,7 @@
 import * as zod from "zod";
 
 export const GetBoardActivityParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const getBoardActivityQueryPageDefault = 0;
@@ -25,10 +25,10 @@ export const GetBoardActivityResponse = zod.object({
   content: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         type: zod.string().min(1),
         details: zod.string().optional(),
-        taskId: zod.string().uuid().optional(),
+        taskId: zod.uuid().optional(),
         taskTitle: zod.string().optional(),
         user: zod.object({
           id: zod.string().min(1),

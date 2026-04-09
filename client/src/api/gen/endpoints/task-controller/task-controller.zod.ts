@@ -7,13 +7,13 @@
 import * as zod from "zod";
 
 export const GetTaskParams = zod.object({
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
 });
 
 export const getTaskResponsePositionMin = 0;
 
 export const GetTaskResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   createdBy: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
@@ -28,7 +28,7 @@ export const GetTaskResponse = zod.object({
     .optional(),
   title: zod.string().min(1),
   description: zod.string().optional(),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   position: zod.number().min(getTaskResponsePositionMin),
   isCompleted: zod.boolean(),
   isArchived: zod.boolean(),
@@ -37,7 +37,7 @@ export const GetTaskResponse = zod.object({
   labels: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         color: zod.string().min(1),
       }),
@@ -48,29 +48,29 @@ export const GetTaskResponse = zod.object({
 });
 
 export const UpdateTaskParams = zod.object({
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
 });
 
 export const updateTaskBodyTitleMin = 3;
 export const updateTaskBodyTitleMax = 255;
 
 export const UpdateTaskBody = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   assigneeId: zod.string().optional(),
   title: zod.string().min(updateTaskBodyTitleMin).max(updateTaskBodyTitleMax),
   description: zod.string().optional(),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   isCompleted: zod.boolean().optional(),
   isArchived: zod.boolean().optional(),
   priority: zod.string().optional(),
-  dueDate: zod.string().date().optional(),
-  labelIds: zod.array(zod.string().uuid()).optional(),
+  dueDate: zod.iso.date().optional(),
+  labelIds: zod.array(zod.uuid()).optional(),
 });
 
 export const updateTaskResponsePositionMin = 0;
 
 export const UpdateTaskResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   createdBy: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
@@ -85,7 +85,7 @@ export const UpdateTaskResponse = zod.object({
     .optional(),
   title: zod.string().min(1),
   description: zod.string().optional(),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   position: zod.number().min(updateTaskResponsePositionMin),
   isCompleted: zod.boolean(),
   isArchived: zod.boolean(),
@@ -94,7 +94,7 @@ export const UpdateTaskResponse = zod.object({
   labels: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         color: zod.string().min(1),
       }),
@@ -105,29 +105,29 @@ export const UpdateTaskResponse = zod.object({
 });
 
 export const DeleteTaskParams = zod.object({
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
 });
 
 export const createTaskBodyTitleMin = 3;
 export const createTaskBodyTitleMax = 255;
 
 export const CreateTaskBody = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   assigneeId: zod.string().optional(),
   title: zod.string().min(createTaskBodyTitleMin).max(createTaskBodyTitleMax),
   description: zod.string().optional(),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   isCompleted: zod.boolean().optional(),
   isArchived: zod.boolean().optional(),
   priority: zod.string().optional(),
-  dueDate: zod.string().date().optional(),
-  labelIds: zod.array(zod.string().uuid()).optional(),
+  dueDate: zod.iso.date().optional(),
+  labelIds: zod.array(zod.uuid()).optional(),
 });
 
 export const createTaskResponsePositionMin = 0;
 
 export const CreateTaskResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   createdBy: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
@@ -142,7 +142,7 @@ export const CreateTaskResponse = zod.object({
     .optional(),
   title: zod.string().min(1),
   description: zod.string().optional(),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   position: zod.number().min(createTaskResponsePositionMin),
   isCompleted: zod.boolean(),
   isArchived: zod.boolean(),
@@ -151,7 +151,7 @@ export const CreateTaskResponse = zod.object({
   labels: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         color: zod.string().min(1),
       }),
@@ -162,7 +162,7 @@ export const CreateTaskResponse = zod.object({
 });
 
 export const UpdateTaskStatusParams = zod.object({
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
 });
 
 export const UpdateTaskStatusBody = zod.object({
@@ -173,7 +173,7 @@ export const UpdateTaskStatusBody = zod.object({
 export const updateTaskStatusResponsePositionMin = 0;
 
 export const UpdateTaskStatusResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   createdBy: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
@@ -188,7 +188,7 @@ export const UpdateTaskStatusResponse = zod.object({
     .optional(),
   title: zod.string().min(1),
   description: zod.string().optional(),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   position: zod.number().min(updateTaskStatusResponsePositionMin),
   isCompleted: zod.boolean(),
   isArchived: zod.boolean(),
@@ -197,7 +197,7 @@ export const UpdateTaskStatusResponse = zod.object({
   labels: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         color: zod.string().min(1),
       }),
@@ -208,13 +208,13 @@ export const UpdateTaskStatusResponse = zod.object({
 });
 
 export const MoveTaskParams = zod.object({
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
 });
 
 export const MoveTaskBody = zod.object({
-  afterTaskId: zod.string().uuid().optional(),
-  beforeTaskId: zod.string().uuid().optional(),
-  newColumnId: zod.string().uuid().optional(),
+  afterTaskId: zod.uuid().optional(),
+  beforeTaskId: zod.uuid().optional(),
+  newColumnId: zod.uuid().optional(),
 });
 
 export const GetMyTasksQueryParams = zod.object({
@@ -222,16 +222,16 @@ export const GetMyTasksQueryParams = zod.object({
 });
 
 export const GetMyTasksResponseItem = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   title: zod.string().min(1),
   description: zod.string().optional(),
   priority: zod.string().optional(),
   dueDate: zod.string().optional(),
   isCompleted: zod.boolean(),
   isArchived: zod.boolean(),
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   boardName: zod.string().min(1),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   columnName: zod.string().min(1),
   assignedTo: zod
     .object({
@@ -243,7 +243,7 @@ export const GetMyTasksResponseItem = zod.object({
   labels: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         color: zod.string().min(1),
       }),

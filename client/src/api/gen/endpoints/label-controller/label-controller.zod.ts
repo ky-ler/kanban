@@ -7,20 +7,20 @@
 import * as zod from "zod";
 
 export const GetLabelParams = zod.object({
-  labelId: zod.string().uuid(),
+  labelId: zod.uuid(),
 });
 
 export const GetLabelResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   color: zod.string().min(1),
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().min(1),
 });
 
 export const UpdateLabelParams = zod.object({
-  labelId: zod.string().uuid(),
+  labelId: zod.uuid(),
 });
 
 export const updateLabelBodyNameMax = 50;
@@ -28,32 +28,32 @@ export const updateLabelBodyNameMax = 50;
 export const updateLabelBodyColorMax = 20;
 
 export const UpdateLabelBody = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   name: zod.string().min(1).max(updateLabelBodyNameMax),
   color: zod.string().min(1).max(updateLabelBodyColorMax),
 });
 
 export const UpdateLabelResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   color: zod.string().min(1),
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().min(1),
 });
 
 export const DeleteLabelParams = zod.object({
-  labelId: zod.string().uuid(),
+  labelId: zod.uuid(),
 });
 
 export const AddLabelToTaskParams = zod.object({
-  taskId: zod.string().uuid(),
-  labelId: zod.string().uuid(),
+  taskId: zod.uuid(),
+  labelId: zod.uuid(),
 });
 
 export const RemoveLabelFromTaskParams = zod.object({
-  taskId: zod.string().uuid(),
-  labelId: zod.string().uuid(),
+  taskId: zod.uuid(),
+  labelId: zod.uuid(),
 });
 
 export const createLabelBodyNameMax = 50;
@@ -61,26 +61,26 @@ export const createLabelBodyNameMax = 50;
 export const createLabelBodyColorMax = 20;
 
 export const CreateLabelBody = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   name: zod.string().min(1).max(createLabelBodyNameMax),
   color: zod.string().min(1).max(createLabelBodyColorMax),
 });
 
 export const CreateLabelResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   color: zod.string().min(1),
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().min(1),
 });
 
 export const GetLabelsByBoardParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const GetLabelsByBoardResponseItem = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   color: zod.string().min(1),
 });

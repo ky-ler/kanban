@@ -7,9 +7,9 @@
 import * as zod from "zod";
 
 export const UpdateChecklistItemParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
-  itemId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
+  itemId: zod.uuid(),
 });
 
 export const updateChecklistItemBodyTitleMax = 500;
@@ -18,14 +18,14 @@ export const UpdateChecklistItemBody = zod.object({
   title: zod.string().min(1).max(updateChecklistItemBodyTitleMax),
   isCompleted: zod.boolean().optional(),
   assigneeId: zod.string().optional(),
-  dueDate: zod.string().date().optional(),
+  dueDate: zod.iso.date().optional(),
 });
 
 export const updateChecklistItemResponsePositionMin = 0;
 
 export const UpdateChecklistItemResponse = zod.object({
-  id: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  id: zod.uuid(),
+  taskId: zod.uuid(),
   title: zod.string().min(1),
   isCompleted: zod.boolean(),
   assignedTo: zod
@@ -35,28 +35,28 @@ export const UpdateChecklistItemResponse = zod.object({
       profileImageUrl: zod.string().min(1),
     })
     .optional(),
-  dueDate: zod.string().date().optional(),
+  dueDate: zod.iso.date().optional(),
   position: zod.number().min(updateChecklistItemResponsePositionMin).optional(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().optional(),
 });
 
 export const DeleteChecklistItemParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
-  itemId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
+  itemId: zod.uuid(),
 });
 
 export const GetChecklistItemsParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
 });
 
 export const getChecklistItemsResponsePositionMin = 0;
 
 export const GetChecklistItemsResponseItem = zod.object({
-  id: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  id: zod.uuid(),
+  taskId: zod.uuid(),
   title: zod.string().min(1),
   isCompleted: zod.boolean(),
   assignedTo: zod
@@ -66,7 +66,7 @@ export const GetChecklistItemsResponseItem = zod.object({
       profileImageUrl: zod.string().min(1),
     })
     .optional(),
-  dueDate: zod.string().date().optional(),
+  dueDate: zod.iso.date().optional(),
   position: zod.number().min(getChecklistItemsResponsePositionMin).optional(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().optional(),
@@ -76,8 +76,8 @@ export const GetChecklistItemsResponse = zod.array(
 );
 
 export const CreateChecklistItemParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
 });
 
 export const createChecklistItemBodyTitleMax = 500;
@@ -86,14 +86,14 @@ export const CreateChecklistItemBody = zod.object({
   title: zod.string().min(1).max(createChecklistItemBodyTitleMax),
   isCompleted: zod.boolean().optional(),
   assigneeId: zod.string().optional(),
-  dueDate: zod.string().date().optional(),
+  dueDate: zod.iso.date().optional(),
 });
 
 export const createChecklistItemResponsePositionMin = 0;
 
 export const CreateChecklistItemResponse = zod.object({
-  id: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  id: zod.uuid(),
+  taskId: zod.uuid(),
   title: zod.string().min(1),
   isCompleted: zod.boolean(),
   assignedTo: zod
@@ -103,23 +103,23 @@ export const CreateChecklistItemResponse = zod.object({
       profileImageUrl: zod.string().min(1),
     })
     .optional(),
-  dueDate: zod.string().date().optional(),
+  dueDate: zod.iso.date().optional(),
   position: zod.number().min(createChecklistItemResponsePositionMin).optional(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().optional(),
 });
 
 export const ToggleChecklistItemParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
-  itemId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
+  itemId: zod.uuid(),
 });
 
 export const toggleChecklistItemResponsePositionMin = 0;
 
 export const ToggleChecklistItemResponse = zod.object({
-  id: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  id: zod.uuid(),
+  taskId: zod.uuid(),
   title: zod.string().min(1),
   isCompleted: zod.boolean(),
   assignedTo: zod
@@ -129,16 +129,16 @@ export const ToggleChecklistItemResponse = zod.object({
       profileImageUrl: zod.string().min(1),
     })
     .optional(),
-  dueDate: zod.string().date().optional(),
+  dueDate: zod.iso.date().optional(),
   position: zod.number().min(toggleChecklistItemResponsePositionMin).optional(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().optional(),
 });
 
 export const ReorderChecklistItemParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
-  itemId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
+  itemId: zod.uuid(),
 });
 
 export const reorderChecklistItemBodyNewPositionMin = 0;

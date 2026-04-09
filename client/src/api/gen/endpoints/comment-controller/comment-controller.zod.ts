@@ -7,9 +7,9 @@
 import * as zod from "zod";
 
 export const UpdateCommentParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
-  commentId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
+  commentId: zod.uuid(),
 });
 
 export const UpdateCommentBody = zod.object({
@@ -17,46 +17,46 @@ export const UpdateCommentBody = zod.object({
 });
 
 export const UpdateCommentResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   content: zod.string().min(1),
   author: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
     profileImageUrl: zod.string().min(1),
   }),
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().optional(),
 });
 
 export const DeleteCommentParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
-  commentId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
+  commentId: zod.uuid(),
 });
 
 export const GetTaskCommentsParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
 });
 
 export const GetTaskCommentsResponseItem = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   content: zod.string().min(1),
   author: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
     profileImageUrl: zod.string().min(1),
   }),
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().optional(),
 });
 export const GetTaskCommentsResponse = zod.array(GetTaskCommentsResponseItem);
 
 export const CreateCommentParams = zod.object({
-  boardId: zod.string().uuid(),
-  taskId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  taskId: zod.uuid(),
 });
 
 export const CreateCommentBody = zod.object({
@@ -64,14 +64,14 @@ export const CreateCommentBody = zod.object({
 });
 
 export const CreateCommentResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   content: zod.string().min(1),
   author: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
     profileImageUrl: zod.string().min(1),
   }),
-  taskId: zod.string().uuid(),
+  taskId: zod.uuid(),
   dateCreated: zod.string().min(1),
   dateModified: zod.string().optional(),
 });

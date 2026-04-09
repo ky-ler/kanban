@@ -7,7 +7,7 @@
 import * as zod from "zod";
 
 export const GetBoardParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const getBoardResponseTasksItemPositionMin = 0;
@@ -21,7 +21,7 @@ export const getBoardResponseTasksItemChecklistProgressCompletedMin = 0;
 export const getBoardResponseColumnsItemPositionMin = 0;
 
 export const GetBoardResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   description: zod.string().optional(),
   createdBy: zod.object({
@@ -44,9 +44,9 @@ export const GetBoardResponse = zod.object({
   tasks: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         title: zod.string().min(1),
-        columnId: zod.string().uuid(),
+        columnId: zod.uuid(),
         assignedTo: zod
           .object({
             id: zod.string().min(1),
@@ -65,7 +65,7 @@ export const GetBoardResponse = zod.object({
         labels: zod
           .array(
             zod.object({
-              id: zod.string().uuid(),
+              id: zod.uuid(),
               name: zod.string().min(1),
               color: zod.string().min(1),
             }),
@@ -91,7 +91,7 @@ export const GetBoardResponse = zod.object({
   columns: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         position: zod.number().min(getBoardResponseColumnsItemPositionMin),
         isArchived: zod.boolean(),
@@ -105,7 +105,7 @@ export const GetBoardResponse = zod.object({
 });
 
 export const UpdateBoardParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const updateBoardBodyNameMin = 3;
@@ -128,7 +128,7 @@ export const updateBoardResponseTasksItemChecklistProgressCompletedMin = 0;
 export const updateBoardResponseColumnsItemPositionMin = 0;
 
 export const UpdateBoardResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   description: zod.string().optional(),
   createdBy: zod.object({
@@ -151,9 +151,9 @@ export const UpdateBoardResponse = zod.object({
   tasks: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         title: zod.string().min(1),
-        columnId: zod.string().uuid(),
+        columnId: zod.uuid(),
         assignedTo: zod
           .object({
             id: zod.string().min(1),
@@ -172,7 +172,7 @@ export const UpdateBoardResponse = zod.object({
         labels: zod
           .array(
             zod.object({
-              id: zod.string().uuid(),
+              id: zod.uuid(),
               name: zod.string().min(1),
               color: zod.string().min(1),
             }),
@@ -198,7 +198,7 @@ export const UpdateBoardResponse = zod.object({
   columns: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         position: zod.number().min(updateBoardResponseColumnsItemPositionMin),
         isArchived: zod.boolean(),
@@ -212,16 +212,16 @@ export const UpdateBoardResponse = zod.object({
 });
 
 export const DeleteBoardParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const TransferOwnershipParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   userId: zod.string(),
 });
 
 export const UpdateCollaboratorRoleParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   userId: zod.string(),
 });
 
@@ -230,7 +230,7 @@ export const UpdateCollaboratorRoleBody = zod.object({
 });
 
 export const RemoveCollaboratorParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   userId: zod.string(),
 });
 
@@ -239,7 +239,7 @@ export const getBoardsForUserResponseCompletedTasksMin = 0;
 export const getBoardsForUserResponseTotalTasksMin = 0;
 
 export const GetBoardsForUserResponseItem = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   description: zod.string().optional(),
   dateModified: zod.string(),
@@ -270,7 +270,7 @@ export const createBoardResponseTasksItemChecklistProgressCompletedMin = 0;
 export const createBoardResponseColumnsItemPositionMin = 0;
 
 export const CreateBoardResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   description: zod.string().optional(),
   createdBy: zod.object({
@@ -293,9 +293,9 @@ export const CreateBoardResponse = zod.object({
   tasks: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         title: zod.string().min(1),
-        columnId: zod.string().uuid(),
+        columnId: zod.uuid(),
         assignedTo: zod
           .object({
             id: zod.string().min(1),
@@ -314,7 +314,7 @@ export const CreateBoardResponse = zod.object({
         labels: zod
           .array(
             zod.object({
-              id: zod.string().uuid(),
+              id: zod.uuid(),
               name: zod.string().min(1),
               color: zod.string().min(1),
             }),
@@ -340,7 +340,7 @@ export const CreateBoardResponse = zod.object({
   columns: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         position: zod.number().min(createBoardResponseColumnsItemPositionMin),
         isArchived: zod.boolean(),
@@ -354,13 +354,13 @@ export const CreateBoardResponse = zod.object({
 });
 
 export const ToggleFavoriteParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const ToggleFavoriteResponse = zod.boolean();
 
 export const AddCollaboratorParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const AddCollaboratorBody = zod.object({
@@ -369,7 +369,7 @@ export const AddCollaboratorBody = zod.object({
 });
 
 export const UpdateBoardArchiveParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const UpdateBoardArchiveBody = zod.object({
@@ -388,7 +388,7 @@ export const updateBoardArchiveResponseTasksItemChecklistProgressCompletedMin = 
 export const updateBoardArchiveResponseColumnsItemPositionMin = 0;
 
 export const UpdateBoardArchiveResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   description: zod.string().optional(),
   createdBy: zod.object({
@@ -411,9 +411,9 @@ export const UpdateBoardArchiveResponse = zod.object({
   tasks: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         title: zod.string().min(1),
-        columnId: zod.string().uuid(),
+        columnId: zod.uuid(),
         assignedTo: zod
           .object({
             id: zod.string().min(1),
@@ -432,7 +432,7 @@ export const UpdateBoardArchiveResponse = zod.object({
         labels: zod
           .array(
             zod.object({
-              id: zod.string().uuid(),
+              id: zod.uuid(),
               name: zod.string().min(1),
               color: zod.string().min(1),
             }),
@@ -462,7 +462,7 @@ export const UpdateBoardArchiveResponse = zod.object({
   columns: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         position: zod
           .number()
@@ -478,7 +478,7 @@ export const UpdateBoardArchiveResponse = zod.object({
 });
 
 export const GetTasksForBoardParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const getTasksForBoardResponsePositionMin = 0;
@@ -490,9 +490,9 @@ export const getTasksForBoardResponseChecklistProgressTotalMin = 0;
 export const getTasksForBoardResponseChecklistProgressCompletedMin = 0;
 
 export const GetTasksForBoardResponseItem = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   title: zod.string().min(1),
-  columnId: zod.string().uuid(),
+  columnId: zod.uuid(),
   assignedTo: zod
     .object({
       id: zod.string().min(1),
@@ -508,7 +508,7 @@ export const GetTasksForBoardResponseItem = zod.object({
   labels: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         name: zod.string().min(1),
         color: zod.string().min(1),
       }),
@@ -534,7 +534,7 @@ export const getArchivedBoardsForUserResponseCompletedTasksMin = 0;
 export const getArchivedBoardsForUserResponseTotalTasksMin = 0;
 
 export const GetArchivedBoardsForUserResponseItem = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   description: zod.string().optional(),
   dateModified: zod.string(),

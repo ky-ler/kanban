@@ -7,8 +7,8 @@
 import * as zod from "zod";
 
 export const UpdateColumnParams = zod.object({
-  boardId: zod.string().uuid(),
-  columnId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  columnId: zod.uuid(),
 });
 
 export const updateColumnBodyNameMax = 100;
@@ -20,19 +20,19 @@ export const UpdateColumnBody = zod.object({
 export const updateColumnResponsePositionMin = 0;
 
 export const UpdateColumnResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   position: zod.number().min(updateColumnResponsePositionMin),
   isArchived: zod.boolean(),
 });
 
 export const DeleteColumnParams = zod.object({
-  boardId: zod.string().uuid(),
-  columnId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  columnId: zod.uuid(),
 });
 
 export const CreateColumnParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const createColumnBodyNameMax = 100;
@@ -47,15 +47,15 @@ export const CreateColumnBody = zod.object({
 export const createColumnResponsePositionMin = 0;
 
 export const CreateColumnResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   position: zod.number().min(createColumnResponsePositionMin),
   isArchived: zod.boolean(),
 });
 
 export const MoveColumnParams = zod.object({
-  boardId: zod.string().uuid(),
-  columnId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  columnId: zod.uuid(),
 });
 
 export const moveColumnBodyNewPositionMin = 0;
@@ -65,8 +65,8 @@ export const MoveColumnBody = zod.object({
 });
 
 export const UpdateColumnArchiveParams = zod.object({
-  boardId: zod.string().uuid(),
-  columnId: zod.string().uuid(),
+  boardId: zod.uuid(),
+  columnId: zod.uuid(),
 });
 
 export const UpdateColumnArchiveBody = zod.object({
@@ -77,7 +77,7 @@ export const UpdateColumnArchiveBody = zod.object({
 export const updateColumnArchiveResponsePositionMin = 0;
 
 export const UpdateColumnArchiveResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   name: zod.string().min(1),
   position: zod.number().min(updateColumnArchiveResponsePositionMin),
   isArchived: zod.boolean(),

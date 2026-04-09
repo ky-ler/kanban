@@ -8,205 +8,284 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteCodeRouteImport } from './routes/invite/$code'
+import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as ProtectedTasksIndexRouteImport } from './routes/_protected/tasks/index'
+import { Route as ProtectedNotificationsIndexRouteImport } from './routes/_protected/notifications/index'
+import { Route as ProtectedBoardsIndexRouteImport } from './routes/_protected/boards/index'
+import { Route as ProtectedBoardsBoardIdRouteImport } from './routes/_protected/boards/$boardId'
+import { Route as ProtectedBoardsBoardIdCollaboratorsRouteImport } from './routes/_protected/boards/$boardId/collaborators'
+import { Route as ProtectedBoardsBoardIdActivityRouteImport } from './routes/_protected/boards/$boardId/activity'
+import { Route as ProtectedBoardsBoardIdTasksTaskIdRouteImport } from './routes/_protected/boards/$boardId.tasks/$taskId'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as ProtectedRouteImport } from './routes/_protected/route'
-import { Route as IndexImport } from './routes/index'
-import { Route as InviteCodeImport } from './routes/invite/$code'
-import { Route as AuthLogoutImport } from './routes/auth/logout'
-import { Route as AuthLoginImport } from './routes/auth/login'
-import { Route as AuthCallbackImport } from './routes/auth/callback'
-import { Route as ProtectedTasksIndexImport } from './routes/_protected/tasks/index'
-import { Route as ProtectedNotificationsIndexImport } from './routes/_protected/notifications/index'
-import { Route as ProtectedBoardsIndexImport } from './routes/_protected/boards/index'
-import { Route as ProtectedBoardsBoardIdImport } from './routes/_protected/boards/$boardId'
-import { Route as ProtectedBoardsBoardIdCollaboratorsImport } from './routes/_protected/boards/$boardId/collaborators'
-import { Route as ProtectedBoardsBoardIdActivityImport } from './routes/_protected/boards/$boardId/activity'
-import { Route as ProtectedBoardsBoardIdTasksTaskIdImport } from './routes/_protected/boards/$boardId.tasks/$taskId'
-
-// Create/Update Routes
-
-const ProtectedRouteRoute = ProtectedRouteImport.update({
+const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
   id: '/_protected',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const InviteCodeRoute = InviteCodeImport.update({
+const InviteCodeRoute = InviteCodeRouteImport.update({
   id: '/invite/$code',
   path: '/invite/$code',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthLogoutRoute = AuthLogoutImport.update({
+const AuthLogoutRoute = AuthLogoutRouteImport.update({
   id: '/auth/logout',
   path: '/auth/logout',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthLoginRoute = AuthLoginImport.update({
+const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthCallbackRoute = AuthCallbackImport.update({
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ProtectedTasksIndexRoute = ProtectedTasksIndexImport.update({
+const ProtectedTasksIndexRoute = ProtectedTasksIndexRouteImport.update({
   id: '/tasks/',
   path: '/tasks/',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
-
 const ProtectedNotificationsIndexRoute =
-  ProtectedNotificationsIndexImport.update({
+  ProtectedNotificationsIndexRouteImport.update({
     id: '/notifications/',
     path: '/notifications/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
-
-const ProtectedBoardsIndexRoute = ProtectedBoardsIndexImport.update({
+const ProtectedBoardsIndexRoute = ProtectedBoardsIndexRouteImport.update({
   id: '/boards/',
   path: '/boards/',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
-
-const ProtectedBoardsBoardIdRoute = ProtectedBoardsBoardIdImport.update({
+const ProtectedBoardsBoardIdRoute = ProtectedBoardsBoardIdRouteImport.update({
   id: '/boards/$boardId',
   path: '/boards/$boardId',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
-
 const ProtectedBoardsBoardIdCollaboratorsRoute =
-  ProtectedBoardsBoardIdCollaboratorsImport.update({
+  ProtectedBoardsBoardIdCollaboratorsRouteImport.update({
     id: '/collaborators',
     path: '/collaborators',
     getParentRoute: () => ProtectedBoardsBoardIdRoute,
   } as any)
-
 const ProtectedBoardsBoardIdActivityRoute =
-  ProtectedBoardsBoardIdActivityImport.update({
+  ProtectedBoardsBoardIdActivityRouteImport.update({
     id: '/activity',
     path: '/activity',
     getParentRoute: () => ProtectedBoardsBoardIdRoute,
   } as any)
-
 const ProtectedBoardsBoardIdTasksTaskIdRoute =
-  ProtectedBoardsBoardIdTasksTaskIdImport.update({
+  ProtectedBoardsBoardIdTasksTaskIdRouteImport.update({
     id: '/tasks/$taskId',
     path: '/tasks/$taskId',
     getParentRoute: () => ProtectedBoardsBoardIdRoute,
   } as any)
 
-// Populate the FileRoutesByPath interface
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
+  '/invite/$code': typeof InviteCodeRoute
+  '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
+  '/boards/': typeof ProtectedBoardsIndexRoute
+  '/notifications/': typeof ProtectedNotificationsIndexRoute
+  '/tasks/': typeof ProtectedTasksIndexRoute
+  '/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
+  '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
+  '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
+  '/invite/$code': typeof InviteCodeRoute
+  '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
+  '/boards': typeof ProtectedBoardsIndexRoute
+  '/notifications': typeof ProtectedNotificationsIndexRoute
+  '/tasks': typeof ProtectedTasksIndexRoute
+  '/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
+  '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
+  '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_protected': typeof ProtectedRouteRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
+  '/invite/$code': typeof InviteCodeRoute
+  '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
+  '/_protected/boards/': typeof ProtectedBoardsIndexRoute
+  '/_protected/notifications/': typeof ProtectedNotificationsIndexRoute
+  '/_protected/tasks/': typeof ProtectedTasksIndexRoute
+  '/_protected/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
+  '/_protected/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
+  '/_protected/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/auth/callback'
+    | '/auth/login'
+    | '/auth/logout'
+    | '/invite/$code'
+    | '/boards/$boardId'
+    | '/boards/'
+    | '/notifications/'
+    | '/tasks/'
+    | '/boards/$boardId/activity'
+    | '/boards/$boardId/collaborators'
+    | '/boards/$boardId/tasks/$taskId'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/auth/callback'
+    | '/auth/login'
+    | '/auth/logout'
+    | '/invite/$code'
+    | '/boards/$boardId'
+    | '/boards'
+    | '/notifications'
+    | '/tasks'
+    | '/boards/$boardId/activity'
+    | '/boards/$boardId/collaborators'
+    | '/boards/$boardId/tasks/$taskId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_protected'
+    | '/auth/callback'
+    | '/auth/login'
+    | '/auth/logout'
+    | '/invite/$code'
+    | '/_protected/boards/$boardId'
+    | '/_protected/boards/'
+    | '/_protected/notifications/'
+    | '/_protected/tasks/'
+    | '/_protected/boards/$boardId/activity'
+    | '/_protected/boards/$boardId/collaborators'
+    | '/_protected/boards/$boardId/tasks/$taskId'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthLogoutRoute: typeof AuthLogoutRoute
+  InviteCodeRoute: typeof InviteCodeRoute
+}
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/_protected': {
-      id: '/_protected'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof ProtectedRouteImport
-      parentRoute: typeof rootRoute
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackImport
-      parentRoute: typeof rootRoute
-    }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/auth/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginImport
-      parentRoute: typeof rootRoute
-    }
-    '/auth/logout': {
-      id: '/auth/logout'
-      path: '/auth/logout'
-      fullPath: '/auth/logout'
-      preLoaderRoute: typeof AuthLogoutImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/invite/$code': {
       id: '/invite/$code'
       path: '/invite/$code'
       fullPath: '/invite/$code'
-      preLoaderRoute: typeof InviteCodeImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof InviteCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/logout': {
+      id: '/auth/logout'
+      path: '/auth/logout'
+      fullPath: '/auth/logout'
+      preLoaderRoute: typeof AuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_protected/tasks/': {
+      id: '/_protected/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks/'
+      preLoaderRoute: typeof ProtectedTasksIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/notifications/': {
+      id: '/_protected/notifications/'
+      path: '/notifications'
+      fullPath: '/notifications/'
+      preLoaderRoute: typeof ProtectedNotificationsIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/boards/': {
+      id: '/_protected/boards/'
+      path: '/boards'
+      fullPath: '/boards/'
+      preLoaderRoute: typeof ProtectedBoardsIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/boards/$boardId': {
       id: '/_protected/boards/$boardId'
       path: '/boards/$boardId'
       fullPath: '/boards/$boardId'
-      preLoaderRoute: typeof ProtectedBoardsBoardIdImport
-      parentRoute: typeof ProtectedRouteImport
-    }
-    '/_protected/boards/': {
-      id: '/_protected/boards/'
-      path: '/boards'
-      fullPath: '/boards'
-      preLoaderRoute: typeof ProtectedBoardsIndexImport
-      parentRoute: typeof ProtectedRouteImport
-    }
-    '/_protected/notifications/': {
-      id: '/_protected/notifications/'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof ProtectedNotificationsIndexImport
-      parentRoute: typeof ProtectedRouteImport
-    }
-    '/_protected/tasks/': {
-      id: '/_protected/tasks/'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof ProtectedTasksIndexImport
-      parentRoute: typeof ProtectedRouteImport
-    }
-    '/_protected/boards/$boardId/activity': {
-      id: '/_protected/boards/$boardId/activity'
-      path: '/activity'
-      fullPath: '/boards/$boardId/activity'
-      preLoaderRoute: typeof ProtectedBoardsBoardIdActivityImport
-      parentRoute: typeof ProtectedBoardsBoardIdImport
+      preLoaderRoute: typeof ProtectedBoardsBoardIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/boards/$boardId/collaborators': {
       id: '/_protected/boards/$boardId/collaborators'
       path: '/collaborators'
       fullPath: '/boards/$boardId/collaborators'
-      preLoaderRoute: typeof ProtectedBoardsBoardIdCollaboratorsImport
-      parentRoute: typeof ProtectedBoardsBoardIdImport
+      preLoaderRoute: typeof ProtectedBoardsBoardIdCollaboratorsRouteImport
+      parentRoute: typeof ProtectedBoardsBoardIdRoute
+    }
+    '/_protected/boards/$boardId/activity': {
+      id: '/_protected/boards/$boardId/activity'
+      path: '/activity'
+      fullPath: '/boards/$boardId/activity'
+      preLoaderRoute: typeof ProtectedBoardsBoardIdActivityRouteImport
+      parentRoute: typeof ProtectedBoardsBoardIdRoute
     }
     '/_protected/boards/$boardId/tasks/$taskId': {
       id: '/_protected/boards/$boardId/tasks/$taskId'
       path: '/tasks/$taskId'
       fullPath: '/boards/$boardId/tasks/$taskId'
-      preLoaderRoute: typeof ProtectedBoardsBoardIdTasksTaskIdImport
-      parentRoute: typeof ProtectedBoardsBoardIdImport
+      preLoaderRoute: typeof ProtectedBoardsBoardIdTasksTaskIdRouteImport
+      parentRoute: typeof ProtectedBoardsBoardIdRoute
     }
   }
 }
-
-// Create and export the route tree
 
 interface ProtectedBoardsBoardIdRouteChildren {
   ProtectedBoardsBoardIdActivityRoute: typeof ProtectedBoardsBoardIdActivityRoute
@@ -246,113 +325,6 @@ const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
   ProtectedRouteRouteChildren,
 )
 
-export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '': typeof ProtectedRouteRouteWithChildren
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/logout': typeof AuthLogoutRoute
-  '/invite/$code': typeof InviteCodeRoute
-  '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
-  '/boards': typeof ProtectedBoardsIndexRoute
-  '/notifications': typeof ProtectedNotificationsIndexRoute
-  '/tasks': typeof ProtectedTasksIndexRoute
-  '/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
-  '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
-  '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
-}
-
-export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '': typeof ProtectedRouteRouteWithChildren
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/logout': typeof AuthLogoutRoute
-  '/invite/$code': typeof InviteCodeRoute
-  '/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
-  '/boards': typeof ProtectedBoardsIndexRoute
-  '/notifications': typeof ProtectedNotificationsIndexRoute
-  '/tasks': typeof ProtectedTasksIndexRoute
-  '/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
-  '/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
-  '/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
-}
-
-export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/_protected': typeof ProtectedRouteRouteWithChildren
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/logout': typeof AuthLogoutRoute
-  '/invite/$code': typeof InviteCodeRoute
-  '/_protected/boards/$boardId': typeof ProtectedBoardsBoardIdRouteWithChildren
-  '/_protected/boards/': typeof ProtectedBoardsIndexRoute
-  '/_protected/notifications/': typeof ProtectedNotificationsIndexRoute
-  '/_protected/tasks/': typeof ProtectedTasksIndexRoute
-  '/_protected/boards/$boardId/activity': typeof ProtectedBoardsBoardIdActivityRoute
-  '/_protected/boards/$boardId/collaborators': typeof ProtectedBoardsBoardIdCollaboratorsRoute
-  '/_protected/boards/$boardId/tasks/$taskId': typeof ProtectedBoardsBoardIdTasksTaskIdRoute
-}
-
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | ''
-    | '/auth/callback'
-    | '/auth/login'
-    | '/auth/logout'
-    | '/invite/$code'
-    | '/boards/$boardId'
-    | '/boards'
-    | '/notifications'
-    | '/tasks'
-    | '/boards/$boardId/activity'
-    | '/boards/$boardId/collaborators'
-    | '/boards/$boardId/tasks/$taskId'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | ''
-    | '/auth/callback'
-    | '/auth/login'
-    | '/auth/logout'
-    | '/invite/$code'
-    | '/boards/$boardId'
-    | '/boards'
-    | '/notifications'
-    | '/tasks'
-    | '/boards/$boardId/activity'
-    | '/boards/$boardId/collaborators'
-    | '/boards/$boardId/tasks/$taskId'
-  id:
-    | '__root__'
-    | '/'
-    | '/_protected'
-    | '/auth/callback'
-    | '/auth/login'
-    | '/auth/logout'
-    | '/invite/$code'
-    | '/_protected/boards/$boardId'
-    | '/_protected/boards/'
-    | '/_protected/notifications/'
-    | '/_protected/tasks/'
-    | '/_protected/boards/$boardId/activity'
-    | '/_protected/boards/$boardId/collaborators'
-    | '/_protected/boards/$boardId/tasks/$taskId'
-  fileRoutesById: FileRoutesById
-}
-
-export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
-  AuthCallbackRoute: typeof AuthCallbackRoute
-  AuthLoginRoute: typeof AuthLoginRoute
-  AuthLogoutRoute: typeof AuthLogoutRoute
-  InviteCodeRoute: typeof InviteCodeRoute
-}
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
@@ -361,82 +333,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLogoutRoute: AuthLogoutRoute,
   InviteCodeRoute: InviteCodeRoute,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/_protected",
-        "/auth/callback",
-        "/auth/login",
-        "/auth/logout",
-        "/invite/$code"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/_protected": {
-      "filePath": "_protected/route.tsx",
-      "children": [
-        "/_protected/boards/$boardId",
-        "/_protected/boards/",
-        "/_protected/notifications/",
-        "/_protected/tasks/"
-      ]
-    },
-    "/auth/callback": {
-      "filePath": "auth/callback.tsx"
-    },
-    "/auth/login": {
-      "filePath": "auth/login.tsx"
-    },
-    "/auth/logout": {
-      "filePath": "auth/logout.tsx"
-    },
-    "/invite/$code": {
-      "filePath": "invite/$code.tsx"
-    },
-    "/_protected/boards/$boardId": {
-      "filePath": "_protected/boards/$boardId.tsx",
-      "parent": "/_protected",
-      "children": [
-        "/_protected/boards/$boardId/activity",
-        "/_protected/boards/$boardId/collaborators",
-        "/_protected/boards/$boardId/tasks/$taskId"
-      ]
-    },
-    "/_protected/boards/": {
-      "filePath": "_protected/boards/index.tsx",
-      "parent": "/_protected"
-    },
-    "/_protected/notifications/": {
-      "filePath": "_protected/notifications/index.tsx",
-      "parent": "/_protected"
-    },
-    "/_protected/tasks/": {
-      "filePath": "_protected/tasks/index.tsx",
-      "parent": "/_protected"
-    },
-    "/_protected/boards/$boardId/activity": {
-      "filePath": "_protected/boards/$boardId/activity.tsx",
-      "parent": "/_protected/boards/$boardId"
-    },
-    "/_protected/boards/$boardId/collaborators": {
-      "filePath": "_protected/boards/$boardId/collaborators.tsx",
-      "parent": "/_protected/boards/$boardId"
-    },
-    "/_protected/boards/$boardId/tasks/$taskId": {
-      "filePath": "_protected/boards/$boardId.tasks/$taskId.tsx",
-      "parent": "/_protected/boards/$boardId"
-    }
-  }
-}
-ROUTE_MANIFEST_END */

@@ -7,7 +7,7 @@
 import * as zod from "zod";
 
 export const MarkAsReadParams = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
 });
 
 export const getNotificationsQueryPageDefault = 0;
@@ -27,7 +27,7 @@ export const GetNotificationsResponse = zod.object({
   content: zod
     .array(
       zod.object({
-        id: zod.string().uuid(),
+        id: zod.uuid(),
         type: zod.string().min(1),
         message: zod.string().min(1),
         isRead: zod.boolean().optional(),
@@ -36,9 +36,9 @@ export const GetNotificationsResponse = zod.object({
           username: zod.string().min(1),
           profileImageUrl: zod.string().min(1),
         }),
-        taskId: zod.string().uuid(),
+        taskId: zod.uuid(),
         taskTitle: zod.string().min(1),
-        boardId: zod.string().uuid(),
+        boardId: zod.uuid(),
         boardName: zod.string().min(1),
         dateCreated: zod.string().min(1),
       }),

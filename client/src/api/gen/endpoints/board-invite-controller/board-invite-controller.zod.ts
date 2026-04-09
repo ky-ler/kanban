@@ -7,15 +7,15 @@
 import * as zod from "zod";
 
 export const CreateInviteBody = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   expiration: zod.enum(["ONE_DAY", "SEVEN_DAYS", "THIRTY_DAYS", "NEVER"]),
   maxUses: zod.enum(["ONE", "FIVE", "TEN", "TWENTY_FIVE", "UNLIMITED"]),
 });
 
 export const CreateInviteResponse = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   code: zod.string().min(1),
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   createdBy: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
@@ -33,7 +33,7 @@ export const AcceptInviteParams = zod.object({
 });
 
 export const AcceptInviteResponse = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   boardName: zod.string().min(1),
   alreadyMember: zod.boolean(),
 });
@@ -49,13 +49,13 @@ export const PreviewInviteResponse = zod.object({
 });
 
 export const GetInvitesParams = zod.object({
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
 });
 
 export const GetInvitesResponseItem = zod.object({
-  id: zod.string().uuid(),
+  id: zod.uuid(),
   code: zod.string().min(1),
-  boardId: zod.string().uuid(),
+  boardId: zod.uuid(),
   createdBy: zod.object({
     id: zod.string().min(1),
     username: zod.string().min(1),
@@ -70,5 +70,5 @@ export const GetInvitesResponseItem = zod.object({
 export const GetInvitesResponse = zod.array(GetInvitesResponseItem);
 
 export const RevokeInviteParams = zod.object({
-  inviteId: zod.string().uuid(),
+  inviteId: zod.uuid(),
 });
