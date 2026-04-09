@@ -63,7 +63,7 @@ function BoardCard({ board }: { board: BoardSummary }) {
 
   return (
     <Link
-      from="/boards"
+      from="/boards/"
       to="/boards/$boardId"
       params={{ boardId: String(board.id) }}
       search={{
