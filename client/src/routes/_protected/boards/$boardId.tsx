@@ -165,10 +165,6 @@ function BoardComponent() {
   const [popoverContainer, setPopoverContainer] =
     useState<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    setSearchInput(filters.query ?? "");
-  }, [filters.query]);
-
   const updateRouteSearch = useCallback(
     (nextFilters: TaskFilters, archive: "tasks" | "columns" | undefined) => {
       navigate({
