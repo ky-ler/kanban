@@ -27,10 +27,14 @@ export function useBoardSubscription(
   const { enabled = true, onEvent } = options;
   const context = useBoardWebSocket();
   const onEventRef = useRef(onEvent);
-  onEventRef.current = onEvent;
+  const hasOnEvent = Boolean(onEvent);
 
   useEffect(() => {
-    if (!context || !enabled || !onEvent) return;
+    onEventRef.current = onEvent;
+  }, [onEvent]);
+
+  useEffect(() => {
+    if (!context || !enabled || !hasOnEvent) return;
 
     const unsubscribe = context.registerListener((event) => {
       onEventRef.current?.(event);
@@ -39,7 +43,7 @@ export function useBoardSubscription(
     return () => {
       unsubscribe();
     };
-  }, [context, enabled, onEvent]);
+  }, [context, enabled, hasOnEvent]);
 
   return {
     status: context?.status ?? "disconnected",
