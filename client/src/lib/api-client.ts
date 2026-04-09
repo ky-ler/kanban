@@ -3,10 +3,6 @@ import { getAuthToken } from "@/features/auth/token-provider";
 import { env } from "@/config/env";
 
 const baseUrl = env.VITE_API_URL || "http://localhost:8080/";
-const shouldLogDebug =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1");
 
 // NOTE: Supports cases where `content-type` is other than `json`
 const getBody = <T>(c: Response | Request): Promise<T> => {
@@ -69,24 +65,36 @@ const createApiError = (
   });
 };
 
+const getAuthTokenWithRetry = async () => {
+  let token: string | null = null;
+
+  try {
+    token = await getAuthToken();
+    if (token) {
+      return token;
+    }
+  } catch {
+    // Retry once after auth context initialization settles.
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  try {
+    token = await getAuthToken();
+  } catch {
+    token = null;
+  }
+
+  return token;
+};
+
 export const apiClient = async <T>(
   url: string,
   options: RequestInit,
 ): Promise<T> => {
   const requestUrl = `${baseUrl}${url}`;
   const requestHeaders = getHeaders(options.headers);
-
-  let token: string | null = null;
-  try {
-    token = await getAuthToken();
-  } catch (error) {
-    if (shouldLogDebug) {
-      console.debug(
-        "Failed to acquire auth token, retrying without it.",
-        error,
-      );
-    }
-  }
+  const token = await getAuthTokenWithRetry();
 
   const requestInit: RequestInit = {
     ...options,

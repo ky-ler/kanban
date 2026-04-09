@@ -1,9 +1,7 @@
 type TokenGetter = () => Promise<string | null>;
 
 const tokenProvider = {
-  get: (async () => {
-    throw new Error("Auth0 token provider not set");
-  }) as TokenGetter,
+  get: (async () => null) as TokenGetter,
 };
 
 export const setAuthTokenGetter = (getter: TokenGetter) => {
