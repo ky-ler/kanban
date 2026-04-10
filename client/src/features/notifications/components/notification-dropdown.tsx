@@ -126,7 +126,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
 
   if (isLoading) {
     return (
-      <div className="w-80 p-3">
+      <div className="w-full p-3">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold">Notifications</h3>
         </div>
