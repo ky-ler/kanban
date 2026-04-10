@@ -16,7 +16,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { NotificationItem } from "@/features/notifications/components/notification-item";
 import { IconBellOff } from "@tabler/icons-react";
@@ -122,11 +121,9 @@ function NotificationsPage() {
   }
 
   if (error) {
-    return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
-        <Alert variant="destructive">Failed to load notifications.</Alert>
-      </div>
-    );
+    throw error instanceof Error
+      ? error
+      : new Error("Failed to load notifications.");
   }
 
   return (
