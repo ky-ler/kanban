@@ -6,10 +6,10 @@ import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import {
   IconArrowRight,
   IconGripVertical,
-  IconLayoutKanban,
   IconLayoutDashboard,
   IconUsers,
 } from "@tabler/icons-react";
+import Logo from "@/assets/logo.svg?react";
 
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context }) => {
@@ -36,7 +36,7 @@ function Index() {
       <header className="bg-background/80 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 border-b backdrop-blur">
         <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-6">
           <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-            <IconLayoutKanban className="text-primary size-5" />
+            <Logo className="size-5" />
             Velora
           </div>
           <div className="flex items-center gap-1.5">
