@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-  IconLayoutKanban,
   IconLogin,
   IconLogout,
   IconMenu2,
@@ -30,6 +29,7 @@ import { useAuth0Context } from "@/features/auth/hooks/use-auth0-context";
 import { NewBoardDialog } from "@/features/boards/components/new-board-dialog";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { cn } from "@/lib/utils";
+import Logo from "@/assets/logo.svg?react";
 
 type NavLink = {
   to: string;
@@ -51,10 +51,6 @@ const navLinks = [
     to: "/tasks",
     label: "Tasks",
     // icon: IconChecklist,
-  },
-  {
-    to: "/notifications",
-    label: "Notifications",
   },
 ] as NavLink[];
 
@@ -92,9 +88,10 @@ export function AppHeader() {
         <Link
           to="/"
           search={{ archive: undefined }}
-          className="hidden shrink-0 items-center gap-2 p-1 font-semibold tracking-tight sm:flex"
+          className="hover:text-primary hidden shrink-0 items-center gap-2 p-1 font-semibold tracking-tight transition-colors sm:flex"
         >
-          <IconLayoutKanban className="text-primary" />
+          {/* <IconLayoutKanban className="text-primary" /> */}
+          <Logo className="size-5" />
           <span className="">Velora</span>
         </Link>
 
@@ -203,7 +200,7 @@ export function AppHeader() {
           <SheetContent side="left" className="w-64">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <IconLayoutKanban className="text-primary size-5" />
+                <Logo className="size-5" />
                 Velora
               </SheetTitle>
             </SheetHeader>
