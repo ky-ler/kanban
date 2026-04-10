@@ -1,4 +1,4 @@
-name: kanban-prod
+name: velora-prod
 
 services:
   postgres:
@@ -19,7 +19,7 @@ services:
       - internal
 
   api:
-    image: ghcr.io/ky-ler/kanban/api:latest
+    image: ghcr.io/ky-ler/velora/api:latest
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME}

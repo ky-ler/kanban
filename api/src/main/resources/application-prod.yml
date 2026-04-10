@@ -25,6 +25,6 @@ management:
 logging:
   level:
     root: WARN
-    com.kylerriggs.kanban: INFO
+    com.kylerriggs.velora: INFO
     org.springframework.security: WARN
     org.hibernate.SQL: OFF

@@ -1,0 +1,763 @@
+package com.kylerriggs.velora.task;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylerriggs.velora.activity.ActivityLogService;
+import com.kylerriggs.velora.activity.ActivityType;
+import com.kylerriggs.velora.board.Board;
+import com.kylerriggs.velora.board.BoardRepository;
+import com.kylerriggs.velora.column.Column;
+import com.kylerriggs.velora.exception.BadRequestException;
+import com.kylerriggs.velora.exception.ResourceNotFoundException;
+import com.kylerriggs.velora.label.Label;
+import com.kylerriggs.velora.notification.event.NotificationEvent.AssigneeChangedEvent;
+import com.kylerriggs.velora.notification.event.NotificationEvent.TaskDescriptionUpdatedEvent;
+import com.kylerriggs.velora.task.dto.MoveTaskRequest;
+import com.kylerriggs.velora.task.dto.MyTaskDto;
+import com.kylerriggs.velora.task.dto.TaskDto;
+import com.kylerriggs.velora.task.dto.TaskRequest;
+import com.kylerriggs.velora.task.dto.TaskStatusRequest;
+import com.kylerriggs.velora.user.User;
+import com.kylerriggs.velora.user.UserLookupService;
+import com.kylerriggs.velora.user.UserService;
+import com.kylerriggs.velora.websocket.BoardEventPublisher;
+import com.kylerriggs.velora.websocket.dto.BoardEventType;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class TaskService {
+    private static final long GAP = 1_000_000L;
+
+    private final TaskRepository taskRepository;
+    private final BoardRepository boardRepository;
+    private final TaskMapper taskMapper;
+    private final UserLookupService userLookupService;
+    private final UserService userService;
+    private final TaskValidationService taskValidationService;
+    private final TaskArchiveService taskArchiveService;
+    private final BoardEventPublisher eventPublisher;
+    private final ActivityLogService activityLogService;
+    private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    /**
+     * Retrieves a single task by its ID.
+     *
+     * @param taskId the ID of the task
+     * @return the task as a DTO
+     * @throws ResourceNotFoundException if the task doesn't exist
+     */
+    public TaskDto getTask(@NonNull UUID taskId) {
+        Task task =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        return taskMapper.toDto(task);
+    }
+
+    /**
+     * Retrieves all tasks assigned to the current user across all boards they have access to.
+     * Supports optional filtering by priority values.
+     *
+     * @param priorityFilter comma-separated priority values (e.g. "HIGH,MEDIUM"), or null/empty
+     * @return list of tasks as cross-board DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<MyTaskDto> getAssignedTasksForCurrentUser(String priorityFilter) {
+        String userId = userService.getCurrentUserId();
+
+        // Parse priority filter
+        boolean filterByPriority = StringUtils.hasText(priorityFilter);
+        List<Priority> priorities = List.of();
+        if (filterByPriority) {
+            priorities =
+                    Arrays.stream(priorityFilter.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .map(s -> Priority.valueOf(s.toUpperCase(Locale.ROOT)))
+                            .toList();
+            filterByPriority = !priorities.isEmpty();
+        }
+
+        List<Task> tasks =
+                taskRepository.findAssignedTasksForUser(userId, priorities, filterByPriority);
+
+        return tasks.stream().map(taskMapper::toMyTaskDto).toList();
+    }
+
+    /**
+     * Creates a new task in the specified board and column. The task is added to the end of the
+     * column's task list.
+     *
+     * @param createTaskRequest the task creation request containing title, description, board,
+     *     column, and optional assignee
+     * @return the created task as a DTO
+     * @throws UnauthorizedException if the user is not authenticated
+     * @throws ResourceNotFoundException if the user, board, column, or assignee doesn't exist
+     * @throws BoardAccessException if the assignee is not a board collaborator
+     */
+    @Transactional
+    public TaskDto createTask(@NonNull TaskRequest createTaskRequest) {
+        User createdBy = userLookupService.getRequiredCurrentUser();
+
+        Board board =
+                boardRepository
+                        .findById(createTaskRequest.boardId())
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Board not found: " + createTaskRequest.boardId()));
+
+        if (board.isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before creating tasks.");
+        }
+
+        Column column =
+                taskValidationService.validateActiveColumnInBoard(
+                        createTaskRequest.columnId(), board.getId());
+
+        String requestAssigneeId = createTaskRequest.assigneeId();
+        User assignedTo =
+                StringUtils.hasText(requestAssigneeId)
+                        ? taskValidationService.validateAssigneeInBoard(requestAssigneeId, board)
+                        : null;
+        Priority requestPriority = parsePriority(createTaskRequest.priority());
+
+        // Get the next position for this column (append to end with GAP spacing)
+        Long maxPosition =
+                taskRepository
+                        .findMaxPositionByColumnIdAndIsArchivedFalse(column.getId())
+                        .orElse(0L);
+        long newPosition = maxPosition + GAP;
+
+        Task newTask = taskMapper.toEntity(createTaskRequest, board, createdBy, assignedTo, column);
+        newTask.setPosition(newPosition);
+        newTask.setCompleted(createTaskRequest.isCompleted());
+        newTask.setArchived(false);
+        newTask.setPriority(requestPriority);
+
+        // Handle labels
+        if (createTaskRequest.labelIds() != null && !createTaskRequest.labelIds().isEmpty()) {
+            newTask.setLabels(
+                    taskValidationService.validateLabelsInBoard(
+                            createTaskRequest.labelIds(), board.getId()));
+        }
+
+        // Save task directly to ensure ID is generated before broadcasting
+        Task savedTask = taskRepository.save(newTask);
+
+        if (createTaskRequest.isArchived()) {
+            taskArchiveService.archiveTask(savedTask);
+        }
+
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish(
+                BoardEventType.TASK_CREATED,
+                Objects.requireNonNull(board.getId()),
+                savedTask.getId());
+
+        // Log activity
+        activityLogService.logActivity(savedTask, ActivityType.TASK_CREATED, null);
+
+        return taskMapper.toDto(savedTask);
+    }
+
+    /**
+     * Updates an existing task's title, description, column, and assignee. Validates that the
+     * assignee (if changed) is a board collaborator.
+     *
+     * @param taskId the ID of the task to update
+     * @param updateTaskRequest the task update request
+     * @return the updated task as a DTO
+     * @throws ResourceNotFoundException if the task, board, column, or assignee doesn't exist
+     * @throws BoardAccessException if the new assignee is not a board collaborator
+     */
+    @Transactional
+    public TaskDto updateTask(@NonNull UUID taskId, TaskRequest updateTaskRequest) {
+        // Load task directly instead of through board to avoid version conflicts
+        Task taskToUpdate =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        // Validate task belongs to the specified board
+        Board board = taskToUpdate.getBoard();
+        if (!board.getId().equals(updateTaskRequest.boardId())) {
+            throw new BadRequestException("Task does not belong to this board");
+        }
+
+        if (board.isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before updating tasks.");
+        }
+
+        // Capture old values for activity logging
+        String oldTitle = taskToUpdate.getTitle();
+        String oldDescription = taskToUpdate.getDescription();
+        Priority oldPriority = taskToUpdate.getPriority();
+        String oldAssigneeId =
+                Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
+        String oldAssigneeUsername =
+                Optional.ofNullable(taskToUpdate.getAssignedTo())
+                        .map(User::getUsername)
+                        .orElse(null);
+        Set<UUID> oldLabelIds =
+                taskToUpdate.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
+        Map<UUID, String> oldLabelNames =
+                taskToUpdate.getLabels().stream()
+                        .collect(Collectors.toMap(Label::getId, Label::getName));
+        String oldDueDate =
+                taskToUpdate.getDueDate() != null ? taskToUpdate.getDueDate().toString() : null;
+        boolean oldCompleted = taskToUpdate.isCompleted();
+        boolean oldArchived = taskToUpdate.isArchived();
+
+        taskToUpdate.setTitle(updateTaskRequest.title());
+        taskToUpdate.setDescription(updateTaskRequest.description());
+
+        // Update priority
+        Priority newPriority = parsePriority(updateTaskRequest.priority());
+        taskToUpdate.setPriority(newPriority);
+
+        // Update due date
+        taskToUpdate.setDueDate(updateTaskRequest.dueDate());
+
+        taskToUpdate.setCompleted(updateTaskRequest.isCompleted());
+
+        if (!taskToUpdate.getColumn().getId().equals(updateTaskRequest.columnId())) {
+            if (taskToUpdate.isArchived() || updateTaskRequest.isArchived()) {
+                throw new BadRequestException(
+                        "Archived tasks cannot be moved. Restore the task first.");
+            }
+            Column newColumn =
+                    taskValidationService.validateActiveColumnInBoard(
+                            updateTaskRequest.columnId(), board.getId());
+            taskToUpdate.setColumn(newColumn);
+        }
+
+        if (oldArchived != updateTaskRequest.isArchived()) {
+            if (updateTaskRequest.isArchived()) {
+                taskArchiveService.archiveTask(taskToUpdate);
+            } else {
+                taskArchiveService.restoreTask(taskToUpdate);
+            }
+        }
+
+        String requestAssigneeId = updateTaskRequest.assigneeId();
+
+        if (!Objects.equals(oldAssigneeId, requestAssigneeId)) {
+            if (StringUtils.hasText(requestAssigneeId)) {
+                User newAssignee =
+                        taskValidationService.validateAssigneeInBoard(requestAssigneeId, board);
+                taskToUpdate.setAssignedTo(newAssignee);
+            } else {
+                taskToUpdate.setAssignedTo(null);
+            }
+        }
+
+        // Update labels
+        List<UUID> requestLabelIds = updateTaskRequest.labelIds();
+        if (requestLabelIds != null) {
+            taskToUpdate.getLabels().clear();
+            taskToUpdate
+                    .getLabels()
+                    .addAll(
+                            taskValidationService.validateLabelsInBoard(
+                                    requestLabelIds, board.getId()));
+        }
+
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish(
+                BoardEventType.TASK_UPDATED, Objects.requireNonNull(board.getId()), taskId);
+
+        // Publish notification events for assignee and description changes
+        String currentUserId = userService.getCurrentUserId();
+        String newAssigneeId =
+                Optional.ofNullable(taskToUpdate.getAssignedTo()).map(User::getId).orElse(null);
+
+        if (!Objects.equals(oldAssigneeId, newAssigneeId) && newAssigneeId != null) {
+            applicationEventPublisher.publishEvent(
+                    new AssigneeChangedEvent(
+                            taskId, board.getId(), currentUserId, newAssigneeId, oldAssigneeId));
+        }
+
+        if (!Objects.equals(oldDescription, taskToUpdate.getDescription())) {
+            applicationEventPublisher.publishEvent(
+                    new TaskDescriptionUpdatedEvent(
+                            taskId,
+                            board.getId(),
+                            currentUserId,
+                            taskToUpdate.getDescription(),
+                            oldDescription));
+        }
+
+        // Log activity for changes
+        logTaskUpdateActivities(
+                taskToUpdate,
+                oldTitle,
+                oldDescription,
+                oldPriority,
+                oldAssigneeId,
+                oldAssigneeUsername,
+                oldLabelIds,
+                oldLabelNames,
+                oldDueDate,
+                oldCompleted,
+                oldArchived,
+                requestLabelIds);
+
+        return taskMapper.toDto(taskToUpdate);
+    }
+
+    private void logTaskUpdateActivities(
+            Task task,
+            String oldTitle,
+            String oldDescription,
+            Priority oldPriority,
+            String oldAssigneeId,
+            String oldAssigneeUsername,
+            Set<UUID> oldLabelIds,
+            Map<UUID, String> oldLabelNames,
+            String oldDueDate,
+            boolean oldCompleted,
+            boolean oldArchived,
+            List<UUID> requestLabelIds) {
+
+        // Check for title/description changes (general update)
+        boolean titleChanged = !Objects.equals(oldTitle, task.getTitle());
+        boolean descriptionChanged = !Objects.equals(oldDescription, task.getDescription());
+
+        if (titleChanged || descriptionChanged) {
+            Map<String, Object> details = new HashMap<>();
+            if (titleChanged) {
+                details.put("oldTitle", oldTitle);
+                details.put("newTitle", task.getTitle());
+            }
+            if (descriptionChanged) {
+                details.put("descriptionChanged", true);
+            }
+            activityLogService.logActivity(task, ActivityType.TASK_UPDATED, toJson(details));
+        }
+
+        // Check for assignee change
+        String newAssigneeId =
+                Optional.ofNullable(task.getAssignedTo()).map(User::getId).orElse(null);
+        if (!Objects.equals(oldAssigneeId, newAssigneeId)) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("oldAssigneeId", oldAssigneeId);
+            details.put("newAssigneeId", newAssigneeId);
+            if (oldAssigneeUsername != null) {
+                details.put("oldAssigneeUsername", oldAssigneeUsername);
+            }
+            if (task.getAssignedTo() != null) {
+                details.put("newAssigneeUsername", task.getAssignedTo().getUsername());
+            }
+            activityLogService.logActivity(task, ActivityType.ASSIGNEE_CHANGED, toJson(details));
+        }
+
+        // Check for priority change
+        if (!Objects.equals(oldPriority, task.getPriority())) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("oldPriority", oldPriority != null ? oldPriority.name() : null);
+            details.put(
+                    "newPriority", task.getPriority() != null ? task.getPriority().name() : null);
+            activityLogService.logActivity(task, ActivityType.PRIORITY_CHANGED, toJson(details));
+        }
+
+        // Check for due date change
+        String newDueDate = task.getDueDate() != null ? task.getDueDate().toString() : null;
+        if (!Objects.equals(oldDueDate, newDueDate)) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("oldDueDate", oldDueDate);
+            details.put("newDueDate", newDueDate);
+            activityLogService.logActivity(task, ActivityType.DUE_DATE_CHANGED, toJson(details));
+        }
+
+        if (oldCompleted != task.isCompleted()) {
+            ActivityType completionEvent =
+                    task.isCompleted() ? ActivityType.TASK_COMPLETED : ActivityType.TASK_REOPENED;
+            activityLogService.logActivity(task, completionEvent, null);
+        }
+
+        if (oldArchived != task.isArchived()) {
+            ActivityType archiveEvent =
+                    task.isArchived() ? ActivityType.TASK_ARCHIVED : ActivityType.TASK_UNARCHIVED;
+            activityLogService.logActivity(task, archiveEvent, null);
+        }
+
+        // Check for labels change
+        if (requestLabelIds != null) {
+            Set<UUID> newLabelIds =
+                    task.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
+            if (!Objects.equals(oldLabelIds, newLabelIds)) {
+                Map<UUID, String> newLabelNameMap =
+                        task.getLabels().stream()
+                                .collect(Collectors.toMap(Label::getId, Label::getName));
+
+                List<String> addedLabels =
+                        newLabelIds.stream()
+                                .filter(id -> !oldLabelIds.contains(id))
+                                .map(id -> newLabelNameMap.getOrDefault(id, id.toString()))
+                                .toList();
+
+                List<String> removedLabels =
+                        oldLabelIds.stream()
+                                .filter(id -> !newLabelIds.contains(id))
+                                .map(id -> oldLabelNames.getOrDefault(id, id.toString()))
+                                .toList();
+
+                Map<String, Object> details = new HashMap<>();
+                details.put("addedLabels", addedLabels);
+                details.put("removedLabels", removedLabels);
+                activityLogService.logActivity(task, ActivityType.LABELS_CHANGED, toJson(details));
+            }
+        }
+    }
+
+    @Transactional
+    public TaskDto updateTaskStatus(
+            @NonNull UUID taskId, @NonNull TaskStatusRequest statusRequest) {
+        if (statusRequest.isCompleted() == null && statusRequest.isArchived() == null) {
+            throw new BadRequestException("At least one status field must be provided");
+        }
+
+        Task taskToUpdate =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        if (taskToUpdate.getBoard().isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before updating tasks.");
+        }
+
+        boolean oldCompleted = taskToUpdate.isCompleted();
+        boolean oldArchived = taskToUpdate.isArchived();
+
+        if (statusRequest.isCompleted() != null) {
+            taskToUpdate.setCompleted(statusRequest.isCompleted());
+        }
+        if (statusRequest.isArchived() != null) {
+            if (statusRequest.isArchived()) {
+                taskArchiveService.archiveTask(taskToUpdate);
+            } else {
+                taskArchiveService.restoreTask(taskToUpdate);
+            }
+        }
+
+        if (oldCompleted == taskToUpdate.isCompleted()
+                && oldArchived == taskToUpdate.isArchived()) {
+            return taskMapper.toDto(taskToUpdate);
+        }
+
+        UUID boardId = taskToUpdate.getBoard().getId();
+        eventPublisher.publish(BoardEventType.TASK_UPDATED, boardId, taskId);
+
+        if (oldCompleted != taskToUpdate.isCompleted()) {
+            ActivityType completionEvent =
+                    taskToUpdate.isCompleted()
+                            ? ActivityType.TASK_COMPLETED
+                            : ActivityType.TASK_REOPENED;
+            activityLogService.logActivity(taskToUpdate, completionEvent, null);
+        }
+
+        if (oldArchived != taskToUpdate.isArchived()) {
+            ActivityType archiveEvent =
+                    taskToUpdate.isArchived()
+                            ? ActivityType.TASK_ARCHIVED
+                            : ActivityType.TASK_UNARCHIVED;
+            activityLogService.logActivity(taskToUpdate, archiveEvent, null);
+        }
+
+        return taskMapper.toDto(taskToUpdate);
+    }
+
+    private String toJson(Map<String, Object> map) {
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Deletes a task from its board.
+     *
+     * @param taskId the ID of the task to delete
+     * @throws ResourceNotFoundException if the task doesn't exist
+     */
+    @Transactional
+    public void deleteTask(@NonNull UUID taskId) {
+        Task taskToDelete =
+                taskRepository
+                        .findById(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        Board board = taskToDelete.getBoard();
+        UUID boardId = board.getId();
+
+        if (!taskToDelete.isArchived()) {
+            throw new BadRequestException("Task must be archived before it can be deleted.");
+        }
+
+        // Log activity before deleting (include task title in details)
+        Map<String, Object> details = new HashMap<>();
+        details.put("taskTitle", taskToDelete.getTitle());
+        activityLogService.logActivity(taskToDelete, ActivityType.TASK_DELETED, toJson(details));
+
+        // Delete the task directly
+        taskRepository.delete(taskToDelete);
+
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish(
+                BoardEventType.TASK_DELETED, Objects.requireNonNull(boardId), taskId);
+    }
+
+    /**
+     * Moves a task to a new position within the same column or to a different column. Uses
+     * fractional indexing positioning so that only the moved task's row is updated
+     *
+     * <p>The caller specifies neighbor task IDs (afterTaskId, beforeTaskId) instead of an absolute
+     * position. The backend computes the physical position as the midpoint between the two
+     * neighbors. If no gap remains, the column is rebalanced.
+     *
+     * @param taskId the ID of the task to move
+     * @param moveTaskRequest the move request containing neighbor references and optional column ID
+     * @throws ResourceNotFoundException if the task or column doesn't exist
+     */
+    @Transactional
+    public void moveTask(@NonNull UUID taskId, MoveTaskRequest moveTaskRequest) {
+        UUID newColumnId = moveTaskRequest.newColumnId();
+        UUID afterTaskId = moveTaskRequest.afterTaskId();
+        UUID beforeTaskId = moveTaskRequest.beforeTaskId();
+
+        // Use pessimistic write lock to prevent concurrent modifications
+        Task taskToMove =
+                taskRepository
+                        .findByIdWithLock(taskId)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        Board board = taskToMove.getBoard();
+        Long oldPosition = taskToMove.getPosition();
+        Column oldColumn = taskToMove.getColumn();
+        UUID oldColumnId = oldColumn.getId();
+        String oldColumnName = oldColumn.getName();
+
+        if (board.isArchived()) {
+            throw new BadRequestException("Board is archived. Unarchive it before moving tasks.");
+        }
+
+        if (taskToMove.isArchived()) {
+            throw new BadRequestException(
+                    "Archived tasks cannot be moved. Restore the task first.");
+        }
+
+        if (taskToMove.getColumn().isArchived()) {
+            throw new BadRequestException(
+                    "Column is archived. Restore the column before moving tasks.");
+        }
+
+        // Determine the target column
+        UUID targetColumnId = (newColumnId != null) ? newColumnId : oldColumnId;
+
+        if (newColumnId != null && !oldColumnId.equals(newColumnId)) {
+            Column targetColumn =
+                    taskValidationService.validateActiveColumnInBoard(newColumnId, board.getId());
+            taskToMove.setColumn(targetColumn);
+        }
+
+        // Compute the new position based on neighbor references
+        long newPosition = computePosition(targetColumnId, afterTaskId, beforeTaskId, taskId);
+
+        // Check if position actually changed (same column, same position)
+        if (oldColumnId.equals(targetColumnId) && oldPosition.equals(newPosition)) {
+            return;
+        }
+
+        taskToMove.setPosition(newPosition);
+
+        // Publish event to be broadcast after transaction commits
+        eventPublisher.publish(
+                BoardEventType.TASK_MOVED, Objects.requireNonNull(board.getId()), taskId);
+
+        // Log activity for move
+        Map<String, Object> details = new HashMap<>();
+        details.put("oldColumnId", oldColumnId.toString());
+        details.put("newColumnId", taskToMove.getColumn().getId().toString());
+        details.put("oldColumnName", oldColumnName);
+        details.put("newColumnName", taskToMove.getColumn().getName());
+        details.put("oldPosition", oldPosition);
+        details.put("newPosition", taskToMove.getPosition());
+        activityLogService.logActivity(taskToMove, ActivityType.TASK_MOVED, toJson(details));
+    }
+
+    /**
+     * Computes a fractional indexing position between two neighbor tasks. If both neighbors are
+     * null, places at the end. If only afterTaskId is set, places after it. If only beforeTaskId is
+     * set, places before it. If both are set, computes the midpoint. Triggers rebalance if the gap
+     * is exhausted.
+     */
+    private long computePosition(
+            UUID columnId, UUID afterTaskId, UUID beforeTaskId, UUID movingTaskId) {
+        if (afterTaskId != null && afterTaskId.equals(movingTaskId)) {
+            throw new BadRequestException("After-task cannot be the task being moved");
+        }
+
+        if (beforeTaskId != null && beforeTaskId.equals(movingTaskId)) {
+            throw new BadRequestException("Before-task cannot be the task being moved");
+        }
+
+        if (afterTaskId != null && afterTaskId.equals(beforeTaskId)) {
+            throw new BadRequestException("After-task and before-task must be different");
+        }
+
+        Long afterPos = null;
+        Long beforePos = null;
+
+        if (afterTaskId != null) {
+            afterPos =
+                    taskRepository
+                            .findActivePositionByIdAndColumnId(afterTaskId, columnId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "After-task not found in target column: "
+                                                            + afterTaskId));
+        }
+
+        if (beforeTaskId != null) {
+            beforePos =
+                    taskRepository
+                            .findActivePositionByIdAndColumnId(beforeTaskId, columnId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "Before-task not found in target column: "
+                                                            + beforeTaskId));
+        }
+
+        // Case: placing at the end of the column (no before neighbor)
+        if (afterPos != null && beforePos == null) {
+            return afterPos + GAP;
+        }
+
+        // Case: placing at the beginning of the column (no after neighbor)
+        if (afterPos == null && beforePos != null) {
+            long pos = beforePos / 2;
+            if (pos <= 0 || pos == beforePos) {
+                rebalanceColumn(columnId, movingTaskId);
+                // Recompute after rebalance
+                beforePos =
+                        taskRepository
+                                .findActivePositionByIdAndColumnId(beforeTaskId, columnId)
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "Before-task not found in target column: "
+                                                                + beforeTaskId));
+                return beforePos / 2;
+            }
+            return pos;
+        }
+
+        // Case: placing between two tasks
+        if (beforePos != null && afterPos != null) {
+            if (afterPos >= beforePos) {
+                throw new BadRequestException(
+                        "After-task must come before before-task in target column");
+            }
+
+            long mid = afterPos + (beforePos - afterPos) / 2;
+            if (mid <= afterPos || mid >= beforePos) {
+                rebalanceColumn(columnId, movingTaskId);
+                // Recompute positions after rebalance
+                afterPos =
+                        taskRepository
+                                .findActivePositionByIdAndColumnId(afterTaskId, columnId)
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "After-task not found in target column: "
+                                                                + afterTaskId));
+                beforePos =
+                        taskRepository
+                                .findActivePositionByIdAndColumnId(beforeTaskId, columnId)
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "Before-task not found in target column: "
+                                                                + beforeTaskId));
+
+                if (afterPos >= beforePos) {
+                    throw new BadRequestException(
+                            "After-task must come before before-task in target column");
+                }
+
+                mid = afterPos + (beforePos - afterPos) / 2;
+                if (mid <= afterPos || mid >= beforePos) {
+                    throw new BadRequestException("Unable to compute position between neighbors");
+                }
+            }
+            return mid;
+        }
+
+        // Case: empty column or no neighbors specified — place at the end
+        Long maxPos =
+                taskRepository.findMaxPositionByColumnIdAndIsArchivedFalse(columnId).orElse(0L);
+        return maxPos + GAP;
+    }
+
+    /**
+     * Rebalances all task positions in a column by redistributing them with even fractional
+     * indexing spacing. Excludes the task currently being moved to avoid constraint violations.
+     */
+    private void rebalanceColumn(UUID columnId, UUID movingTaskId) {
+        List<Task> tasks = taskRepository.findByColumnIdAndIsArchivedFalseOrderByPosition(columnId);
+        long pos = GAP;
+        for (Task t : tasks) {
+            if (!t.getId().equals(movingTaskId)) {
+                taskRepository.updatePosition(t.getId(), pos);
+                pos += GAP;
+            }
+        }
+    }
+
+    private Priority parsePriority(String priorityValue) {
+        if (!StringUtils.hasText(priorityValue)) {
+            return null;
+        }
+
+        try {
+            return Priority.valueOf(priorityValue.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            String allowedValues =
+                    Arrays.stream(Priority.values())
+                            .map(Enum::name)
+                            .collect(Collectors.joining(", "));
+            throw new BadRequestException(
+                    "Invalid priority: " + priorityValue + ". Allowed values: " + allowedValues);
+        }
+    }
+}

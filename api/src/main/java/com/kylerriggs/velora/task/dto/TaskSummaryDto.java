@@ -1,0 +1,27 @@
+package com.kylerriggs.velora.task.dto;
+
+import com.kylerriggs.velora.checklist.dto.ChecklistProgressDto;
+import com.kylerriggs.velora.label.dto.LabelSummaryDto;
+import com.kylerriggs.velora.user.dto.UserSummaryDto;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
+import java.util.UUID;
+
+public record TaskSummaryDto(
+        @NotNull UUID id,
+        @NotBlank String title,
+        @NotNull UUID columnId,
+        UserSummaryDto assignedTo,
+        @Min(0) long position,
+        @NotNull boolean isCompleted,
+        @NotNull boolean isArchived,
+        String priority,
+        String dueDate,
+        List<LabelSummaryDto> labels,
+        @NotNull @Min(0) long commentCount,
+        @NotNull boolean hasDescription,
+        ChecklistProgressDto checklistProgress) {}

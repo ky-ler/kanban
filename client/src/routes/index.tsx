@@ -37,7 +37,7 @@ function Index() {
         <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-6">
           <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">
             <IconLayoutKanban className="text-primary size-5" />
-            Kanban
+            Velora
           </div>
           <div className="flex items-center gap-1.5">
             <ThemeToggle />
@@ -60,8 +60,8 @@ function Index() {
           Organize your work, your way
         </h1>
         <p className="text-muted-foreground mx-auto mt-4 max-w-lg text-sm">
-          A real-time kanban board to help you and your team stay on top of
-          tasks.
+          A real-time project management application to help you and your team
+          stay on top of tasks.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Button size="lg" onClick={signUp}>
@@ -79,7 +79,7 @@ function Index() {
               icon: IconLayoutDashboard,
               title: "Boards & Columns",
               description:
-                "Create and customize kanban boards with columns that match your workflow.",
+                "Create and customize projects with columns that match your workflow.",
             },
             {
               icon: IconUsers,

@@ -1,0 +1,30 @@
+package com.kylerriggs.velora.user;
+
+import com.kylerriggs.velora.exception.UnauthorizedException;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserService {
+    /**
+     * Retrieves the ID of the currently authenticated user from the security context.
+     *
+     * @return the user ID from the authentication token
+     */
+    public String getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        String userId = authentication.getName();
+
+        if (userId == null || userId.isBlank() || "anonymousUser".equals(userId)) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        return userId;
+    }
+}

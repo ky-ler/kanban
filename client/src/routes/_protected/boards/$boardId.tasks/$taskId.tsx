@@ -145,7 +145,7 @@ export const Route = createFileRoute(
         content: `View and edit details for task ${loaderData?.[1].data.title}.`,
       },
       {
-        title: `Task Details - ${loaderData?.[1].data.title} - Kanban`,
+        title: `Task Details - ${loaderData?.[1].data.title} - Velora`,
       },
     ],
   }),

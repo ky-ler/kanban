@@ -14,8 +14,8 @@ spring:
         jwt:
           issuer-uri: https://test.example.com/
           audiences: https://test-api
-kanban:
+velora:
   security:
-    custom-claim-prefix: https://kanban.kylerriggs.com/claims/
+    custom-claim-prefix: https://velora.kylerriggs.com/claims/
     cors-allowed-origins:
       - http://localhost:5173

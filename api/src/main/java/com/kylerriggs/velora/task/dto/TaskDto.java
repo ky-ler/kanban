@@ -1,0 +1,27 @@
+package com.kylerriggs.velora.task.dto;
+
+import com.kylerriggs.velora.label.dto.LabelSummaryDto;
+import com.kylerriggs.velora.user.dto.UserSummaryDto;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
+import java.util.UUID;
+
+public record TaskDto(
+        @NotNull UUID id,
+        @NotNull UserSummaryDto createdBy,
+        UserSummaryDto assignedTo,
+        @NotBlank String title,
+        String description,
+        @NotNull UUID columnId,
+        @NotNull @Min(0) Long position,
+        @NotNull boolean isCompleted,
+        @NotNull boolean isArchived,
+        String priority,
+        String dueDate,
+        List<LabelSummaryDto> labels,
+        @NotBlank String dateCreated,
+        @NotBlank String dateModified) {}

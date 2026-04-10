@@ -81,7 +81,7 @@ export const Route = createFileRoute("/_protected/tasks/")({
         content: "View all tasks assigned to you across all boards.",
       },
       {
-        title: "Tasks - Kanban",
+        title: "Tasks - Velora",
       },
     ],
   }),

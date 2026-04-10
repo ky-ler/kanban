@@ -1,0 +1,169 @@
+package com.kylerriggs.velora.invite;
+
+import com.kylerriggs.velora.board.Board;
+import com.kylerriggs.velora.board.BoardLimitPolicy;
+import com.kylerriggs.velora.board.BoardRepository;
+import com.kylerriggs.velora.board.BoardRole;
+import com.kylerriggs.velora.board.BoardUser;
+import com.kylerriggs.velora.board.BoardUserRepository;
+import com.kylerriggs.velora.exception.BadRequestException;
+import com.kylerriggs.velora.exception.ResourceNotFoundException;
+import com.kylerriggs.velora.invite.dto.AcceptInviteResponse;
+import com.kylerriggs.velora.invite.dto.BoardInviteDto;
+import com.kylerriggs.velora.invite.dto.CreateInviteRequest;
+import com.kylerriggs.velora.invite.dto.InvitePreviewDto;
+import com.kylerriggs.velora.user.User;
+import com.kylerriggs.velora.user.UserLookupService;
+import com.kylerriggs.velora.user.UserService;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class BoardInviteService {
+    private final BoardInviteRepository inviteRepository;
+    private final BoardRepository boardRepository;
+    private final BoardUserRepository boardUserRepository;
+    private final BoardInviteMapper inviteMapper;
+    private final UserService userService;
+    private final UserLookupService userLookupService;
+    private final BoardLimitPolicy boardLimitPolicy;
+
+    private static final String CODE_CHARS =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    private static final int CODE_LENGTH = 12;
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    @Transactional
+    public BoardInviteDto createInvite(CreateInviteRequest request) {
+        User creator = userLookupService.getRequiredCurrentUser();
+
+        Board board =
+                boardRepository
+                        .findById(request.boardId())
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Board not found: " + request.boardId()));
+
+        Instant expiresAt =
+                request.expiration().getDuration() != null
+                        ? Instant.now().plus(request.expiration().getDuration())
+                        : null;
+
+        BoardInvite invite =
+                BoardInvite.builder()
+                        .code(generateUniqueCode())
+                        .board(board)
+                        .createdBy(creator)
+                        .expiresAt(expiresAt)
+                        .maxUses(request.maxUses().getUses())
+                        .build();
+
+        if (invite == null) {
+            throw new BadRequestException("Failed to create invite");
+        }
+
+        return inviteMapper.toDto(inviteRepository.save(invite));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BoardInviteDto> getInvitesForBoard(@NonNull UUID boardId) {
+        return inviteRepository.findActiveByBoardId(boardId).stream()
+                .map(inviteMapper::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public InvitePreviewDto getInvitePreview(@NonNull String code) {
+        BoardInvite invite =
+                inviteRepository
+                        .findByCodeWithBoard(code)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Invite not found: " + code));
+        return inviteMapper.toPreviewDto(invite);
+    }
+
+    @Transactional
+    public AcceptInviteResponse acceptInvite(@NonNull String code) {
+        String userId = userService.getCurrentUserId();
+
+        BoardInvite invite =
+                inviteRepository
+                        .findByCodeWithBoardForUpdate(code)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("Invite not found: " + code));
+
+        // Validate invite
+        if (invite.isRevoked()) {
+            throw new BadRequestException("Invite has been revoked");
+        }
+        if (invite.getExpiresAt() != null && Instant.now().isAfter(invite.getExpiresAt())) {
+            throw new BadRequestException("Invite has expired");
+        }
+        if (invite.getMaxUses() != null && invite.getUseCount() >= invite.getMaxUses()) {
+            throw new BadRequestException("Invite has reached maximum uses");
+        }
+
+        Board board = invite.getBoard();
+
+        // Check if already a member
+        if (boardUserRepository.existsByBoardIdAndUserId(board.getId(), userId)) {
+            return new AcceptInviteResponse(board.getId(), board.getName(), true);
+        }
+
+        boardLimitPolicy.assertCanAcceptInvite(userId);
+
+        User user = userLookupService.getRequiredUser(userId);
+
+        // Add user as MEMBER
+        BoardUser membership =
+                BoardUser.builder().board(board).user(user).role(BoardRole.MEMBER).build();
+        board.getCollaborators().add(membership);
+
+        // Increment use count
+        invite.setUseCount(invite.getUseCount() + 1);
+        inviteRepository.save(invite);
+        boardRepository.save(board);
+
+        return new AcceptInviteResponse(board.getId(), board.getName(), false);
+    }
+
+    @Transactional
+    public void revokeInvite(@NonNull UUID inviteId) {
+        BoardInvite invite =
+                inviteRepository
+                        .findById(inviteId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Invite not found: " + inviteId));
+        invite.setRevoked(true);
+        inviteRepository.save(invite);
+    }
+
+    private String generateUniqueCode() {
+        String code;
+        do {
+            code = generateCode();
+        } while (inviteRepository.findByCode(code).isPresent());
+        return code;
+    }
+
+    private String generateCode() {
+        StringBuilder sb = new StringBuilder(CODE_LENGTH);
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            sb.append(CODE_CHARS.charAt(secureRandom.nextInt(CODE_CHARS.length())));
+        }
+        return sb.toString();
+    }
+}

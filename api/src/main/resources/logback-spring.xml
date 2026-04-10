@@ -16,6 +16,6 @@
         <root level="WARN">
             <appender-ref ref="JSON"/>
         </root>
-        <logger name="com.kylerriggs.kanban" level="INFO"/>
+        <logger name="com.kylerriggs.velora" level="INFO"/>
     </springProfile>
 </configuration>

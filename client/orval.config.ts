@@ -3,7 +3,7 @@ import { defineConfig } from "orval";
 const targetPath = "http://localhost:8080/api-docs.yaml";
 
 export default defineConfig({
-  kanban: {
+  velora: {
     input: {
       target: targetPath,
     },
@@ -42,7 +42,7 @@ export default defineConfig({
       },
     },
   },
-  kanbanZod: {
+  veloraZod: {
     input: {
       target: targetPath,
     },

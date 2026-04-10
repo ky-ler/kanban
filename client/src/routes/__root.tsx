@@ -31,10 +31,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       {
         name: "description",
-        content: "A real-time, collaborative kanban board application.",
+        content: "A real-time, collaborative project management application.",
       },
       {
-        title: "Kanban",
+        title: "Velora",
       },
     ],
   }),

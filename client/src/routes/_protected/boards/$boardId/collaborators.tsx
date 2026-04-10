@@ -88,7 +88,7 @@ export const Route = createFileRoute(
         content: `Manage collaborators and invites for your board: ${loaderData?.data.name}.`,
       },
       {
-        title: `Collaborators - ${loaderData?.data.name} - Kanban`,
+        title: `Collaborators - ${loaderData?.data.name} - Velora`,
       },
     ],
   }),

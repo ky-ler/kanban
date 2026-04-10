@@ -1,20 +1,20 @@
 services:
-  kanban-db:
+  velora-db:
     image: postgres:18-alpine
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-kanban}
+      POSTGRES_DB: ${DB_NAME:-velora}
     volumes:
-      - kanban_db_data:/var/lib/postgresql
+      - velora_db_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-kanban}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-velora}"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
 volumes:
-  kanban_db_data:
+  velora_db_data:

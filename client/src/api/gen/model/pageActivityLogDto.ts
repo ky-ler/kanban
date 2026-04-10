@@ -9,15 +9,15 @@ import type { PageableObject } from "./pageableObject";
 import type { SortObject } from "./sortObject";
 
 export interface PageActivityLogDto {
-  totalElements?: number;
   totalPages?: number;
+  totalElements?: number;
   size?: number;
   content?: ActivityLogDto[];
   number?: number;
   pageable?: PageableObject;
   sort?: SortObject;
-  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }

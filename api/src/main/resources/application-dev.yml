@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/kanban}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/velora}
     username: ${DB_USERNAME:username}
     password: ${DB_PASSWORD:password}
   security:
@@ -8,12 +8,12 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${JWT_ISSUER_URI:https://dev-qprlf4kpcqixju57.us.auth0.com/}
-          audiences: ${JWT_AUDIENCES:https://kanban-api}
+          audiences: ${JWT_AUDIENCES:https://velora-api}
 
 logging:
   level:
-    com.kylerriggs.kanban: DEBUG
+    com.kylerriggs.velora: DEBUG
 
-kanban:
+velora:
   security:
     cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

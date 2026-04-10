@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "name": "velora",
+      "path": ".",
+    },
+  ],
+  "settings": {
+    "eslint.workingDirectories": [
+      { "directory": "./client", "changeProcessCWD": true },
+    ],
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "[java]": {
+      "editor.defaultFormatter": "josevseb.google-java-format-for-vs-code",
+    },
+    "java.format.settings.google.style": "google",
+    "java.format.settings.google.version": "1.33.0",
+    "java.format.settings.google.extra": "--aosp",
+  },
+}

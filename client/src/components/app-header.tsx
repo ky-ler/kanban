@@ -95,7 +95,7 @@ export function AppHeader() {
           className="hidden shrink-0 items-center gap-2 p-1 font-semibold tracking-tight sm:flex"
         >
           <IconLayoutKanban className="text-primary" />
-          <span className="">Kanban</span>
+          <span className="">Velora</span>
         </Link>
 
         {/* Nav Links */}
@@ -204,7 +204,7 @@ export function AppHeader() {
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <IconLayoutKanban className="text-primary size-5" />
-                Kanban
+                Velora
               </SheetTitle>
             </SheetHeader>
             <nav className="flex flex-col gap-1 px-4">

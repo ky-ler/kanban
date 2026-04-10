@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_protected/boards/$boardId/activity")({
         content: `Activity feed for your board: ${loaderData?.data.name}.`,
       },
       {
-        title: `Activity - ${loaderData?.data.name} - Kanban`,
+        title: `Activity - ${loaderData?.data.name} - Velora`,
       },
     ],
   }),

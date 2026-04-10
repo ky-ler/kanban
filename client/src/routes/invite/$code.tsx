@@ -45,10 +45,10 @@ export const Route = createFileRoute("/invite/$code")({
     meta: [
       {
         name: "description",
-        content: `Join ${loaderData?.data.boardName} on Kanban - a real-time collaborative kanban board application.`,
+        content: `Join ${loaderData?.data.boardName} on Velora - a real-time collaborative project management application.`,
       },
       {
-        title: `Join ${loaderData?.data.boardName} - Kanban`,
+        title: `Join ${loaderData?.data.boardName} - Velora`,
       },
     ],
   }),

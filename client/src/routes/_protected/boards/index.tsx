@@ -46,10 +46,10 @@ export const Route = createFileRoute("/_protected/boards/")({
     meta: [
       {
         name: "description",
-        content: "View and manage your kanban boards.",
+        content: "View and manage your projects.",
       },
       {
-        title: "Boards - Kanban",
+        title: "Boards - Velora",
       },
     ],
   }),

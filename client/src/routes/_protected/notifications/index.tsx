@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_protected/notifications/")({
           "View your notifications and keep up with board and task updates.",
       },
       {
-        title: "Notifications - Kanban",
+        title: "Notifications - Velora",
       },
     ],
   }),

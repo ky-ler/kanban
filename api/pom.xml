@@ -10,9 +10,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.kylerriggs</groupId>
-    <artifactId>kanban</artifactId>
+    <artifactId>velora</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>kanban</name>
+    <name>velora</name>
     <description>Project management application</description>
     <url/>
     <licenses>
