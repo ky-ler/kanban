@@ -39,23 +39,57 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
   }),
   component: () => <RootComponent />,
-  errorComponent: ({ error, reset }) => (
-    <ErrorPage error={error} reset={reset} />
-  ),
+  errorComponent: RootErrorComponent,
 });
 
 function RootComponent() {
   const { auth } = Route.useRouteContext();
+  const showHeader = auth.isAuthenticated || auth?.isLoading;
 
+  return (
+    <RootLayout showHeader={showHeader}>
+      <Outlet />
+    </RootLayout>
+  );
+}
+
+function RootErrorComponent({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
+  const { auth } = Route.useRouteContext();
+  const isAuthenticated = auth.isAuthenticated;
+
+  return (
+    <RootLayout showHeader={isAuthenticated} isErrorMode>
+      <ErrorPage
+        error={error}
+        reset={reset}
+        isAuthenticated={isAuthenticated}
+      />
+    </RootLayout>
+  );
+}
+
+function RootLayout({
+  children,
+  showHeader,
+  isErrorMode = false,
+}: {
+  children: React.ReactNode;
+  showHeader: boolean;
+  isErrorMode?: boolean;
+}) {
   return (
     <>
       <HeadContent />
       <TooltipProvider>
         <div className="flex min-h-svh flex-col">
-          {!auth.isAuthenticated && !auth?.isLoading ? null : <AppHeader />}
-          <main className="flex flex-1 flex-col">
-            <Outlet />
-          </main>
+          {showHeader ? <AppHeader isErrorMode={isErrorMode} /> : null}
+          <main className="flex flex-1 flex-col">{children}</main>
         </div>
         <Toaster position="bottom-center" />
         <Suspense>

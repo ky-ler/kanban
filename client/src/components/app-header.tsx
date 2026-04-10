@@ -54,7 +54,11 @@ const navLinks = [
   },
 ] as NavLink[];
 
-export function AppHeader() {
+interface AppHeaderProps {
+  isErrorMode?: boolean;
+}
+
+export function AppHeader({ isErrorMode = false }: AppHeaderProps) {
   const auth = useAuth0Context();
   const [newBoardOpen, setNewBoardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,7 +124,7 @@ export function AppHeader() {
 
         {/* Right Side */}
         <div className="ml-auto flex items-center gap-1.5">
-          {auth.isAuthenticated && (
+          {auth.isAuthenticated && !isErrorMode && (
             <Button
               variant="default"
               size="default"
@@ -133,7 +137,7 @@ export function AppHeader() {
 
           <ThemeToggle />
 
-          {auth.isAuthenticated && <NotificationBell />}
+          {auth.isAuthenticated && !isErrorMode && <NotificationBell />}
 
           {auth.isAuthenticated ? (
             <DropdownMenu>
@@ -260,7 +264,9 @@ export function AppHeader() {
         </Sheet>
       )}
 
-      <NewBoardDialog open={newBoardOpen} onOpenChange={setNewBoardOpen} />
+      {!isErrorMode && (
+        <NewBoardDialog open={newBoardOpen} onOpenChange={setNewBoardOpen} />
+      )}
     </header>
   );
 }
